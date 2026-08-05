@@ -1,0 +1,22 @@
+[vm_lab]
+profile = "lab"
+
+[host]
+state_dir = "../var/state"
+runtime_dir = "../var/run"
+base_image = "../var/images/base_ai_os.qcow2"
+qemu_binary = "qemu-system-x86_64"
+qemu_img_binary = "qemu-img"
+enable_kvm = false
+ssh_ports = [2222, 2299]
+agent_ports = [9901, 9978]
+vnc_ports = [5900, 5977]
+agent_timeout_seconds = 30.0
+
+[components]
+guest_runtime_candidates = false
+operator_shell = false
+native_tools = false
+file_processing = false
+digital_twin_lineage = false
+quarantined_runtime = false

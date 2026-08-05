@@ -1,0 +1,14 @@
+[bootstrap]
+target_dir = "/opt/somnus"
+marker_file = "/var/lib/somnus/bootstrap-v1.json"
+
+# Add one or more local [[payloads]] tables. Every payload requires exact
+# packed/unpacked sizes and a SHA256 digest.
+#
+# [[payloads]]
+# name = "somnus-guest-runtime"
+# sha256 = "replace-with-64-character-sha256"
+# archive = "tar.gz"
+# size_bytes = 123456
+# unpacked_size_bytes = 987654
+# local_paths = ["/mnt/seed/somnus-guest-runtime.tar.gz"]

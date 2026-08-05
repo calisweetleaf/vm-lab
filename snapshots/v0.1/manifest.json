@@ -1,0 +1,30 @@
+{
+  "snapshot_version": "v0.1",
+  "timestamp": "2026-08-05T02:41:40Z",
+  "mode": "COMPOSE",
+  "domains": {
+    "vm_lab": {
+      "module": "src/somnus_vm",
+      "wrapper": "python -m somnus_vm",
+      "tool_count": 3,
+      "tools": ["doctor", "topology", "plan"],
+      "provenance": "vm_lab.zip sha256:63f698f7af3ce989de8885a3b3b68b7214dedbffb1ac6671636b1f5d13829f94",
+      "edits": [],
+      "proof": "test/vm_lab/runs/20260805T024125Z/result.json"
+    },
+    "guest_bootstrap": {
+      "module": "src/somnus_vm/guest/bootstrap.py",
+      "wrapper": "somnus-guest-bootstrap",
+      "tool_count": 1,
+      "tools": ["bootstrap"],
+      "provenance": "archive/lineage/guest/vm_bootstrap.py",
+      "edits": [],
+      "proof": "test/vm_lab/runs/20260805T024125Z/result.json"
+    }
+  },
+  "total_capabilities": 4,
+  "system_hash": "8dcc5bd65ca30497e40312a77b22ca81639bf8f6eb74eefa95ae5c57ee371328",
+  "system_hash_method": "sha256 of sorted per-file sha256 lines, excluding this manifest",
+  "source_files_preserved": 33,
+  "promotion": "non-mutating host planning plus verified guest bootstrap"
+}

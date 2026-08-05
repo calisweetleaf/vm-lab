@@ -1,0 +1,15 @@
+aiofiles
+aiohttp
+aiosqlite
+cryptography
+docker
+GitPython
+httpx
+numpy
+psutil
+pydantic
+pydantic-settings
+PyYAML
+requests
+scikit-learn
+sentence-transformers

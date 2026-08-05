@@ -1,0 +1,15 @@
+aiofiles
+chardet
+networkx
+nltk
+numpy
+pandas
+Pillow
+psutil
+pydantic
+python-docx
+pypdf
+PyYAML
+scikit-learn
+scipy
+toml

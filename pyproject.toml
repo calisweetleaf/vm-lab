@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "somnus-vm-lab"
+version = "0.1.0"
+description = "Contract-first planning and bootstrap boundary for experimental Somnus VMs"
+requires-python = ">=3.12"
+dependencies = []
+
+[project.scripts]
+vm-lab = "somnus_vm.cli:main"
+somnus-guest-bootstrap = "somnus_vm.guest.bootstrap:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
