@@ -260,6 +260,8 @@ The dotted edge is descriptive registration, not an import license.
 | `test/vm_lab/` | active | grows with every promoted claim |
 | `PLAN.md` | living authority | gates may strengthen; weakening requires decision record |
 | `TASK.md` | volatile | exactly one current unit |
+| `STATE.md` | volatile | exact current phase/unit/command/blocker/evidence only |
+| `docs/plan-index.json` | living machine authority | every phase, dependency, gate, owner, status, and evidence path must validate |
 | `CONTEXT.md` | living index | update when current architecture/state changes |
 | `MEMORY.md` | append/curate | durable decisions and corrected history only |
 | `PROVENANCE.md` | chronological | append factual decisions and sessions |
@@ -300,6 +302,8 @@ Project-specific detection and recovery: [`FAILURE_GRAMMAR.md`](FAILURE_GRAMMAR.
 | `snapshots/v0.1/manifest.json` | yes | promoted capabilities, proof path, system hash |
 | `AGENTS.md` | yes | repository operator kernel and navigation |
 | `PLAN.md` | yes | full destination and physical gates |
+| `STATE.md` | yes | current execution phase and exact unit |
+| `docs/plan-index.json` | yes | strict phase DAG, owners, statuses, gates, and evidence |
 | `.sovereign/` | yes | warm-state hint, topology fingerprint, golden paths |
 | `.github/` | yes | event-driven integrity enforcement |
 | `.codex/skills/vm-lab/` | yes | conditional repo skill router |

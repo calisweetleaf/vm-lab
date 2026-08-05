@@ -5,3 +5,5 @@ build/
 dist/
 var/
 .codegraph/
+archive/vm-lab-first-zip.zip
+.gitignore

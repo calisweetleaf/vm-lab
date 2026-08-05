@@ -1,0 +1,97 @@
+{
+  "checks": [
+    {
+      "detail": "round-tripped one record, rejected an illegal transition, and fixed endpoint names",
+      "duration_ms": 0.179,
+      "name": "contract_roundtrip",
+      "status": "pass"
+    },
+    {
+      "detail": "loaded resolved configs and rejected truthy booleans plus ambiguous QMP paths",
+      "duration_ms": 1.849,
+      "name": "configuration",
+      "status": "pass"
+    },
+    {
+      "detail": "bind-checked 24 distinct ephemeral ports across eight threads",
+      "duration_ms": 2.254,
+      "name": "port_allocation",
+      "status": "pass"
+    },
+    {
+      "detail": "encoded a comma-bearing disk path with JSON blockdev and a valid QMP path",
+      "duration_ms": 0.982,
+      "name": "qemu_plan",
+      "status": "pass"
+    },
+    {
+      "detail": "extracted bounded data and rejected traversal, links, duplicates, and size drift",
+      "duration_ms": 2.137,
+      "name": "bootstrap_extraction",
+      "status": "pass"
+    },
+    {
+      "detail": "installed/recovered bounded payloads and rejected stale, ambiguous, mislabeled, or colliding intent",
+      "duration_ms": 3.884,
+      "name": "bootstrap_idempotency",
+      "status": "pass"
+    },
+    {
+      "detail": "reported 9 source-aware checks with healthy=False",
+      "duration_ms": 1.06,
+      "name": "doctor_truthfulness",
+      "status": "pass"
+    },
+    {
+      "detail": "ran checkout-independent topology, redacted planning, and clean port-exhaustion errors",
+      "duration_ms": 215.729,
+      "name": "cli_entrypoint",
+      "status": "pass"
+    },
+    {
+      "detail": "installed a wheel with checkout-free CLI and clean malformed-payload exit behavior",
+      "duration_ms": 1833.471,
+      "name": "wheel_runtime",
+      "status": "pass"
+    },
+    {
+      "detail": "validated 405 unique execution IDs across phases P0-P18",
+      "duration_ms": 6.022,
+      "name": "plan_contract",
+      "status": "pass"
+    },
+    {
+      "detail": "validated live plan index with 1722 direct observations",
+      "duration_ms": 72.128,
+      "name": "plan_index",
+      "status": "pass"
+    },
+    {
+      "detail": "rejected 8 hostile plan fixtures: duplicate-json-key, missing-dependency, dependency-cycle, missing-gate, multiple-current-phases, completed-without-evidence, owner-path-escape, duplicate-plan-id",
+      "duration_ms": 662.881,
+      "name": "plan_index_rejections",
+      "status": "pass"
+    },
+    {
+      "detail": "verified 33/33 preserved source files against their byte hashes",
+      "duration_ms": 2.269,
+      "name": "source_manifest",
+      "status": "pass"
+    }
+  ],
+  "counts": {
+    "failed": 0,
+    "passed": 13,
+    "skipped": 0
+  },
+  "domain": "vm_lab",
+  "ended_at": "2026-08-05T05:48:41.167109+00:00",
+  "fail_count": 0,
+  "mode": "EDIT",
+  "pass_count": 13,
+  "scope": "SCOPE.md",
+  "skip_count": 0,
+  "started_at": "2026-08-05T05:48:38.362146+00:00",
+  "status": "pass",
+  "target_module": "scripts/verify_repository.py and test/vm_lab/test_vm_lab.py"
+}

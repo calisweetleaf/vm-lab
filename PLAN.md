@@ -27,8 +27,8 @@
 > records chronological decisions. Do not duplicate the phase plan into those
 > files.
 >
-> **Current unit:** [`TASK-CTM-001`](TASK.md) — activate the living repository.
-> Runtime implementation resumes at Phase P0 only after that unit closes.
+> **Ready unit:** [`TASK-P1-001`](TASK.md) — compose the canonical protocol
+> boundary. P0 is closed; no P2 or physical work begins before `GATE-P1`.
 
 ## 0. Document contract
 
@@ -282,24 +282,33 @@ flowchart TD
 | v0.4 | authenticated AIPC lifecycle | readiness, command, file, graceful stop, reconciliation |
 | v0.5 | storage recovery | quiesced snapshot, rollback, crash recovery, destructive gates |
 | v0.6 | ecosystem bridges | Kerminal client, VM-Go compatibility, Artifact ingress |
-| v1.0 | certified reference backend | full matrix, release packaging, complete evidence |
+| v1.0 | certified reference backend | full matrix, final disposition, release packaging, complete evidence |
+
+The stable phase IDs are not the final execution order at the release boundary.
+`P18` closes source disposition before `P17` performs the final release seal:
+
+`P0 -> P1 -> ... -> P16 -> P18 -> P17`
 
 ## 8. Phase P0 — lock the execution baseline
 
 ### Required work
 
-- [ ] `P0-001` Add `STATE.md` with the execution fields defined by `EXEC-001`.
-- [ ] `P0-002` Add a machine-readable `docs/plan-index.json` mapping every phase ID to owner files, dependencies, gate, and status.
-- [ ] `P0-003` Teach the smoke harness to reject duplicate plan IDs, missing dependencies, missing gates, and completed items without evidence paths.
-- [ ] `P0-004` Add a `docs/decisions/` directory for short architecture decision records. Start with daemon ownership, SQLite registry, guest package split, and stopped-VM rollback.
-- [ ] `P0-005` Record the real target platforms: Linux x86_64 KVM, Linux x86_64 TCG, Python 3.12+, QEMU capabilities used, and qcow2 feature expectations.
-- [ ] `P0-006` Create an explicit disposable-fixture policy. Physical tests may never point at the operator's production AIPC disk.
-- [ ] `P0-007` Preserve the one-active-AIPC default in configuration and document how test fixtures opt into multiple disposable VMs.
-- [ ] `P0-008` Define release exit codes and machine-readable error envelopes before mutation commands exist.
+- [x] `P0-001` Add `STATE.md` with the execution fields defined by `EXEC-001`.
+- [x] `P0-002` Add a machine-readable `docs/plan-index.json` mapping every phase ID to owner files, dependencies, gate, and status.
+- [x] `P0-003` Teach the smoke harness to reject duplicate plan IDs, missing dependencies, missing gates, and completed items without evidence paths.
+- [x] `P0-004` Add a `docs/decisions/` directory for short architecture decision records. Start with daemon ownership, SQLite registry, guest package split, and stopped-VM rollback.
+- [x] `P0-005` Record the real target platforms: Linux x86_64 KVM, Linux x86_64 TCG, Python 3.12+, QEMU capabilities used, and qcow2 feature expectations.
+- [x] `P0-006` Create an explicit disposable-fixture policy. Physical tests may never point at the operator's production AIPC disk.
+- [x] `P0-007` Lock the one-active-AIPC configuration contract and document how test fixtures opt into multiple disposable VMs; P1 implements the typed setting before lifecycle mutation exists.
+- [x] `P0-008` Define release exit codes and machine-readable error envelopes before mutation commands exist; P1 implements the shared protocol types.
 
 ### Gate P0
 
-- [ ] `GATE-P0` A direct plan-validation run proves unique IDs, complete dependency references, an explicit gate for every phase, one current phase, and zero falsely completed physical capabilities.
+- [x] `GATE-P0` A direct plan-validation run proves unique IDs, complete dependency references, an explicit gate for every phase, one current phase, and zero falsely completed physical capabilities.
+
+Gate evidence: [`test/vm_lab/runs/20260805T054841Z/result.json`](test/vm_lab/runs/20260805T054841Z/result.json)
+records 13 passes, including 1,722 live plan observations and eight hostile
+fixture rejections, with zero failures or skips.
 
 ## 9. Phase P1 — canonical protocols, states, and settings
 
@@ -888,16 +897,17 @@ The following tests are mandatory; they are not interchangeable.
 
 The next Operator does not begin with snapshots, file processing, shell wiring, or cognitive memory. The exact first sequence is:
 
-1. Create `STATE.md` and scope P1.
-2. Split `somnus_protocol` and close the schema/transition tests.
-3. Build the daemon control envelope and SQLite registry without launching QEMU.
-4. Prove interprocess ownership and recovery journal behavior.
-5. Build owned overlay creation around a known disposable image.
-6. Implement QMP and process identity.
-7. Run the first physical QEMU boot gate.
-8. Implement the small authenticated guest agent.
-9. Complete lifecycle and reconciliation.
-10. Implement stopped-VM rollback before any live snapshot claim.
+1. Close P0 with `STATE.md`, the machine plan index, decisions, and direct plan validation.
+2. Scope P1 only after `GATE-P0` passes.
+3. Split `somnus_protocol` and close the schema/transition tests.
+4. Build the daemon control envelope and SQLite registry without launching QEMU.
+5. Prove interprocess ownership and recovery journal behavior.
+6. Build owned overlay creation around a known disposable image.
+7. Implement QMP and process identity.
+8. Run the first physical QEMU boot gate.
+9. Implement the small authenticated guest agent.
+10. Complete lifecycle and reconciliation.
+11. Implement stopped-VM rollback before any live snapshot claim.
 
 If real QEMU/KVM metal is unavailable, implementation stops at the next physical gate. The Operator may improve contracts, fixtures, diagnostics, and deterministic failure behavior, but must not mark the blocked capability complete or expose its mutation command.
 

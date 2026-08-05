@@ -89,6 +89,7 @@ evidence is in `docs/RECONSTITUTION_AUDIT.md`. Major rejections:
 | 2026-08-04 | first private Git remote | `origin` set to `git@github.com:calisweetleaf/vm-lab.git`; `main` tracks `origin/main` |
 | 2026-08-04 | CodeGraph local index | 47 files, 2,743 nodes, 5,683 edges; local index ignored by Git |
 | 2026-08-04 | CTMv3 living repository | entry packet, topology, traversal, failure grammar, continuity, skill router, and CI added |
+| 2026-08-05 | P0 execution baseline | strict phase DAG, decisions, platform/fixture contracts, and direct gate validation added |
 
 ## Session log
 
@@ -96,6 +97,7 @@ evidence is in `docs/RECONSTITUTION_AUDIT.md`. Major rejections:
 | --- | --- | --- | --- | --- |
 | 2026-08-04 | Codex + Daeron | Reconstituted and sealed v0.1 | initial topology | activate living repository |
 | 2026-08-04 | Codex | Built and verified CTMv3 living repository layer | documented current v0.1; runtime unchanged | P0 is ready when a new runtime goal selects it |
+| 2026-08-05 | Codex + Daeron | Closed P0 with machine plan and hostile-fixture validation | execution topology added; promoted v0.1 runtime unchanged | compose the first P1 protocol unit |
 
 ### CTMv3 activation evidence
 
@@ -115,3 +117,31 @@ evidence is in `docs/RECONSTITUTION_AUDIT.md`. Major rejections:
 - GitHub-owned event automation is defined locally in
   `.github/workflows/repository-integrity.yml` and will become active after this
   change is committed and pushed.
+
+### Phase P0 execution-baseline evidence
+
+- direct plan validator: 1,722 observations, 0 failures;
+- negative plan fixtures: 8/8 rejected through the real verifier CLI;
+- repository verifier before closure: 2,135 observations, 0 failures;
+- consumed smoke: 13 pass, 0 fail, 0 skip;
+- evidence bundle: `test/vm_lab/runs/20260805T054841Z`;
+- Somnus SOTA verifier: 16/16 applicable checks passed for
+  `scripts/verify_repository.py` and `test/vm_lab/test_vm_lab.py`;
+- platform observation: Python 3.12.3, QEMU/qemu-img 8.2.2, Linux x86_64,
+  operator KVM access present, canonical disposable base image absent;
+- runtime claim: unchanged v0.1; no lifecycle mutation command was added;
+- snapshot claim: `snapshots/v0.1/manifest.json` remained immutable.
+- closure correction: after P0 transitioned to complete, the hostile
+  multiple-current-phase fixture still targeted P1 and therefore stopped being
+  hostile; failed runs `20260805T055202Z` and `20260805T055206Z` preserved the
+  detection. The fixture now promotes pending P2 alongside ready P1, making the
+  rejection independent of the previously current phase. Run
+  `20260805T055238Z` then exposed the same stale-phase assumption in the
+  completed-without-evidence fixture; it now completes unevidenced P1 work
+  instead of reasserting already evidenced P0 work.
+- final post-transition validation: 1,733 plan observations, 2,174 repository
+  observations, and 13/13 consumed checks passed;
+- final closure bundle: `test/vm_lab/runs/20260805T055444Z`;
+- evidence reconciliation: `SOTA_RUN.md`, its JSON result, the topology
+  fingerprint, the P0-complete/P1-ready transition, and both sealed manifests
+  agree.

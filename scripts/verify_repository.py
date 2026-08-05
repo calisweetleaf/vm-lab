@@ -4,11 +4,20 @@
 This check is intentionally standard-library-only. It validates the navigation
 and continuity surfaces that ordinary runtime tests do not own; the v0.1 smoke
 harness remains the behavioral authority for the promoted Python package.
+
+Modified: 2026-08-05
+Modified by: daeron and Codex
+Justification: Phase P0 requires one direct machine validator for the execution
+    DAG, task state, gates, and evidence. Extending the repository verifier
+    preserves one structural authority instead of creating a parallel planner.
+Provenance: PROVENANCE.md, Phase P0 execution-baseline session.
+Files: scripts/verify_repository.py
 """
 
 from __future__ import annotations
 
 import argparse
+from collections import Counter
 import hashlib
 import json
 import re
@@ -31,6 +40,7 @@ REQUIRED_PATHS = (
     "CONTEXT.md",
     "MEMORY.md",
     "TASK.md",
+    "STATE.md",
     "PLAN.md",
     "PROVENANCE.md",
     "README.md",
@@ -39,6 +49,14 @@ REQUIRED_PATHS = (
     "SOTA_RUN.md",
     "source-manifest.json",
     "snapshots/v0.1/manifest.json",
+    "docs/plan-index.json",
+    "docs/PLATFORM_MATRIX.md",
+    "docs/DISPOSABLE_FIXTURE_POLICY.md",
+    "docs/decisions/0001-single-mutation-owner.md",
+    "docs/decisions/0002-sqlite-registry.md",
+    "docs/decisions/0003-package-authority-boundaries.md",
+    "docs/decisions/0004-stopped-vm-rollback.md",
+    "docs/decisions/0005-errors-and-exit-codes.md",
     ".codex/skills/vm-lab/SKILL.md",
     ".sovereign/session_state.json",
     ".sovereign/golden_paths.json",
@@ -58,6 +76,7 @@ LINKED_DOCS = (
     "CONTEXT.md",
     "MEMORY.md",
     "TASK.md",
+    "STATE.md",
     ".codex/skills/vm-lab/SKILL.md",
     ".github/copilot-instructions.md",
 )
@@ -77,6 +96,46 @@ REQUIRED_AGENTS_LINKS = (
 LINK_PATTERN = re.compile(r"!?\[[^\]]*]\(([^)]+)\)")
 ANCHOR_PATTERN = re.compile(r"`([^`\n]+):(\d+)`")
 SHA256_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
+PLAN_ID_PATTERN = re.compile(
+    r"^- \[[ x]\] `((?:INV|BASE|DONE|EXEC|TEST)-\d{3}|P\d+-\d{3}|GATE-P\d+)`",
+    re.MULTILINE,
+)
+PLAN_ITEM_PATTERN = re.compile(r"^- \[([ x])\] `(P\d+-\d{3})`", re.MULTILINE)
+PHASE_HEADING_PATTERN = re.compile(r"^## \d+\. Phase (P\d+) — (.+)$", re.MULTILINE)
+CURRENT_TASK_PATTERN = re.compile(
+    r"^## (ACTIVE|READY)\b.*`TASK-(P\d+)-\d{3}`",
+    re.MULTILINE,
+)
+EXPECTED_PHASES = {f"P{phase}" for phase in range(19)}
+EXPECTED_EXECUTION_ORDER = tuple(
+    [*(f"P{phase}" for phase in range(17)), "P18", "P17"]
+)
+PHASE_STATUSES = {"pending", "ready", "active", "blocked", "complete"}
+ITEM_STATUSES = {"pending", "blocked", "complete"}
+TOP_LEVEL_PLAN_KEYS = {
+    "schema_version",
+    "plan_path",
+    "execution_order",
+    "current_phase",
+    "baseline_evidence",
+    "phases",
+}
+PHASE_PLAN_KEYS = {
+    "id",
+    "title",
+    "status",
+    "depends_on",
+    "gate_id",
+    "owner_files",
+    "items",
+    "evidence",
+    "blocker",
+}
+ITEM_PLAN_KEYS = {"id", "status", "evidence", "blocker"}
+
+
+class PlanIndexError(ValueError):
+    """Raised when JSON structure would conceal execution-plan intent."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -86,6 +145,450 @@ class Check:
     name: str
     ok: bool
     detail: str
+
+
+def _object_without_duplicate_keys(pairs: list[tuple[str, object]]) -> dict[str, object]:
+    """Build one JSON object while rejecting duplicate keys."""
+
+    result: dict[str, object] = {}
+    for key, value in pairs:
+        if key in result:
+            raise PlanIndexError(f"Duplicate JSON key: {key}")
+        result[key] = value
+    return result
+
+
+def _string_list(value: object) -> list[str] | None:
+    """Return a string list when the complete value has the required shape."""
+
+    if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+        return None
+    return list(value)
+
+
+def _path_observation(root: Path, raw_path: str) -> tuple[bool, str]:
+    """Return containment and existence evidence for one repository path."""
+
+    repository = root.resolve()
+    target = (repository / raw_path).resolve()
+    contained = target.is_relative_to(repository)
+    exists = target.exists()
+    if not contained:
+        return False, "path escapes repository"
+    return exists, f"{raw_path}: {'present' if exists else 'missing'}"
+
+
+def _phase_sections(plan: str) -> dict[str, tuple[str, dict[str, bool]]]:
+    """Return phase titles and item completion states parsed from PLAN.md."""
+
+    matches = list(PHASE_HEADING_PATTERN.finditer(plan))
+    sections: dict[str, tuple[str, dict[str, bool]]] = {}
+    for index, match in enumerate(matches):
+        phase_id, title = match.groups()
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(plan)
+        items = {
+            item_id: marker == "x"
+            for marker, item_id in PLAN_ITEM_PATTERN.findall(plan[match.end() : end])
+        }
+        sections[phase_id] = (title, items)
+    return sections
+
+
+def check_plan_index(root: Path = ROOT) -> list[Check]:
+    """Validate the machine phase DAG, task state, gates, owners, and evidence."""
+
+    checks: list[Check] = []
+    repository = root.resolve()
+    index_path = repository / "docs" / "plan-index.json"
+    try:
+        raw_payload = json.loads(
+            index_path.read_text(encoding="utf-8"),
+            object_pairs_hook=_object_without_duplicate_keys,
+        )
+    except (
+        OSError,
+        json.JSONDecodeError,
+        PlanIndexError,
+        UnicodeError,
+    ) as exc:
+        return [Check("plan-index:load", False, f"{type(exc).__name__}: {exc}")]
+
+    if not isinstance(raw_payload, dict):
+        return [Check("plan-index:root-object", False, "top level must be an object")]
+    payload: dict[str, object] = raw_payload
+    unknown_top = sorted(set(payload) - TOP_LEVEL_PLAN_KEYS)
+    checks.append(
+        Check(
+            "plan-index:top-level-fields",
+            not unknown_top,
+            f"unknown={unknown_top}",
+        )
+    )
+    checks.append(
+        Check(
+            "plan-index:schema",
+            payload.get("schema_version") == 1,
+            f"schema_version={payload.get('schema_version')!r}",
+        )
+    )
+
+    plan_path = payload.get("plan_path")
+    if not isinstance(plan_path, str):
+        checks.append(Check("plan-index:plan-path", False, "plan_path must be a string"))
+        return checks
+    plan_path_ok, plan_path_detail = _path_observation(repository, plan_path)
+    checks.append(Check("plan-index:plan-path", plan_path_ok, plan_path_detail))
+    if not plan_path_ok:
+        return checks
+    try:
+        plan = (repository / plan_path).read_text(encoding="utf-8")
+        task = (repository / "TASK.md").read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as exc:
+        checks.append(Check("plan-index:source-read", False, f"{type(exc).__name__}: {exc}"))
+        return checks
+
+    identifiers = PLAN_ID_PATTERN.findall(plan)
+    identifier_counts = Counter(identifiers)
+    duplicate_identifiers = sorted(
+        identifier for identifier, count in identifier_counts.items() if count > 1
+    )
+    checks.extend(
+        [
+            Check(
+                "plan-index:plan-depth",
+                len(identifiers) >= 250,
+                f"identifier_count={len(identifiers)}",
+            ),
+            Check(
+                "plan-index:unique-plan-ids",
+                not duplicate_identifiers,
+                f"duplicates={duplicate_identifiers}",
+            ),
+        ]
+    )
+    plan_ids = set(identifiers)
+    completed_plan_ids = set(re.findall(r"^- \[x\] `([^`]+)`", plan, re.MULTILINE))
+    plan_sections = _phase_sections(plan)
+    checks.append(
+        Check(
+            "plan-index:plan-phases",
+            set(plan_sections) == EXPECTED_PHASES,
+            f"phases={sorted(plan_sections)}",
+        )
+    )
+
+    order = _string_list(payload.get("execution_order"))
+    order_ok = order is not None and tuple(order) == EXPECTED_EXECUTION_ORDER
+    checks.append(
+        Check(
+            "plan-index:execution-order",
+            order_ok,
+            f"order={order}",
+        )
+    )
+    order_positions = {phase_id: index for index, phase_id in enumerate(order or [])}
+
+    raw_phases = payload.get("phases")
+    if not isinstance(raw_phases, list):
+        checks.append(Check("plan-index:phases-shape", False, "phases must be a list"))
+        return checks
+    phase_rows = [row for row in raw_phases if isinstance(row, dict)]
+    checks.append(
+        Check(
+            "plan-index:phases-shape",
+            len(phase_rows) == len(raw_phases),
+            f"objects={len(phase_rows)}, rows={len(raw_phases)}",
+        )
+    )
+    phase_ids = [row.get("id") for row in phase_rows]
+    phase_id_strings = [phase_id for phase_id in phase_ids if isinstance(phase_id, str)]
+    duplicate_phases = sorted(
+        phase_id for phase_id, count in Counter(phase_id_strings).items() if count > 1
+    )
+    checks.extend(
+        [
+            Check(
+                "plan-index:phase-ids",
+                set(phase_id_strings) == EXPECTED_PHASES and len(phase_id_strings) == 19,
+                f"phase_ids={phase_id_strings}",
+            ),
+            Check(
+                "plan-index:unique-phase-ids",
+                not duplicate_phases,
+                f"duplicates={duplicate_phases}",
+            ),
+        ]
+    )
+
+    phase_statuses: dict[str, str] = {}
+    current_candidates: list[str] = []
+    for row_number, row in enumerate(phase_rows):
+        phase_id = row.get("id")
+        label = phase_id if isinstance(phase_id, str) else f"row-{row_number}"
+        unknown_phase = sorted(set(row) - PHASE_PLAN_KEYS)
+        checks.append(
+            Check(
+                f"plan-index:{label}:fields",
+                not unknown_phase,
+                f"unknown={unknown_phase}",
+            )
+        )
+        if not isinstance(phase_id, str) or phase_id not in EXPECTED_PHASES:
+            checks.append(Check(f"plan-index:{label}:id", False, f"id={phase_id!r}"))
+            continue
+
+        status = row.get("status")
+        status_ok = isinstance(status, str) and status in PHASE_STATUSES
+        checks.append(
+            Check(
+                f"plan-index:{phase_id}:status",
+                status_ok,
+                f"status={status!r}",
+            )
+        )
+        if status_ok:
+            phase_statuses[phase_id] = status
+            if status in {"ready", "active"}:
+                current_candidates.append(phase_id)
+        blocker = row.get("blocker")
+        checks.append(
+            Check(
+                f"plan-index:{phase_id}:blocker",
+                status != "blocked" or isinstance(blocker, str) and bool(blocker.strip()),
+                f"blocker={blocker!r}",
+            )
+        )
+
+        title = row.get("title")
+        expected_title = plan_sections.get(phase_id, ("", {}))[0]
+        checks.append(
+            Check(
+                f"plan-index:{phase_id}:title",
+                isinstance(title, str) and title == expected_title,
+                f"expected={expected_title!r}, actual={title!r}",
+            )
+        )
+
+        dependencies = _string_list(row.get("depends_on"))
+        dependencies_ok = dependencies is not None
+        if dependencies is not None:
+            dependencies_ok = (
+                len(dependencies) == len(set(dependencies))
+                and phase_id not in dependencies
+                and all(dependency in EXPECTED_PHASES for dependency in dependencies)
+                and all(
+                    order_positions.get(dependency, 10_000)
+                    < order_positions.get(phase_id, -1)
+                    for dependency in dependencies
+                )
+            )
+            phase_position = order_positions.get(phase_id)
+            if phase_position is not None and phase_position > 0 and order is not None:
+                dependencies_ok = dependencies_ok and order[phase_position - 1] in dependencies
+            if phase_position == 0:
+                dependencies_ok = dependencies_ok and not dependencies
+        checks.append(
+            Check(
+                f"plan-index:{phase_id}:dependencies",
+                dependencies_ok,
+                f"depends_on={dependencies}",
+            )
+        )
+
+        gate_id = row.get("gate_id")
+        expected_gate = f"GATE-{phase_id}"
+        gate_ok = gate_id == expected_gate and expected_gate in plan_ids
+        checks.append(
+            Check(
+                f"plan-index:{phase_id}:gate",
+                gate_ok,
+                f"expected={expected_gate}, actual={gate_id!r}",
+            )
+        )
+
+        owners = _string_list(row.get("owner_files"))
+        checks.append(
+            Check(
+                f"plan-index:{phase_id}:owners-shape",
+                owners is not None and bool(owners),
+                f"owner_files={owners}",
+            )
+        )
+        for owner_index, owner in enumerate(owners or []):
+            owner_ok, owner_detail = _path_observation(repository, owner)
+            checks.append(
+                Check(
+                    f"plan-index:{phase_id}:owner-{owner_index}",
+                    owner_ok,
+                    owner_detail,
+                )
+            )
+
+        phase_evidence = _string_list(row.get("evidence"))
+        phase_evidence_ok = phase_evidence is not None and (
+            status != "complete" or bool(phase_evidence)
+        )
+        checks.append(
+            Check(
+                f"plan-index:{phase_id}:evidence-shape",
+                phase_evidence_ok,
+                f"evidence={phase_evidence}",
+            )
+        )
+        for evidence_index, evidence in enumerate(phase_evidence or []):
+            evidence_ok, evidence_detail = _path_observation(repository, evidence)
+            checks.append(
+                Check(
+                    f"plan-index:{phase_id}:evidence-{evidence_index}",
+                    evidence_ok,
+                    evidence_detail,
+                )
+            )
+
+        raw_items = row.get("items")
+        if not isinstance(raw_items, list):
+            checks.append(
+                Check(f"plan-index:{phase_id}:items-shape", False, "items must be a list")
+            )
+            continue
+        item_rows = [item for item in raw_items if isinstance(item, dict)]
+        indexed_item_ids = [
+            item.get("id") for item in item_rows if isinstance(item.get("id"), str)
+        ]
+        expected_items = plan_sections.get(phase_id, ("", {}))[1]
+        checks.append(
+            Check(
+                f"plan-index:{phase_id}:items",
+                len(item_rows) == len(raw_items)
+                and set(indexed_item_ids) == set(expected_items)
+                and len(indexed_item_ids) == len(set(indexed_item_ids)),
+                f"indexed={indexed_item_ids}, expected={sorted(expected_items)}",
+            )
+        )
+        all_items_complete = bool(item_rows)
+        for item_number, item in enumerate(item_rows):
+            item_id = item.get("id")
+            item_label = item_id if isinstance(item_id, str) else f"item-{item_number}"
+            unknown_item = sorted(set(item) - ITEM_PLAN_KEYS)
+            checks.append(
+                Check(
+                    f"plan-index:{phase_id}:{item_label}:fields",
+                    not unknown_item,
+                    f"unknown={unknown_item}",
+                )
+            )
+            item_status = item.get("status")
+            item_status_ok = isinstance(item_status, str) and item_status in ITEM_STATUSES
+            all_items_complete = all_items_complete and item_status == "complete"
+            checks.append(
+                Check(
+                    f"plan-index:{phase_id}:{item_label}:status",
+                    item_status_ok,
+                    f"status={item_status!r}",
+                )
+            )
+            item_blocker = item.get("blocker")
+            checks.append(
+                Check(
+                    f"plan-index:{phase_id}:{item_label}:blocker",
+                    item_status != "blocked"
+                    or isinstance(item_blocker, str)
+                    and bool(item_blocker.strip()),
+                    f"blocker={item_blocker!r}",
+                )
+            )
+            item_evidence = _string_list(item.get("evidence"))
+            item_evidence_ok = item_evidence is not None and (
+                item_status != "complete" or bool(item_evidence)
+            )
+            checks.append(
+                Check(
+                    f"plan-index:{phase_id}:{item_label}:evidence-shape",
+                    item_evidence_ok,
+                    f"evidence={item_evidence}",
+                )
+            )
+            for evidence_index, evidence in enumerate(item_evidence or []):
+                evidence_ok, evidence_detail = _path_observation(repository, evidence)
+                checks.append(
+                    Check(
+                        f"plan-index:{phase_id}:{item_label}:evidence-{evidence_index}",
+                        evidence_ok,
+                        evidence_detail,
+                    )
+                )
+            if isinstance(item_id, str) and item_id in expected_items:
+                plan_complete = expected_items[item_id]
+                checks.append(
+                    Check(
+                        f"plan-index:{phase_id}:{item_id}:plan-status",
+                        plan_complete == (item_status == "complete"),
+                        f"plan_complete={plan_complete}, index_status={item_status!r}",
+                    )
+                )
+
+        gate_complete = expected_gate in completed_plan_ids
+        checks.append(
+            Check(
+                f"plan-index:{phase_id}:completion",
+                (status == "complete") == gate_complete
+                and (status != "complete" or all_items_complete and bool(phase_evidence)),
+                (
+                    f"status={status!r}, gate_complete={gate_complete}, "
+                    f"all_items_complete={all_items_complete}"
+                ),
+            )
+        )
+
+    current_phase = payload.get("current_phase")
+    checks.append(
+        Check(
+            "plan-index:one-current-phase",
+            len(current_candidates) == 1
+            and current_phase == current_candidates[0],
+            f"current_phase={current_phase!r}, candidates={current_candidates}",
+        )
+    )
+    current_task_matches = CURRENT_TASK_PATTERN.findall(task)
+    task_phases = [phase for _, phase in current_task_matches]
+    checks.append(
+        Check(
+            "plan-index:task-agreement",
+            len(task_phases) == 1 and current_phase == task_phases[0],
+            f"task_phases={task_phases}, current_phase={current_phase!r}",
+        )
+    )
+
+    baseline_evidence = _string_list(payload.get("baseline_evidence"))
+    checks.append(
+        Check(
+            "plan-index:baseline-evidence-shape",
+            baseline_evidence is not None and bool(baseline_evidence),
+            f"baseline_evidence={baseline_evidence}",
+        )
+    )
+    for evidence_index, evidence in enumerate(baseline_evidence or []):
+        evidence_ok, evidence_detail = _path_observation(repository, evidence)
+        checks.append(
+            Check(
+                f"plan-index:baseline-evidence-{evidence_index}",
+                evidence_ok,
+                evidence_detail,
+            )
+        )
+
+    completed_done = sorted(
+        identifier for identifier in completed_plan_ids if identifier.startswith("DONE-")
+    )
+    p15_complete = phase_statuses.get("P15") == "complete"
+    checks.append(
+        Check(
+            "plan-index:no-false-physical-completion",
+            not completed_done or p15_complete,
+            f"completed_done={completed_done}, p15_complete={p15_complete}",
+        )
+    )
+    return checks
 
 
 def _sha256(path: Path) -> str:
@@ -317,6 +820,7 @@ def run() -> list[Check]:
         *check_json_state(),
         *check_source_preservation(),
         *check_automation_contract(),
+        *check_plan_index(),
     ]
 
 
@@ -326,17 +830,32 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--json", action="store_true", help="emit machine-readable results")
     parser.add_argument(
+        "--plan-only",
+        action="store_true",
+        help="validate only the execution-plan index and its live owners",
+    )
+    parser.add_argument(
+        "--root",
+        type=Path,
+        help="alternate repository root for --plan-only fixture validation",
+    )
+    parser.add_argument(
         "--write-fingerprint",
         action="store_true",
         help="write the current topology fingerprint before verification",
     )
     args = parser.parse_args(argv)
 
+    if args.root is not None and not args.plan_only:
+        parser.error("--root is valid only with --plan-only")
+    if args.plan_only and args.write_fingerprint:
+        parser.error("--write-fingerprint cannot be combined with --plan-only")
+
     if args.write_fingerprint:
         FINGERPRINT_PATH.parent.mkdir(parents=True, exist_ok=True)
         FINGERPRINT_PATH.write_text(f"{topology_fingerprint()}\n", encoding="utf-8")
 
-    checks = run()
+    checks = check_plan_index(args.root or ROOT) if args.plan_only else run()
     failures = [check for check in checks if not check.ok]
     if args.json:
         print(

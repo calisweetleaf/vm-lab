@@ -19,7 +19,7 @@ This is a navigation and dependency map, not an automatically generated director
 | Diagnose suspicious success | [`FAILURE_GRAMMAR.md`](FAILURE_GRAMMAR.md) | smallest discriminating observation |
 | Reconstruct current state | [`CONTEXT.md`](CONTEXT.md) | current promoted source/proof |
 | Recover prior decisions | [`MEMORY.md`](MEMORY.md) | [`PROVENANCE.md`](PROVENANCE.md) if chronology matters |
-| Resume work | [`TASK.md`](TASK.md) | relevant phase in [`PLAN.md`](PLAN.md) |
+| Resume work | [`TASK.md`](TASK.md) | [`STATE.md`](STATE.md) → indexed phase in [`docs/plan-index.json`](docs/plan-index.json) |
 | Inspect snapshot claims | [`SNAPSHOT.md`](SNAPSHOT.md) | [`snapshots/v0.1/manifest.json`](snapshots/v0.1/manifest.json) |
 | Inspect current proof | [`SOTA_RUN.md`](SOTA_RUN.md) | latest [`test/vm_lab/runs/`](test/vm_lab/runs/) bundle |
 | Understand a source placement | [`docs/MIGRATION_MAP.md`](docs/MIGRATION_MAP.md) | registered disposition in `topology.py` |
@@ -82,6 +82,7 @@ vm-lab/
 ├── CONTEXT.md                   LIVE INDEX — current architecture/state
 ├── MEMORY.md                    DURABLE NOTES — decisions/rejections/lessons
 ├── TASK.md                      ACTIVE STATE — exactly one execution unit
+├── STATE.md                     PHASE STATE — exact unit/command/blocker/evidence
 ├── PLAN.md                      EXECUTION AUTHORITY — full phases/gates
 ├── PROVENANCE.md                LINEAGE LEDGER — decisions and sessions
 ├── SCOPE.md                     IMPLEMENTATION SCOPE — WRAP/EDIT/COMPOSE
@@ -100,12 +101,17 @@ Rendered links:
 - [`CONTEXT.md`](CONTEXT.md)
 - [`MEMORY.md`](MEMORY.md)
 - [`TASK.md`](TASK.md)
+- [`STATE.md`](STATE.md)
 - [`PLAN.md`](PLAN.md)
 - [`PROVENANCE.md`](PROVENANCE.md)
 - [`SCOPE.md`](SCOPE.md)
 - [`SNAPSHOT.md`](SNAPSHOT.md)
 - [`SOTA_RUN.md`](SOTA_RUN.md)
 - [`README.md`](README.md)
+- [`docs/plan-index.json`](docs/plan-index.json)
+- [`docs/PLATFORM_MATRIX.md`](docs/PLATFORM_MATRIX.md)
+- [`docs/DISPOSABLE_FIXTURE_POLICY.md`](docs/DISPOSABLE_FIXTURE_POLICY.md)
+- [`docs/decisions/`](docs/decisions/)
 
 ### Live runtime — promoted v0.1
 
@@ -204,6 +210,7 @@ Quarantine is failure evidence. Re-entry requires a replacement behind a current
 | Markdown owners and links exist | `python scripts/verify_repository.py` |
 | Architecture anchors point inside files | `python scripts/verify_repository.py` |
 | Topology and session fingerprint agree | `python scripts/verify_repository.py` |
+| Plan DAG, current phase, gates, and evidence agree | `python scripts/verify_repository.py --plan-only --json` |
 | All 33 source files remain exact | repository verifier + smoke harness |
 | Contract/config/planner/bootstrap/CLI work | `PYTHONPATH=src python test/vm_lab/smoke.py` |
 | Installed wheel works outside checkout | smoke `check_wheel_runtime` |

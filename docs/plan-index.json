@@ -1,0 +1,1832 @@
+{
+  "schema_version": 1,
+  "plan_path": "PLAN.md",
+  "execution_order": [
+    "P0",
+    "P1",
+    "P2",
+    "P3",
+    "P4",
+    "P5",
+    "P6",
+    "P7",
+    "P8",
+    "P9",
+    "P10",
+    "P11",
+    "P12",
+    "P13",
+    "P14",
+    "P15",
+    "P16",
+    "P18",
+    "P17"
+  ],
+  "current_phase": "P1",
+  "baseline_evidence": [
+    "source-manifest.json",
+    "snapshots/v0.1/manifest.json",
+    "SOTA_RUN.md"
+  ],
+  "phases": [
+    {
+      "id": "P0",
+      "title": "lock the execution baseline",
+      "status": "complete",
+      "depends_on": [],
+      "gate_id": "GATE-P0",
+      "owner_files": [
+        "TASK.md",
+        "STATE.md",
+        "PLAN.md",
+        "scripts/verify_repository.py",
+        "test/vm_lab/test_vm_lab.py"
+      ],
+      "items": [
+        {
+          "id": "P0-001",
+          "status": "complete",
+          "evidence": [
+            "STATE.md"
+          ]
+        },
+        {
+          "id": "P0-002",
+          "status": "complete",
+          "evidence": [
+            "docs/plan-index.json"
+          ]
+        },
+        {
+          "id": "P0-003",
+          "status": "complete",
+          "evidence": [
+            "test/vm_lab/runs/20260805T054841Z/result.json"
+          ]
+        },
+        {
+          "id": "P0-004",
+          "status": "complete",
+          "evidence": [
+            "docs/decisions/"
+          ]
+        },
+        {
+          "id": "P0-005",
+          "status": "complete",
+          "evidence": [
+            "docs/PLATFORM_MATRIX.md"
+          ]
+        },
+        {
+          "id": "P0-006",
+          "status": "complete",
+          "evidence": [
+            "docs/DISPOSABLE_FIXTURE_POLICY.md"
+          ]
+        },
+        {
+          "id": "P0-007",
+          "status": "complete",
+          "evidence": [
+            "docs/DISPOSABLE_FIXTURE_POLICY.md",
+            "docs/decisions/0001-single-mutation-owner.md"
+          ]
+        },
+        {
+          "id": "P0-008",
+          "status": "complete",
+          "evidence": [
+            "docs/decisions/0005-errors-and-exit-codes.md"
+          ]
+        }
+      ],
+      "evidence": [
+        "SOTA_RUN.md",
+        "test/vm_lab/runs/20260805T054841Z/result.json"
+      ]
+    },
+    {
+      "id": "P1",
+      "title": "canonical protocols, states, and settings",
+      "status": "ready",
+      "depends_on": [
+        "P0"
+      ],
+      "gate_id": "GATE-P1",
+      "owner_files": [
+        "src/somnus_vm/contracts/vm.py",
+        "src/somnus_vm/contracts/agent.py",
+        "src/somnus_vm/config.py"
+      ],
+      "items": [
+        {
+          "id": "P1-001",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P1-002",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P1-003",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P1-004",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P1-005",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P1-006",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P1-007",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P1-008",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P1-009",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P1-010",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P1-011",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P1-012",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P1-013",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P1-014",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P1-015",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P1-016",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P1-017",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P1-018",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P1-019",
+          "status": "pending",
+          "evidence": []
+        }
+      ],
+      "evidence": []
+    },
+    {
+      "id": "P2",
+      "title": "one daemon, transactional registry, and ownership",
+      "status": "pending",
+      "depends_on": [
+        "P1"
+      ],
+      "gate_id": "GATE-P2",
+      "owner_files": [
+        "PLAN.md",
+        "src/somnus_vm/host/"
+      ],
+      "items": [
+        {
+          "id": "P2-001",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P2-002",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P2-003",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P2-004",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P2-005",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P2-006",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P2-007",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P2-008",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P2-009",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P2-010",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P2-011",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P2-012",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P2-013",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P2-014",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P2-015",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P2-016",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P2-017",
+          "status": "pending",
+          "evidence": []
+        }
+      ],
+      "evidence": []
+    },
+    {
+      "id": "P3",
+      "title": "image provenance and persistent AIPC storage",
+      "status": "pending",
+      "depends_on": [
+        "P2"
+      ],
+      "gate_id": "GATE-P3",
+      "owner_files": [
+        "PLAN.md",
+        "components/host/vm_image_manager.py",
+        "src/somnus_vm/host/"
+      ],
+      "items": [
+        {
+          "id": "P3-001",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P3-002",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P3-003",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P3-004",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P3-005",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P3-006",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P3-007",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P3-008",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P3-009",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P3-010",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P3-011",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P3-012",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P3-013",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P3-014",
+          "status": "pending",
+          "evidence": []
+        }
+      ],
+      "evidence": []
+    },
+    {
+      "id": "P4",
+      "title": "QEMU process truth and QMP",
+      "status": "pending",
+      "depends_on": [
+        "P3"
+      ],
+      "gate_id": "GATE-P4",
+      "owner_files": [
+        "src/somnus_vm/host/qemu.py",
+        "src/somnus_vm/host/planner.py",
+        "FAILURE_GRAMMAR.md"
+      ],
+      "items": [
+        {
+          "id": "P4-001",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P4-002",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P4-003",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P4-004",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P4-005",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P4-006",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P4-007",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P4-008",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P4-009",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P4-010",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P4-011",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P4-012",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P4-013",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P4-014",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P4-015",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P4-016",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P4-017",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P4-018",
+          "status": "pending",
+          "evidence": []
+        }
+      ],
+      "evidence": []
+    },
+    {
+      "id": "P5",
+      "title": "networking and durable endpoint allocation",
+      "status": "pending",
+      "depends_on": [
+        "P4"
+      ],
+      "gate_id": "GATE-P5",
+      "owner_files": [
+        "src/somnus_vm/host/ports.py",
+        "src/somnus_vm/host/qemu.py",
+        "configs/"
+      ],
+      "items": [
+        {
+          "id": "P5-001",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P5-002",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P5-003",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P5-004",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P5-005",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P5-006",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P5-007",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P5-008",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P5-009",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P5-010",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P5-011",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P5-012",
+          "status": "pending",
+          "evidence": []
+        }
+      ],
+      "evidence": []
+    },
+    {
+      "id": "P6",
+      "title": "authenticated guest agent",
+      "status": "pending",
+      "depends_on": [
+        "P5"
+      ],
+      "gate_id": "GATE-P6",
+      "owner_files": [
+        "src/somnus_vm/contracts/agent.py",
+        "components/guest/agent/digital_twin.py",
+        "PLAN.md"
+      ],
+      "items": [
+        {
+          "id": "P6-001",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P6-002",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P6-003",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P6-004",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P6-005",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P6-006",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P6-007",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P6-008",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P6-009",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P6-010",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P6-011",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P6-012",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P6-013",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P6-014",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P6-015",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P6-016",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P6-017",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P6-018",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P6-019",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P6-020",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P6-021",
+          "status": "pending",
+          "evidence": []
+        }
+      ],
+      "evidence": []
+    },
+    {
+      "id": "P7",
+      "title": "guest bootstrap, provisioning, and in-place updates",
+      "status": "pending",
+      "depends_on": [
+        "P6"
+      ],
+      "gate_id": "GATE-P7",
+      "owner_files": [
+        "src/somnus_vm/guest/bootstrap.py",
+        "archive/lineage/guest/vm_bootstrap.py",
+        "components/host/vm_image_manager.py"
+      ],
+      "items": [
+        {
+          "id": "P7-001",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P7-002",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P7-003",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P7-004",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P7-005",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P7-006",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P7-007",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P7-008",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P7-009",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P7-010",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P7-011",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P7-012",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P7-013",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P7-014",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P7-015",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P7-016",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P7-017",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P7-018",
+          "status": "pending",
+          "evidence": []
+        }
+      ],
+      "evidence": []
+    },
+    {
+      "id": "P8",
+      "title": "complete lifecycle control",
+      "status": "pending",
+      "depends_on": [
+        "P7"
+      ],
+      "gate_id": "GATE-P8",
+      "owner_files": [
+        "src/somnus_vm/cli.py",
+        "archive/lineage/host/vm_supervisor.py",
+        "PLAN.md"
+      ],
+      "items": [
+        {
+          "id": "P8-001",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P8-002",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P8-003",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P8-004",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P8-005",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P8-006",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P8-007",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P8-008",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P8-009",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P8-010",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P8-011",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P8-012",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P8-013",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P8-014",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P8-015",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P8-016",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P8-017",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P8-018",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P8-019",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P8-020",
+          "status": "pending",
+          "evidence": []
+        }
+      ],
+      "evidence": []
+    },
+    {
+      "id": "P9",
+      "title": "snapshots, rollback, backup, and resources",
+      "status": "pending",
+      "depends_on": [
+        "P8"
+      ],
+      "gate_id": "GATE-P9",
+      "owner_files": [
+        "components/host/vm_image_manager.py",
+        "FAILURE_GRAMMAR.md",
+        "PLAN.md"
+      ],
+      "items": [
+        {
+          "id": "P9-001",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P9-002",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P9-003",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P9-004",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P9-005",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P9-006",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P9-007",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P9-008",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P9-009",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P9-010",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P9-011",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P9-012",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P9-013",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P9-014",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P9-015",
+          "status": "pending",
+          "evidence": []
+        }
+      ],
+      "evidence": []
+    },
+    {
+      "id": "P10",
+      "title": "security hardening",
+      "status": "pending",
+      "depends_on": [
+        "P9"
+      ],
+      "gate_id": "GATE-P10",
+      "owner_files": [
+        "FAILURE_GRAMMAR.md",
+        "PLAN.md",
+        "configs/"
+      ],
+      "items": [
+        {
+          "id": "P10-001",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P10-002",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P10-003",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P10-004",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P10-005",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P10-006",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P10-007",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P10-008",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P10-009",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P10-010",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P10-011",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P10-012",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P10-013",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P10-014",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P10-015",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P10-016",
+          "status": "pending",
+          "evidence": []
+        }
+      ],
+      "evidence": []
+    },
+    {
+      "id": "P11",
+      "title": "observability and operator diagnostics",
+      "status": "pending",
+      "depends_on": [
+        "P10"
+      ],
+      "gate_id": "GATE-P11",
+      "owner_files": [
+        "src/somnus_vm/doctor.py",
+        "SOTA_RUN.md",
+        "PLAN.md"
+      ],
+      "items": [
+        {
+          "id": "P11-001",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P11-002",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P11-003",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P11-004",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P11-005",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P11-006",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P11-007",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P11-008",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P11-009",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P11-010",
+          "status": "pending",
+          "evidence": []
+        }
+      ],
+      "evidence": []
+    },
+    {
+      "id": "P12",
+      "title": "Kerminal and operator integration",
+      "status": "pending",
+      "depends_on": [
+        "P11"
+      ],
+      "gate_id": "GATE-P12",
+      "owner_files": [
+        "components/operator/ai_action_orchestrator.py",
+        "components/operator/ai_advanced_shell.py",
+        "PLAN.md"
+      ],
+      "items": [
+        {
+          "id": "P12-001",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P12-002",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P12-003",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P12-004",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P12-005",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P12-006",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P12-007",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P12-008",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P12-009",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P12-010",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P12-011",
+          "status": "pending",
+          "evidence": []
+        }
+      ],
+      "evidence": []
+    },
+    {
+      "id": "P13",
+      "title": "guest cognitive runtime promotion",
+      "status": "pending",
+      "depends_on": [
+        "P12"
+      ],
+      "gate_id": "GATE-P13",
+      "owner_files": [
+        "components/guest/runtime/",
+        "components/guest/agent/digital_twin.py",
+        "PLAN.md"
+      ],
+      "items": [
+        {
+          "id": "P13-001",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P13-002",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P13-003",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P13-004",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P13-005",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P13-006",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P13-007",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P13-008",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P13-009",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P13-010",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P13-011",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P13-012",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P13-013",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P13-014",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P13-015",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P13-016",
+          "status": "pending",
+          "evidence": []
+        }
+      ],
+      "evidence": []
+    },
+    {
+      "id": "P14",
+      "title": "Artifact and file-processing boundary",
+      "status": "pending",
+      "depends_on": [
+        "P13"
+      ],
+      "gate_id": "GATE-P14",
+      "owner_files": [
+        "extras/file_processing/",
+        "PLAN.md",
+        "docs/MIGRATION_MAP.md"
+      ],
+      "items": [
+        {
+          "id": "P14-001",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P14-002",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P14-003",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P14-004",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P14-005",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P14-006",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P14-007",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P14-008",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P14-009",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P14-010",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P14-011",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P14-012",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P14-013",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P14-014",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P14-015",
+          "status": "pending",
+          "evidence": []
+        }
+      ],
+      "evidence": []
+    },
+    {
+      "id": "P15",
+      "title": "certification and failure matrix",
+      "status": "pending",
+      "depends_on": [
+        "P14"
+      ],
+      "gate_id": "GATE-P15",
+      "owner_files": [
+        "test/vm_lab/",
+        "SOTA_RUN.md",
+        "PLAN.md"
+      ],
+      "items": [
+        {
+          "id": "P15-001",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P15-002",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P15-003",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P15-004",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P15-005",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P15-006",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P15-007",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P15-008",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P15-009",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P15-010",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P15-011",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P15-012",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P15-013",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P15-014",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P15-015",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P15-016",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P15-017",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P15-018",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P15-019",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P15-020",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P15-021",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P15-022",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P15-023",
+          "status": "pending",
+          "evidence": []
+        }
+      ],
+      "evidence": []
+    },
+    {
+      "id": "P16",
+      "title": "measured performance and resource behavior",
+      "status": "pending",
+      "depends_on": [
+        "P15"
+      ],
+      "gate_id": "GATE-P16",
+      "owner_files": [
+        "quarantine/tests/benchmark_vm_system.py",
+        "PLAN.md",
+        "test/vm_lab/"
+      ],
+      "items": [
+        {
+          "id": "P16-001",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P16-002",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P16-003",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P16-004",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P16-005",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P16-006",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P16-007",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P16-008",
+          "status": "pending",
+          "evidence": []
+        }
+      ],
+      "evidence": []
+    },
+    {
+      "id": "P18",
+      "title": "quarantine retirement and optional capability promotion",
+      "status": "pending",
+      "depends_on": [
+        "P16"
+      ],
+      "gate_id": "GATE-P18",
+      "owner_files": [
+        "docs/MIGRATION_MAP.md",
+        "source-manifest.json",
+        "quarantine/",
+        "components/"
+      ],
+      "items": [
+        {
+          "id": "P18-001",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P18-002",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P18-003",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P18-004",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P18-005",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P18-006",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P18-007",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P18-008",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P18-009",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P18-010",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P18-011",
+          "status": "pending",
+          "evidence": []
+        }
+      ],
+      "evidence": []
+    },
+    {
+      "id": "P17",
+      "title": "packaging, documentation, and release",
+      "status": "pending",
+      "depends_on": [
+        "P18"
+      ],
+      "gate_id": "GATE-P17",
+      "owner_files": [
+        "pyproject.toml",
+        "README.md",
+        "SNAPSHOT.md",
+        "snapshots/v0.1/manifest.json"
+      ],
+      "items": [
+        {
+          "id": "P17-001",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P17-002",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P17-003",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P17-004",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P17-005",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P17-006",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P17-007",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P17-008",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P17-009",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P17-010",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P17-011",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P17-012",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P17-013",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P17-014",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P17-015",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P17-016",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P17-017",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P17-018",
+          "status": "pending",
+          "evidence": []
+        },
+        {
+          "id": "P17-019",
+          "status": "pending",
+          "evidence": []
+        }
+      ],
+      "evidence": []
+    }
+  ]
+}

@@ -19,7 +19,7 @@ guest payloads; it intentionally has no public VM lifecycle.
 
 1. Operator contract: `AGENTS.md:1` → rules, routes, promotion boundary.
 2. Public runtime: `src/somnus_vm/cli.py:76` → `main()`.
-3. Direct proof: `test/vm_lab/test_vm_lab.py:643` → `main()`.
+3. Direct proof: `test/vm_lab/test_vm_lab.py:855` → `main()`.
 
 **→ To follow a public command:** BRANCH A.  
 **→ To understand what may run:** BRANCH B.  
@@ -130,23 +130,25 @@ the future single mutation owner.
 
 ## BRANCH F: What proves v0.1 behavior?
 
-**Entry point:** `test/vm_lab/test_vm_lab.py:643` → `main()`
+**Entry point:** `test/vm_lab/test_vm_lab.py:855` → `main()`
 
 The direct harness runs independent checks for:
 
-- contracts and legal transitions at `test/vm_lab/test_vm_lab.py:120`;
-- strict configuration at line `138`;
-- concurrent plan-time port behavior at line `163`;
-- QEMU argv safety at line `177`;
-- hostile archive extraction at line `196`;
-- bootstrap idempotency at line `232`;
-- doctor honesty at line `328`;
-- CLI execution at line `356`;
-- outside-checkout wheel behavior at line `396`;
-- source preservation at line `487`;
-- plan/document contract at line `502`.
+- contracts and legal transitions at `test/vm_lab/test_vm_lab.py:127`;
+- strict configuration at line `145`;
+- concurrent plan-time port behavior at line `170`;
+- QEMU argv safety at line `184`;
+- hostile archive extraction at line `203`;
+- bootstrap idempotency at line `239`;
+- doctor honesty at line `335`;
+- CLI execution at line `363`;
+- outside-checkout wheel behavior at line `403`;
+- source preservation at line `494`;
+- plan/document contract at line `509`;
+- live plan-index validation at line `591`;
+- hostile plan-index rejection fixtures at line `648`.
 
-`test/vm_lab/test_vm_lab.py:572` seals JSON, Markdown, and log outputs.
+`test/vm_lab/test_vm_lab.py:774` seals JSON, Markdown, and log outputs.
 
 **→ For the latest sealed run:** `SOTA_RUN.md:1`.  
 **→ For what the proof does not claim:** BRANCH H.  
@@ -160,13 +162,19 @@ The direct harness runs independent checks for:
 
 1. `PLAN.md:1` owns the complete destination and phase gates.
 2. `TASK.md:1` owns the current execution unit only.
-3. `CONTEXT.md:1` indexes current architecture and verification state.
-4. `MEMORY.md:1` retains durable decisions and rejected paths.
-5. `PROVENANCE.md:1` records lineage and chronological sessions.
-6. `.sovereign/session_state.json:1` is a last-close hint; its topology hash must
+3. `STATE.md:1` records the exact phase, unit, last command, blocker, and next
+   action.
+4. `docs/plan-index.json:1` owns the validated phase DAG, gates, owners,
+   statuses, and evidence paths.
+5. `CONTEXT.md:1` indexes current architecture and verification state.
+6. `MEMORY.md:1` retains durable decisions and rejected paths.
+7. `PROVENANCE.md:1` records lineage and chronological sessions.
+8. `.sovereign/session_state.json:1` is a last-close hint; its topology hash must
    match `.sovereign/topology_fingerprint.txt:1`.
 
 **→ To resume:** read the active task, then only its linked plan section.  
+**→ To validate execution state:** run
+`python scripts/verify_repository.py --plan-only --json`.
 **→ If continuity conflicts with code:** current code wins; update the stale owner.  
 **→ If the fingerprint fails:** repair changed topology/map lanes and rehash.
 
@@ -217,6 +225,8 @@ The richer lifecycle state machine is a P1 deliverable, not silently present.
 | --- | --- |
 | Repository rules and routes | `AGENTS.md:1` |
 | Active unit | `TASK.md:1` |
+| Exact execution state | `STATE.md:1` |
+| Machine phase DAG | `docs/plan-index.json:1` |
 | Long-range plan | `PLAN.md:1` |
 | CLI parser/dispatch | `src/somnus_vm/cli.py:30`, `src/somnus_vm/cli.py:76` |
 | Configuration loader | `src/somnus_vm/config.py:129` |
@@ -231,13 +241,17 @@ The richer lifecycle state machine is a P1 deliverable, not silently present.
 | Bootstrap config | `src/somnus_vm/guest/bootstrap.py:149` |
 | Private verified payload | `src/somnus_vm/guest/bootstrap.py:336` |
 | Bootstrap operation | `src/somnus_vm/guest/bootstrap.py:468` |
-| Direct proof harness | `test/vm_lab/test_vm_lab.py:643` |
+| Direct proof harness | `test/vm_lab/test_vm_lab.py:855` |
+| Plan contract check | `test/vm_lab/test_vm_lab.py:509` |
+| Live plan-index check | `test/vm_lab/test_vm_lab.py:591` |
+| Hostile plan fixtures | `test/vm_lab/test_vm_lab.py:648` |
 | Latest proof ledger | `SOTA_RUN.md:1` |
 | Source preservation | `source-manifest.json:1` |
 | Snapshot claim | `snapshots/v0.1/manifest.json:1` |
 | Why code was quarantined | `docs/RECONSTITUTION_AUDIT.md:15` |
 | Original-to-current placement | `docs/MIGRATION_MAP.md:1` |
-| Living repository verifier | `scripts/verify_repository.py:1` |
+| Living repository verifier | `scripts/verify_repository.py:827` |
+| Plan-index validator | `scripts/verify_repository.py:197` |
 
 ---
 

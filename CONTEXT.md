@@ -1,8 +1,8 @@
 # VM Lab Current Context
 
-**As of:** 2026-08-04  
+**As of:** 2026-08-05
 **Branch:** `main` tracking `origin/main`  
-**Baseline commit:** `a2c7b9de14dd58141ef5c9918a110efd0d11b272`  
+**Entry baseline commit:** `f13fb3d32364ac5d57090582c4a826fc9ec6f2b6`
 **Promoted snapshot:** `v0.1`  
 **Active state owner:** [`TASK.md`](TASK.md)
 
@@ -50,11 +50,11 @@ flowchart TD
 
 The latest sealed run referenced by [`SOTA_RUN.md`](SOTA_RUN.md) is:
 
-- run: `test/vm_lab/runs/20260805T032541Z`
 - status: pass
-- checks: 11 pass, 0 fail, 0 skip
+- checks: 13 pass, 0 fail, 0 skip
 - evidence: `result.json`, `result.md`, and recorded ledger
 - provenance: 33 source files preserved
+- plan gate: 1,722 direct observations and eight hostile fixtures
 
 This proves the v0.1 boundary only. It does not prove real QEMU lifecycle.
 
@@ -87,14 +87,19 @@ The living repository kit is rooted at:
 - [`FAILURE_GRAMMAR.md`](FAILURE_GRAMMAR.md) — pre-failure recognition;
 - [`MEMORY.md`](MEMORY.md) — durable decisions and rejected paths;
 - [`PROVENANCE.md`](PROVENANCE.md) — chronological lineage;
+- [`STATE.md`](STATE.md) — current phase and exact unit;
+- [`docs/plan-index.json`](docs/plan-index.json) — strict machine phase DAG;
 - [`.sovereign/`](.sovereign/) — continuity hint and fingerprint;
 - [`.github/`](.github/) — remote event enforcement;
 - [`.codex/skills/vm-lab/SKILL.md`](.codex/skills/vm-lab/SKILL.md) —
   conditional Codex entry router.
 
-Activation verification: 404 repository-integrity checks and all 11 promoted
-runtime smoke checks pass. The next ready unit is P0; no runtime implementation
-unit is active.
+P0 gate-time verification recorded 2,135 repository-integrity observations.
+Final post-transition verification records 1,733 plan observations, 2,174
+repository-integrity observations, and all 13 consumed checks passing in
+`test/vm_lab/runs/20260805T055444Z`. `GATE-P0` is closed. The next ready unit
+is the first P1 protocol composition; no daemon or lifecycle implementation is
+active.
 
 ## Decision index
 
@@ -107,6 +112,8 @@ unit is active.
 | What cannot be misunderstood | [`TOPOLOGY.md`](TOPOLOGY.md) |
 | What suspicious success looks like | [`FAILURE_GRAMMAR.md`](FAILURE_GRAMMAR.md) |
 | What work is active | [`TASK.md`](TASK.md) |
+| What phase is current | [`STATE.md`](STATE.md) |
+| What dependencies and evidence bind it | [`docs/plan-index.json`](docs/plan-index.json) |
 
 ## Update rule
 

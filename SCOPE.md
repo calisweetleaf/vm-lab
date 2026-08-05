@@ -1,30 +1,28 @@
 ## Engagement Mode
 
-- mode: COMPOSE
-- target_module: `src/somnus_vm/`
-- target_module_provenance: `vm_lab.zip` sha256 `63f698f7af3ce989de8885a3b3b68b7214dedbffb1ac6671636b1f5d13829f94`
-- justification: I am composing the viable VM lineage into one contract-first host control plane while preserving guest, operator, file-processing, and quarantined code behind explicit runtime boundaries.
+- mode: EDIT
+- target_module: `scripts/verify_repository.py` and `test/vm_lab/test_vm_lab.py`
+- target_module_provenance: `PLAN.md` Phase P0 and committed CTMv3 baseline `f13fb3d`
+- justification: I am surgically extending the existing structural verifier and consumed smoke harness because a wrapper would duplicate their repository and evidence authority.
 - author: daeron
 - collaborator: Codex
-- date: 2026-08-04
+- date: 2026-08-05
 
-## Composition Scope
+## Edit Scope
 
-I include the following surfaces in this snapshot:
+I include only the Phase P0 enforcement surfaces:
 
-- canonical VM and guest-agent contracts;
-- TOML configuration and read-only doctor;
-- bind-checked, explicitly non-reserved plan-time port allocation;
-- explicit, non-daemonized QEMU launch planning;
-- JSON block-device encoding and AF_UNIX path-budget validation;
-- install-safe default configuration and checkout-independent topology;
-- local-only, hash/size-required, traversal-safe in-guest bootstrap;
-- configuration-bound bootstrap markers and staged payload placement;
-- migration of every source artifact into live, candidate, cold, lineage, or quarantine placement;
-- direct-Python integration proof including a real wheel build/install and 33-file hash verification.
+- strict duplicate-aware parsing of `docs/plan-index.json`;
+- phase, dependency, gate, task-state, owner, and evidence validation;
+- direct `--plan-only --json --root` fixture execution;
+- live and hostile-fixture checks through the existing smoke harness;
+- fail-loud, still-continue evidence without runtime mutation.
 
-I do not promote lifecycle mutation, snapshots, image building, the digital-twin agent, memory/ASPS, the operator shell, native tools, or file processing in this pass. Their source is preserved, but their existing contracts do not pass the new boundary. In particular, `start`, `ready`, `stop`, and `destroy` remain withheld until the real-metal QMP gate.
+I do not change `src/somnus_vm/`, add lifecycle mutation, choose a base image,
+launch QEMU, or modify the sealed v0.1 snapshot.
 
 ## Dependency Decision
 
-The promoted package remains standard-library only. Candidate dependency lists are isolated in `requirements-candidates.txt` and `requirements-file-processing.txt`; neither is imported during host boot.
+Both edited Python files keep their original ownership and carry complete
+Modified provenance blocks. Repository infrastructure remains outside the
+immutable v0.1 runtime manifest; this edit is recorded in `PROVENANCE.md`.

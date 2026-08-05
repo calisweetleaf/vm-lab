@@ -43,23 +43,58 @@ smallest selected or ready execution unit.
 
 ---
 
-## READY — `TASK-P0-001`: Lock the execution baseline
+## COMPLETE — `TASK-P0-001`: Lock the execution baseline
 
-This is ready, not active. It begins only when a new goal selects runtime
-implementation.
+**Outcome lock**
+
+> Deliver the Phase P0 execution baseline; done when a direct plan-validation
+> run proves unique plan IDs, complete dependencies and gates, exactly one
+> current phase, evidence for every completed item, and zero falsely completed
+> physical capabilities.
 
 **Plan owner:** [`PLAN.md`](PLAN.md) §8, Phase P0.
 
-Expected first unit:
+**Completed unit**
 
-1. create `STATE.md` for runtime phase state;
-2. declare the exact P0 `SCOPE.md` unit;
-3. build `docs/plan-index.json`;
-4. add plan-ID/dependency/gate validation to the harness;
-5. close `GATE-P0` before P1 implementation.
+1. [x] created `STATE.md` for runtime phase state;
+2. [x] declared and preserved the exact P0 COMPOSE and EDIT scopes;
+3. [x] built `docs/plan-index.json`;
+4. [x] added plan-ID/dependency/gate/evidence validation to the harness;
+5. [x] rejected eight hostile plan fixtures through the real CLI;
+6. [x] closed `GATE-P0` without promoting runtime mutation.
 
-Do not skip directly to snapshots, guest cognition, file processing, or shell
-wiring.
+**Acceptance evidence**
+
+- gate-time plan validator: 1,722 observations, 0 failures;
+- final post-transition plan validator: 1,733 observations, 0 failures;
+- final repository verifier: 2,174 observations, 0 failures;
+- gate evidence: `test/vm_lab/runs/20260805T054841Z/result.json`;
+- final closure evidence: `test/vm_lab/runs/20260805T055444Z/result.json`;
+- smoke result: 13 pass, 0 fail, 0 skip;
+- Somnus SOTA verifier: 16/16 applicable checks on both edited Python owners.
+
+---
+
+## READY — `TASK-P1-001`: Compose the canonical protocol boundary
+
+**Outcome lock**
+
+> Deliver the pure `somnus_protocol` boundary and compatibility handoff; done
+> when every current VM and agent schema round-trips through the canonical
+> package, host and guest imports remain side-effect free, unknown fields and
+> unsupported versions fail loudly, and the v0.1 public commands still pass.
+
+**Plan owner:** [`PLAN.md`](PLAN.md) §9, Phase P1.
+
+**First bounded unit**
+
+1. declare a new P1 COMPOSE scope;
+2. create the dependency-free `somnus_protocol` package spine;
+3. move one schema family at a time behind explicit compatibility imports;
+4. close direct serialization and cold-import fixtures before the next family.
+
+Do not begin the daemon, registry, QEMU launch, guest service, or lifecycle CLI
+inside this unit.
 
 ---
 
@@ -67,11 +102,10 @@ wiring.
 
 | Order | Unit | Depends on | Gate |
 | --- | --- | --- | --- |
-| 1 | P0 execution baseline | living repository activation | `GATE-P0` |
-| 2 | P1 protocol/state/settings | P0 | `GATE-P1` |
-| 3 | P2 daemon/registry/ownership | P1 | `GATE-P2` |
-| 4 | P3 owned overlay storage | P2 | `GATE-P3` |
-| 5 | P4 QMP/process identity | P3 | `GATE-P4` |
-| 6 | first real QEMU boot | P4 + disposable fixture | physical run |
+| 1 | P1 protocol/state/settings | P0 | `GATE-P1` |
+| 2 | P2 daemon/registry/ownership | P1 | `GATE-P2` |
+| 3 | P3 owned overlay storage | P2 | `GATE-P3` |
+| 4 | P4 QMP/process identity | P3 | `GATE-P4` |
+| 5 | first real QEMU boot | P4 + disposable fixture | physical run |
 
 All later work remains in [`PLAN.md`](PLAN.md), not duplicated here.

@@ -326,9 +326,11 @@ working only with `PYTHONPATH=src` is not packaging proof.
   ledger.
 - [`SCOPE.md`](SCOPE.md) records the current WRAP / EDIT / COMPOSE boundary for
   runtime implementation.
-- `STATE.md` is created only when the next runtime implementation phase begins,
-  as required by `PLAN.md`; repository activation state lives in `TASK.md` and
-  `.sovereign/`, not a premature placeholder.
+- [`STATE.md`](STATE.md) records the current phase, exact unit, last command,
+  blocker, next action, dirty files, and evidence.
+- [`docs/plan-index.json`](docs/plan-index.json) is the machine-readable phase
+  DAG. Validate it directly with
+  `python scripts/verify_repository.py --plan-only --json`.
 
 At session close after substantive mutation:
 
@@ -348,6 +350,8 @@ At session close after substantive mutation:
 | --- | --- |
 | [`filetree.md`](filetree.md) | Living navigation and dependency map |
 | [`ARCHITECTURE_MAP.md`](ARCHITECTURE_MAP.md) | Question-oriented traversal with source anchors |
+| [`STATE.md`](STATE.md) | Live execution phase and exact unit |
+| [`docs/plan-index.json`](docs/plan-index.json) | Strict phase/dependency/gate/evidence DAG |
 | [`TOPOLOGY.md`](TOPOLOGY.md) | Invariants, interfaces, complexity, anti-concepts |
 | [`FAILURE_GRAMMAR.md`](FAILURE_GRAMMAR.md) | Pre-failure smells and false-success taxonomy |
 | [`.codex/skills/vm-lab/SKILL.md`](.codex/skills/vm-lab/SKILL.md) | Conditional repository skill router |
@@ -395,7 +399,12 @@ nearest physical owner.
 - [Current context index](CONTEXT.md)
 - [Durable repository memory](MEMORY.md)
 - [Active task](TASK.md)
+- [Execution state](STATE.md)
 - [Full execution plan](PLAN.md)
+- [Machine plan index](docs/plan-index.json)
+- [Target platform matrix](docs/PLATFORM_MATRIX.md)
+- [Disposable fixture policy](docs/DISPOSABLE_FIXTURE_POLICY.md)
+- [Architecture decisions](docs/decisions/)
 - [Current implementation scope](SCOPE.md)
 - [Snapshot boundary](SNAPSHOT.md)
 - [Latest proof ledger](SOTA_RUN.md)

@@ -5,6 +5,13 @@ Integrated: 2026-08-04
 Purpose: Exercises only the promoted contracts, configuration, planning,
     bootstrap, packaging, topology, doctor, and execution-plan behaviors.
 IO: Uses temporary files, bind probes, subprocess CLI, and run artifacts.
+
+Modified: 2026-08-05
+Modified by: daeron and Codex
+Justification: Phase P0 adds a machine plan index whose real verifier CLI and
+    hostile fixture behavior must be exercised by the consumed smoke boundary.
+Provenance: PROVENANCE.md, Phase P0 execution-baseline session.
+Files: test/vm_lab/test_vm_lab.py
 """
 
 from __future__ import annotations
@@ -527,8 +534,25 @@ def check_plan_contract() -> str:
     duplicates = sorted({identifier for identifier in identifiers if identifiers.count(identifier) > 1})
     assert not duplicates, f"Duplicate execution-plan IDs: {duplicates}"
 
-    completed = re.findall(r"- \[x\] `([^`]+)`", plan)
-    assert completed and all(identifier.startswith("BASE-") for identifier in completed)
+    plan_index = json.loads((PROJECT_ROOT / "docs" / "plan-index.json").read_text(encoding="utf-8"))
+    completed_phases = {
+        phase["id"] for phase in plan_index["phases"] if phase["status"] == "complete"
+    }
+    allowed_completed = {
+        identifier
+        for identifier in identifiers
+        if identifier.startswith("BASE-")
+        or any(
+            identifier.startswith(f"{phase_id}-") or identifier == f"GATE-{phase_id}"
+            for phase_id in completed_phases
+        )
+    }
+    completed = set(re.findall(r"- \[x\] `([^`]+)`", plan))
+    assert completed
+    assert completed <= allowed_completed, (
+        f"Completed plan IDs are not backed by completed indexed phases: "
+        f"{sorted(completed - allowed_completed)}"
+    )
     for boundary in (
         "AIPC is a persistent full computer",
         "VM-Go remains a separate host-lifecycle project",
@@ -539,6 +563,184 @@ def check_plan_contract() -> str:
         assert boundary in plan, f"Missing architecture boundary: {boundary}"
     assert "No command may report success for a simulated operation" in plan
     return f"validated {len(identifiers)} unique execution IDs across phases P0-P18"
+
+
+def _run_plan_validator(root: Path) -> tuple[int, dict[str, object], str]:
+    """Run the real plan-only verifier against one repository fixture."""
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            str(PROJECT_ROOT / "scripts" / "verify_repository.py"),
+            "--plan-only",
+            "--json",
+            "--root",
+            str(root),
+        ],
+        cwd=PROJECT_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    payload = json.loads(completed.stdout)
+    assert isinstance(payload, dict)
+    return completed.returncode, payload, completed.stderr
+
+
+def check_plan_index() -> str:
+    """Verify the live execution DAG through its public validator CLI."""
+
+    return_code, payload, stderr = _run_plan_validator(PROJECT_ROOT)
+    assert return_code == 0, (
+        f"plan-only verifier exited {return_code}: {stderr or payload}"
+    )
+    assert payload.get("ok") is True
+    summary = payload.get("summary")
+    assert isinstance(summary, dict)
+    assert summary.get("fail") == 0
+    checks = payload.get("checks")
+    assert isinstance(checks, list)
+    names = {
+        item.get("name")
+        for item in checks
+        if isinstance(item, dict) and isinstance(item.get("name"), str)
+    }
+    for name in (
+        "plan-index:unique-plan-ids",
+        "plan-index:execution-order",
+        "plan-index:one-current-phase",
+        "plan-index:task-agreement",
+        "plan-index:no-false-physical-completion",
+    ):
+        assert name in names, f"Missing plan-index observation: {name}"
+    return f"validated live plan index with {summary.get('pass')} direct observations"
+
+
+def _materialize_plan_fixture(root: Path) -> None:
+    """Create one real minimal repository fixture for plan validation."""
+
+    for relative in ("PLAN.md", "TASK.md", "docs/plan-index.json"):
+        source = PROJECT_ROOT / relative
+        target = root / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, target)
+
+    payload = json.loads((root / "docs" / "plan-index.json").read_text(encoding="utf-8"))
+    fixture_paths = set(payload["baseline_evidence"])
+    for phase in payload["phases"]:
+        fixture_paths.update(phase["owner_files"])
+        fixture_paths.update(phase["evidence"])
+        for item in phase["items"]:
+            fixture_paths.update(item["evidence"])
+    for relative in sorted(fixture_paths):
+        source = PROJECT_ROOT / relative
+        target = root / relative
+        if target.exists():
+            continue
+        if source.is_dir():
+            target.mkdir(parents=True, exist_ok=True)
+        else:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text("fixture evidence\n", encoding="utf-8")
+
+
+def check_plan_index_rejections() -> str:
+    """Prove malformed, ambiguous, and unevidenced plan states fail loudly."""
+
+    scenarios: list[tuple[str, object]] = []
+
+    def duplicate_json_key(root: Path) -> None:
+        path = root / "docs" / "plan-index.json"
+        content = path.read_text(encoding="utf-8")
+        path.write_text(
+            content.replace(
+                '"schema_version": 1,',
+                '"schema_version": 1,\\n  "schema_version": 1,',
+                1,
+            ),
+            encoding="utf-8",
+        )
+
+    scenarios.append(("duplicate-json-key", duplicate_json_key))
+
+    def missing_dependency(root: Path) -> None:
+        path = root / "docs" / "plan-index.json"
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        payload["phases"][2]["depends_on"] = ["P99"]
+        path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+    scenarios.append(("missing-dependency", missing_dependency))
+
+    def dependency_cycle(root: Path) -> None:
+        path = root / "docs" / "plan-index.json"
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        payload["phases"][1]["depends_on"] = ["P2"]
+        path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+    scenarios.append(("dependency-cycle", dependency_cycle))
+
+    def missing_gate(root: Path) -> None:
+        path = root / "docs" / "plan-index.json"
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        payload["phases"][0]["gate_id"] = "GATE-P99"
+        path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+    scenarios.append(("missing-gate", missing_gate))
+
+    def multiple_current_phases(root: Path) -> None:
+        path = root / "docs" / "plan-index.json"
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        payload["phases"][2]["status"] = "ready"
+        path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+    scenarios.append(("multiple-current-phases", multiple_current_phases))
+
+    def completed_without_evidence(root: Path) -> None:
+        path = root / "docs" / "plan-index.json"
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        payload["phases"][1]["items"][0]["status"] = "complete"
+        payload["phases"][1]["items"][0]["evidence"] = []
+        path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+    scenarios.append(("completed-without-evidence", completed_without_evidence))
+
+    def owner_path_escape(root: Path) -> None:
+        path = root / "docs" / "plan-index.json"
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        payload["phases"][0]["owner_files"] = ["../outside"]
+        path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+    scenarios.append(("owner-path-escape", owner_path_escape))
+
+    def duplicate_plan_id(root: Path) -> None:
+        path = root / "PLAN.md"
+        with path.open("a", encoding="utf-8") as handle:
+            handle.write("\n- [ ] `P0-001` duplicate hostile fixture\n")
+
+    scenarios.append(("duplicate-plan-id", duplicate_plan_id))
+
+    with tempfile.TemporaryDirectory(prefix="vm-lab-plan-fixtures-") as temporary:
+        fixture_root = Path(temporary)
+        base = fixture_root / "base"
+        _materialize_plan_fixture(base)
+        base_code, base_payload, base_stderr = _run_plan_validator(base)
+        assert base_code == 0, f"base fixture invalid: {base_stderr or base_payload}"
+
+        rejected: list[str] = []
+        for name, mutate in scenarios:
+            assert callable(mutate)
+            scenario_root = fixture_root / name
+            shutil.copytree(base, scenario_root)
+            mutate(scenario_root)
+            return_code, payload, stderr = _run_plan_validator(scenario_root)
+            assert return_code == 1, (
+                f"{name} returned {return_code}: {stderr or payload}"
+            )
+            assert payload.get("ok") is False, f"{name} did not report structured failure"
+            rejected.append(name)
+
+    return f"rejected {len(rejected)} hostile plan fixtures: {', '.join(rejected)}"
 
 
 def _run_check(name: str, function: object) -> CheckResult:
@@ -575,10 +777,20 @@ def _write_artifacts(results: list[CheckResult], started_at: datetime, ended_at:
     timestamp = ended_at.strftime("%Y%m%dT%H%M%SZ")
     run_dir = PROJECT_ROOT / "test" / "vm_lab" / "runs" / timestamp
     run_dir.mkdir(parents=True, exist_ok=True)
+    scope_text = (PROJECT_ROOT / "SCOPE.md").read_text(encoding="utf-8")
+    mode_match = re.search(r"^- mode: (WRAP|EDIT|COMPOSE)$", scope_text, re.MULTILINE)
+    target_match = re.search(r"^- target_module: (.+)$", scope_text, re.MULTILINE)
+    if mode_match is None or target_match is None:
+        raise ValueError("SCOPE.md is missing a machine-readable mode or target_module")
+    mode = mode_match.group(1)
+    target_module = target_match.group(1).replace("`", "")
     passed = sum(result.status == "pass" for result in results)
     failed = sum(result.status == "fail" for result in results)
     payload = {
         "domain": "vm_lab",
+        "mode": mode,
+        "scope": "SCOPE.md",
+        "target_module": target_module,
         "status": "pass" if failed == 0 else "fail",
         "started_at": started_at.isoformat(),
         "ended_at": ended_at.isoformat(),
@@ -619,10 +831,10 @@ def _write_artifacts(results: list[CheckResult], started_at: datetime, ended_at:
             "# Latest SOTA Run",
             "",
             "<!-- SOTA_RUN_LATEST_START -->",
-            "- mode: COMPOSE",
+            f"- mode: {mode}",
             "- domain: vm_lab",
             "- scope: SCOPE.md",
-            "- target_module: src/somnus_vm/",
+            f"- target_module: {target_module}",
             "- smoke_harness: test/vm_lab/smoke.py",
             f"- run_dir: {relative}",
             f"- status: {payload['status']}",
@@ -655,6 +867,8 @@ def main() -> int:
         ("cli_entrypoint", check_cli_entrypoint),
         ("wheel_runtime", check_wheel_runtime),
         ("plan_contract", check_plan_contract),
+        ("plan_index", check_plan_index),
+        ("plan_index_rejections", check_plan_index_rejections),
         ("source_manifest", check_source_manifest),
     ]
     results = [_run_check(name, function) for name, function in checks]

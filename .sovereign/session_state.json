@@ -1,16 +1,16 @@
 {
   "schema_version": 1,
-  "session_id": "ctm-activation-20260804",
+  "session_id": "p0-execution-baseline-20260805",
   "workspace": ".",
   "last_agent": "Codex",
-  "last_timestamp": "2026-08-04T22:26:58-05:00",
-  "last_action": "Completed and verified CTMv3 living repository activation",
+  "last_timestamp": "2026-08-05T00:57:10-05:00",
+  "last_action": "Closed and fully verified GATE-P0; promoted TASK-P1-001 to READY",
   "active_task": null,
   "open_tasks": [
-    "Select and activate the next runtime implementation goal beginning at P0"
+    "Compose the canonical somnus_protocol boundary in TASK-P1-001"
   ],
-  "topology_hash": "sha256:8976b3cf33027fc181145ff71e058793856f43da7819f1e2a6e265c8beb490f6",
+  "topology_hash": "sha256:28884764e6759144de2a2c62a38eb89cf0afc3497de0cfbb4899915522d6c4a4",
   "warm_start_valid": true,
   "notes": "This file is a last-close hint. Verify the topology fingerprint and current working tree before trusting warm state.",
-  "ready_task": "TASK-P0-001"
+  "ready_task": "TASK-P1-001"
 }
