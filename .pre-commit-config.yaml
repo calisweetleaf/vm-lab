@@ -1,0 +1,9 @@
+repos:
+  - repo: local
+    hooks:
+      - id: vm-lab-repository-integrity
+        name: VM Lab living repository integrity
+        entry: python scripts/verify_repository.py
+        language: system
+        pass_filenames: false
+        always_run: true

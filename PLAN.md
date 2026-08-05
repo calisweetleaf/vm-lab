@@ -21,6 +21,15 @@
 
 # Full SOTA Execution Plan
 
+> **Planning stack:** this file owns the complete destination and physical
+> gates. [`TASK.md`](TASK.md) owns exactly one current execution unit;
+> [`CONTEXT.md`](CONTEXT.md) indexes current state; [`PROVENANCE.md`](PROVENANCE.md)
+> records chronological decisions. Do not duplicate the phase plan into those
+> files.
+>
+> **Current unit:** [`TASK-CTM-001`](TASK.md) — activate the living repository.
+> Runtime implementation resumes at Phase P0 only after that unit closes.
+
 ## 0. Document contract
 
 This file is the execution authority for taking the reorganized VM lab from the verified v0.1 boundary to a production-grade experimental Python VM backend. I use `SCOPE.md` to define the current change, `STATE.md` to record live work once implementation resumes, and this file to preserve the complete destination and critical path.

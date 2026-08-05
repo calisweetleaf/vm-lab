@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "repository": "vm-lab",
+  "paths": {
+    "entry": {
+      "intent": "Enter or resume the repository without broad archaeology",
+      "chain": [
+        "AGENTS.md",
+        "TASK.md",
+        "filetree.md",
+        "one task-specific owner",
+        "scripts/verify_repository.py"
+      ],
+      "success": "The active unit, owner, promotion boundary, and direct gate are known"
+    },
+    "implementation": {
+      "intent": "Change one promoted runtime unit",
+      "chain": [
+        "TASK.md",
+        "relevant PLAN.md phase",
+        "ARCHITECTURE_MAP.md branch",
+        "exact source owner",
+        "direct focused check",
+        "test/vm_lab/smoke.py"
+      ],
+      "success": "The consumer reaches the change and the named gate remains truthful"
+    },
+    "failure": {
+      "intent": "Diagnose a false-success smell or regression",
+      "chain": [
+        "FAILURE_GRAMMAR.md",
+        "smallest discriminating observation",
+        "classify owning layer",
+        "repair direct owner",
+        "boundary regression"
+      ],
+      "success": "The actual mechanism is corrected without hiding the physical gate"
+    },
+    "promotion": {
+      "intent": "Move a candidate concept into the live runtime",
+      "chain": [
+        "docs/MIGRATION_MAP.md",
+        "MEMORY.md rejected paths",
+        "TOPOLOGY.md interface boundary",
+        "relevant PLAN.md gate",
+        "new bounded owner",
+        "physical proof",
+        "snapshot and provenance agreement"
+      ],
+      "success": "The actual consumer reaches one owner and no unpromoted import enters boot"
+    }
+  }
+}

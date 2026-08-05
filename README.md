@@ -26,6 +26,24 @@ The final adversarial pass removed lifecycle mutation from v0.1. Without real QE
 
 [`PLAN.md`](PLAN.md) is the execution authority for crossing that gap. It names every phase, invariant, physical gate, failure test, file disposition, and full-SOTA sign-off condition so a future Codex Operator cannot mistake preserved lineage for promoted runtime.
 
+## Living repository entry
+
+Operators enter through [`AGENTS.md`](AGENTS.md), confirm the selected or ready
+unit in [`TASK.md`](TASK.md), and navigate through
+[`filetree.md`](filetree.md) or
+[`ARCHITECTURE_MAP.md`](ARCHITECTURE_MAP.md). The complete current-state and
+failure surfaces are [`CONTEXT.md`](CONTEXT.md),
+[`TOPOLOGY.md`](TOPOLOGY.md), and
+[`FAILURE_GRAMMAR.md`](FAILURE_GRAMMAR.md).
+
+```bash
+python scripts/verify_repository.py
+```
+
+That fast structural gate checks the rendered entry packet, topology
+fingerprint, source anchors, continuity state, and all 33 preserved source
+hashes. It complements—rather than replaces—the runtime proof below.
+
 ## Current promotion state
 
 | Surface | State | Boot behavior |
