@@ -5,13 +5,14 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "somnus-vm-lab"
 version = "0.1.0"
-description = "Contract-first planning and bootstrap boundary for experimental Somnus VMs"
+description = "Contract-first Somnus VM planning, authenticated daemon, verified storage, and guest bootstrap"
 requires-python = ">=3.12"
 dependencies = []
 
 [project.scripts]
 vm-lab = "somnus_vm.cli:main"
 somnus-guest-bootstrap = "somnus_vm.guest.bootstrap:main"
+somnus-vm-daemon = "somnus_vm.daemon_runtime:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

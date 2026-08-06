@@ -9,7 +9,6 @@ IO: Brief localhost bind probes only; no persistent reservation or writes.
 
 from __future__ import annotations
 
-import secrets
 from pathlib import Path
 
 from ..config import LabConfiguration
@@ -53,12 +52,16 @@ class VMPlanner:
             record = VMRecord(
                 definition=definition,
                 ports=ports,
-                agent_token=secrets.token_urlsafe(32),
             )
             plan = self._builder.build(record)
-            record.qmp_socket = str(plan.qmp_socket)
-            record.pid_file = str(plan.pid_file)
-            record.log_path = str(plan.log_path)
+            # VMRecord is an immutable protocol value.  The QEMU builder owns
+            # no record mutation: it returns pure plan locations which become
+            # a new declared record for the caller to serialize or inspect.
+            record = record.with_planned_runtime(
+                qmp_socket=str(plan.qmp_socket),
+                pid_file=str(plan.pid_file),
+                log_path=str(plan.log_path),
+            )
             return record, plan
         finally:
             self._ports.release(ports)

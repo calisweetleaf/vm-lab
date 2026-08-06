@@ -1,0 +1,109 @@
+{
+  "checks": [
+    {
+      "detail": "round-tripped strict VM definition/ports, rejected coercion and unknown fields, preserved aliases, and proved cold import isolation",
+      "duration_ms": 41.172,
+      "name": "protocol_vm_primitives",
+      "status": "pass"
+    },
+    {
+      "detail": "round-tripped and adversarially validated 7 agent protocol surfaces",
+      "duration_ms": 2.201,
+      "name": "protocol_agent",
+      "status": "pass"
+    },
+    {
+      "detail": "round-tripped one record, rejected an illegal transition, and fixed endpoint names",
+      "duration_ms": 0.119,
+      "name": "contract_roundtrip",
+      "status": "pass"
+    },
+    {
+      "detail": "loaded resolved configs and rejected truthy booleans plus ambiguous QMP paths",
+      "duration_ms": 1.814,
+      "name": "configuration",
+      "status": "pass"
+    },
+    {
+      "detail": "bind-checked 24 distinct ephemeral ports across eight threads",
+      "duration_ms": 2.268,
+      "name": "port_allocation",
+      "status": "pass"
+    },
+    {
+      "detail": "encoded a comma-bearing disk path with JSON blockdev and a valid QMP path",
+      "duration_ms": 0.968,
+      "name": "qemu_plan",
+      "status": "pass"
+    },
+    {
+      "detail": "extracted bounded data and rejected traversal, links, duplicates, and size drift",
+      "duration_ms": 3.031,
+      "name": "bootstrap_extraction",
+      "status": "pass"
+    },
+    {
+      "detail": "installed/recovered bounded payloads and rejected stale, ambiguous, mislabeled, or colliding intent",
+      "duration_ms": 3.205,
+      "name": "bootstrap_idempotency",
+      "status": "pass"
+    },
+    {
+      "detail": "reported 9 source-aware checks with healthy=False",
+      "duration_ms": 0.911,
+      "name": "doctor_truthfulness",
+      "status": "pass"
+    },
+    {
+      "detail": "ran checkout-independent topology, redacted planning, and clean port-exhaustion errors",
+      "duration_ms": 200.364,
+      "name": "cli_entrypoint",
+      "status": "pass"
+    },
+    {
+      "detail": "installed a wheel with checkout-free CLI and clean malformed-payload exit behavior",
+      "duration_ms": 1808.563,
+      "name": "wheel_runtime",
+      "status": "pass"
+    },
+    {
+      "detail": "validated 405 unique execution IDs across phases P0-P18",
+      "duration_ms": 2.909,
+      "name": "plan_contract",
+      "status": "pass"
+    },
+    {
+      "detail": "validated live plan index with 1733 direct observations",
+      "duration_ms": 62.701,
+      "name": "plan_index",
+      "status": "pass"
+    },
+    {
+      "detail": "rejected 8 hostile plan fixtures: duplicate-json-key, missing-dependency, dependency-cycle, missing-gate, multiple-current-phases, completed-without-evidence, owner-path-escape, duplicate-plan-id",
+      "duration_ms": 568.846,
+      "name": "plan_index_rejections",
+      "status": "pass"
+    },
+    {
+      "detail": "verified 33/33 preserved source files against their byte hashes",
+      "duration_ms": 1.98,
+      "name": "source_manifest",
+      "status": "pass"
+    }
+  ],
+  "counts": {
+    "failed": 0,
+    "passed": 15,
+    "skipped": 0
+  },
+  "domain": "vm_lab",
+  "ended_at": "2026-08-05T16:44:57.345544+00:00",
+  "fail_count": 0,
+  "mode": "COMPOSE",
+  "pass_count": 15,
+  "scope": "SCOPE.md",
+  "skip_count": 0,
+  "started_at": "2026-08-05T16:44:54.644396+00:00",
+  "status": "pass",
+  "target_module": "src/somnus_protocol/ with explicit compatibility exports"
+}

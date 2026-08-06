@@ -1,12 +1,15 @@
 # VM Lab Cognitive Topology
 
-**Extracted from:** snapshot `v0.1`, commit `a2c7b9d`, 2026-08-04  
-**Language:** Python 3.12+, standard-library live runtime  
-**Overall density:** DENSE at truth/ownership/security boundaries; THIN at CLI
-dispatch and serialization
+**Promoted baseline:** snapshot `v0.1`, closed P1 protocol authority, live
+internal P2 daemon/registry ownership, and physically verified P3 image
+storage, 2026-08-05. The public host CLI remains read-only; P4 QEMU/QMP process
+ownership is the current frontier.
+**Language:** Python 3.12+, standard-library live runtime
+**Overall density:** DENSE at truth/ownership/security boundaries; THIN at
+CLI dispatch and canonical serialization
 
 This document encodes the structure that must survive implementation changes.
-For source navigation, use [`ARCHITECTURE_MAP.md`](ARCHITECTURE_MAP.md).
+For source traversal, use [`ARCHITECTURE_MAP.md`](ARCHITECTURE_MAP.md).
 
 ---
 
@@ -14,34 +17,50 @@ For source navigation, use [`ARCHITECTURE_MAP.md`](ARCHITECTURE_MAP.md).
 
 ### LBC 1: Promotion disposition is executable authority
 
-**Definition:** A file's directory and registered disposition determine whether
-it may participate in runtime. Only `src/somnus_vm/` is live in v0.1.
+**Definition:** The registered directory and disposition determine whether code
+may participate in runtime. `src/somnus_protocol/` is the live pure shared
+authority. `src/somnus_vm/` owns the read-only public host CLI, the separately
+invoked guest bootstrap, and the separately invoked internal
+daemon/registry/storage runtime. `src/somnus_vm/contracts/` is live
+compatibility re-export code, not a second schema owner. `components/`,
+`extras/`, `archive/`, and `quarantine/` retain
+candidate/cold/lineage/rejected material.
 
-**Why load-bearing:** Importing candidate, cold, lineage, or quarantined code can
-silently reintroduce duplicate supervisors, unsafe snapshot behavior, eager
-dependencies, or synthetic success.
+**Why load-bearing:** Importing a donor can reintroduce duplicate supervisors,
+unsafe snapshot behavior, eager dependencies, or synthetic success. Duplicating
+the protocol in the compatibility package breaks host/guest/operator agreement.
 
-**Common misunderstanding:** “The implementation already exists under
-`components/`, so wiring it is promotion.”
+**Verification:** `src/somnus_vm/topology.py:48` registers both live protocol
+and compatibility boundaries; `test/vm_lab/test_protocol_host_consumption.py:84`
+proves live consumers reach canonical types.
 
-**Verification:** Compare imports against `src/somnus_vm/topology.py:48` and
-prove that host boot reaches no non-live path.
+### LBC 2: Lifecycle contract is not lifecycle ownership
 
-### LBC 2: Planning is not lifecycle ownership
+**Definition:** `somnus_protocol.vm` contains the full immutable lifecycle
+grammar: 16 states, exactly 48 evidence-keyed legal transitions, transition
+records, observations, process/storage/image/snapshot references, explicit
+terminal destruction, and exact v0 migration. Every non-idempotent edge binds
+evidence to VM ID, generation, boot identity when applicable, and a digest of
+declaration, planned runtime, and migration provenance. Histories reject reused
+evidence, observation, boot, process, and error-cause identities. A later
+authoritative observation of the active process core must advance the process
+observation timestamp strictly; equal-time reuse is false freshness. It owns no
+process, registry, QMP client, filesystem, socket, credential, or timer.
 
-**Definition:** v0.1 may validate configuration, bind-check candidate ports, and
-emit QEMU argv. It does not create state directories, reserve ports, create
-images, start QEMU, or own lifecycle transitions.
+**Why load-bearing:** A state enum or serialized transition must never be
+misreported as a running computer. The live internal daemon may mutate its
+registry and image store, but it does not yet launch QEMU or advance the VM
+lifecycle. Only the physical owner named by an edge may establish that edge's
+evidence.
 
-**Why load-bearing:** Turning a planner into a launcher without a durable
-single-owner daemon creates split authority across CLI processes and makes
-recovery, leases, and process adoption incoherent.
-
-**Common misunderstanding:** “A complete QEMU command means `start` is nearly
-implemented.”
-
-**Verification:** `src/somnus_vm/host/qemu.py:43` returns a frozen
-`QemuLaunchPlan`; no host-planning call creates or mutates an external resource.
+**Verification:** `src/somnus_protocol/vm.py:323` declares legal edges and
+`:562` binds requirements to the same edge set;
+`test/vm_lab/test_protocol_vm_lifecycle.py:1690` exercises illegal,
+underspecified, cross-identity, replayed, unknown-field, coercive,
+future-version, and unsafe-legacy cases. No public CLI action changes VM
+lifecycle state. `src/somnus_vm/daemon_runtime.py:42` composes the internal
+owner, while `src/somnus_vm/host/service.py:289` deliberately exposes only
+registry and P3 storage semantics.
 
 ### LBC 3: Observed external truth owns success
 
@@ -50,78 +69,169 @@ identity/status, authenticated guest protocol, durable registry ownership,
 verified file hashes, observed process exit, or qcow2 backing-chain inspection.
 
 **Why load-bearing:** Intention-derived state survives superficial tests while
-lying about the machine.
+lying about the machine. A PID, socket pathname, port, status text, or schema
+roundtrip has weaker semantics than the physical observation it represents.
 
-**Common misunderstanding:** “PID alive + QMP socket exists + port accepts a
-connection means this VM is ready.”
+**Verification:** P3 now observes immutable base bytes, exact manifests,
+filesystem identity/allocation/mode, qcow2 format and backing chain, ownership
+markers, durable registry rows, and real `qemu-img` exit/output through
+`src/somnus_vm/host/storage.py:435` and
+`src/somnus_vm/host/images.py:696`. The gate integration bundle at
+`test/vm_lab/runs/20260805T211740Z/` proves those storage facts only. A future
+QMP-running state must still correlate process start identity, executable,
+command hash, VM UUID, QMP UUID, greeting, and status; guest-ready additionally
+requires authenticated VM ID, boot ID, and protocol version.
 
-**Verification:** A future running state must correlate process start identity,
-executable, command hash, VM UUID, QMP UUID, QMP status, and a stabilization
-window. Guest-ready requires authenticated VM ID, boot ID, and protocol version.
+### LBC 4: Host, guest, operator, Artifact, and protocol are separate authorities
 
-### LBC 4: Host, guest, operator, and Artifact workers are separate authorities
+**Definition:** The host's live internal daemon owns durable registry and image
+mutation. Future host phases own QEMU/QMP lifecycle only after their gates;
+guest owns authenticated in-guest control/runtime; Kerminal/operator owns
+agency; Artifact workers transform disposable work outside the persistent AIPC;
+`somnus_protocol` owns only typed cross-boundary vocabulary.
 
-**Definition:** Host code owns lifecycle; guest code owns in-guest control and
-cognition; Kerminal/operator code owns agency; Artifact workers inspect and
-transform disposable files outside the persistent AIPC.
+**Why load-bearing:** Cross-imports create circular boot paths and second
+owners for processes, identity, or cognition. A pure schema package is an
+interface membrane, not an orchestrator.
 
-**Why load-bearing:** Cross-imports create circular boot paths and second owners
-for processes, state, or identity.
+**Verification:** Protocol import performs no host/guest/operator I/O. Host
+import succeeds without guest cognition or operator modules. Guest import
+succeeds without registry, QMP, image, or lease modules. The internal
+`UnixControlClient` reaches `UnixControlDaemon` through authenticated local
+transport; Kerminal is not yet promoted as that client and never constructs
+QEMU.
 
-**Common misunderstanding:** “They are all Somnus runtime, so a shared package
-can coordinate them directly.”
+### LBC 5: Persistent AIPC identity includes storage and generation lineage
 
-**Verification:** Host import succeeds without guest cognition or operator
-modules. Guest import succeeds without registry, QMP, image, or lease modules.
-Kerminal reaches the VM only through a stable client contract.
-
-### LBC 5: Persistent AIPC identity includes storage lineage
-
-**Definition:** An AIPC is a persistent full computer. Its identity spans VM ID,
-disk ownership, active disk generation, state transitions, guest identity, and
-recovery history—not one QEMU process.
+**Definition:** An AIPC is a persistent full computer. Its identity spans VM
+ID, immutable resource declaration, disk/storage reference, active generation,
+boot identity, observed transitions, guest identity, and recovery history—not
+one QEMU process. `VMRecord` is secret-free and uses explicit schema versioning.
 
 **Why load-bearing:** Process-centric designs make restart adoption, snapshot
-rollback, and destructive cleanup unsafe.
+rollback, destructive cleanup, and credential handling unsafe. Raw agent
+secrets do not belong in protocol records or error payloads.
 
-**Common misunderstanding:** “The VM is the QEMU PID; its disk is just a launch
-argument.”
-
-**Verification:** Future registry constraints must prevent duplicate VM IDs,
-normalized names, writable disk paths, QMP sockets, and endpoint leases, while
-reconciliation can distinguish stopped, running, crashed, foreign, stale, and
-orphaned states.
+**Verification:** `src/somnus_protocol/vm.py:2341` rejects invalid records;
+legacy migration at `:3314`/`:3427` accepts only a historyless `DECLARED`
+record, records `migration_source=legacy_v0`, drops historical raw token
+material, and rejects legacy weak states that cannot truthfully become stronger
+observed states. P3 binds a published base and each overlay to registry-owned
+device/inode, file and allocated sizes, mode, qemu-img version, chain digest,
+operation ID, and marker digest through
+`src/somnus_vm/host/registry.py:2992` and `:3206`.
 
 ### LBC 6: Bootstrap trust is a one-read byte contract
 
-**Definition:** Each local payload has an exact byte size, unpacked size, SHA256,
-archive type, and allowed source list. Bootstrap copies and hashes the source
-once into a private path, then installs only from that verified copy.
+**Definition:** Each local payload has exact byte size, unpacked size, SHA256,
+archive type, and allowed source list. Bootstrap copies and hashes once into a
+private path, then installs only from that verified copy.
 
-**Why load-bearing:** Reopening the original path after validation restores a
-TOCTOU window; permissive extraction restores traversal, link, device,
-collision, and expansion attacks.
+**Why load-bearing:** Reopening the original source after validation restores
+TOCTOU; permissive extraction restores traversal, link, device, collision, and
+expansion attacks.
 
-**Common misunderstanding:** “Checking a checksum before normal extraction is
-equivalent.”
+**Verification:** `src/somnus_vm/guest/bootstrap.py:336` materializes private
+verified bytes; extractors reject non-regular or ambiguous members before
+placement. Protocol envelopes do not change this bootstrap boundary.
 
-**Verification:** `src/somnus_vm/guest/bootstrap.py:336` materializes the private
-verified copy; extractors reject every non-regular or ambiguous archive member
-before placement.
+### LBC 7: One-active-AIPC is policy; multi-VM isolation is correctness
 
-### LBC 7: One-active-AIPC is policy, multi-VM isolation is correctness
+**Definition:** Normal operation may permit one active AIPC, while types and
+future implementations must still isolate IDs, generations, state roots,
+storage, sockets, ports, and leases.
 
-**Definition:** Normal operation may allow one active AIPC, but implementation
-must still allocate distinct state, storage, sockets, ports, and identities.
+**Why load-bearing:** Fixed global resources collide in tests, recovery, and
+future multi-VM support. A policy limit cannot replace allocation correctness.
 
-**Why load-bearing:** Encoding “one active VM” as global fixed resources makes
-tests, recovery, imports, and future policy changes collide.
+**Verification:** `src/somnus_vm/config.py:502` owns the policy; concurrent
+port/definition tests and the live registry's unique ownership constraints
+prove that separate declarations cannot collide even though activation remains
+a later phase.
 
-**Common misunderstanding:** “Because policy allows one, hard-coded ports and
-paths are safe.”
+### LBC 8: The guest is a cooperating system, not one cognition owner
 
-**Verification:** Concurrent disposable declarations and allocations must
-produce no duplicates even when policy later rejects the second activation.
+**Definition:** Foundational intent retains two distinct memory owners, ASPS as
+the cognitive workspace closest to the resident model/harness path, ACE as the
+separate OS-agency pillar, system cache as parallel result infrastructure, a
+digital twin for operations, and Kerminal as the human/model master control
+surface. Candidate implementations remain outside the live import graph.
+
+**Why load-bearing:** Collapsing ACE into a memory mediator, cache into model
+cognition, or shell into lifecycle ownership destroys the intended physical
+authority partition before those systems are actually composed and tested.
+
+**Verification:** `src/somnus_vm/topology.py:172-176` keeps these components
+candidate. `Somnus-Core-Ideals.md` and `NOTEPAD.md` preserve intent/questions;
+only a named promotion gate and consumed physical proof make a candidate live.
+
+### LBC 9: Pairwise negotiation and local decode support are different checks
+
+**Definition:** `ProtocolCapabilities` commits one explicit minimum/maximum
+offer to a caller-owned negotiation ID. `ProtocolNegotiation` commits both
+offer fingerprints and the highest version the two ranges share. Offer hashes
+detect transcript mismatch but neither authenticate a peer nor store replay
+state. Independently, every ordinary P1 envelope requires a version within the
+current package's supported range and the exact current persisted schema.
+
+**Why load-bearing:** Treating a self-consistent transcript as authenticated
+lets an untrusted peer substitute or replay an offer. Treating pairwise overlap
+as permission for the current decoder to accept arbitrary historical/future
+wire or persisted shapes silently widens the implementation boundary.
+
+**Verification:** Pairwise offer/transcript types live at
+`src/somnus_protocol/version.py:246` and `:397`; current-package enforcement is
+at `:212` and `:228`. The control protocol proof exercises mismatch, replay,
+downgrade, unsupported-range, and schema rejection. The live Unix transport
+authenticates the local peer UID, but negotiation-offer authentication and a
+negotiation replay store are not properties of these value types.
+
+### LBC 10: Public errors are closed projections; generic machine bags are not
+
+**Definition:** Public error code, category, exit class, detail, retryability,
+remediation, evidence kind, and evidence summary are derived from closed
+registries. P1 error `details` is always empty. Raw diagnostics remain private
+and cross the public envelope only as a rigid `diag:<non-nil UUID>` identifier
+whose resolver and authorization policy do not yet exist. By contrast,
+`ControlRequest.payload` and `ControlResponse.result` are bounded,
+machine-keyed, authenticated operation data. Their operation owner defines
+semantics, and neither bag is inherently redacted or safe to log.
+
+**Why load-bearing:** Caller-controlled prose, paths, URLs, headers, payloads,
+tracebacks, or subprocess output inside public errors leaks data and destroys
+machine stability. Assuming a generic success/request bag is public because it
+is structurally bounded creates the same leak through a different envelope.
+
+**Verification:** Registries begin at `src/somnus_protocol/control.py:124` and
+`:161`; request/response bags at `:449`/`:572`; diagnostic references and
+closed errors at `:685`/`:723`/`:771`. The public root exports
+`ProtocolValidationError` and all supported contract names so consumers do not
+reach into private validation implementation.
+
+### LBC 11: Storage recovery replays authority, not intent
+
+**Definition:** A storage operation is recoverable only from an exact persisted
+checkpoint prefix. Each checkpoint binds ordinal, name, canonical payload
+bytes, and payload SHA256. Once a checkpoint claims staged or published
+physical state, recovery must re-observe that exact device/inode and evidence;
+it must not recreate a missing candidate or adopt replacement bytes. A
+post-publication exception remains `recovery_required`, never terminal
+`failed`.
+
+**Why load-bearing:** A path, valid qcow2 header, matching content hash, or
+familiar checkpoint name does not prove ownership. Recreating or adopting from
+weak evidence can bless a foreign file and make destructive cleanup target the
+wrong object.
+
+**Verification:** Exact checkpoint comparison begins at
+`src/somnus_vm/host/service.py:1159`; resume prefixes are projected at `:1194`,
+and startup recovery/reconciliation run at `:1542` and `:1569` before the
+control socket accepts work. `RegisteredBase` at
+`src/somnus_vm/host/storage.py:266` is re-observed before and after overlay
+creation. The eight adversarial checks beginning at
+`test/vm_lab/test_storage_p3_adversarial.py:194` prove foreign-file
+non-adoption, checkpoint tamper rejection, inode-bound base authority,
+post-publication recovery state, symlink safety, and native-child containment.
 
 ---
 
@@ -132,8 +242,14 @@ produce no duplicates even when policy later rejects the second activation.
 | Input | Contract | Owner |
 | --- | --- | --- |
 | CLI argv | explicit subcommand and bounded values; no shell strings | `src/somnus_vm/cli.py` |
-| Host TOML | strict types, resolved paths, no quarantined enablement | `src/somnus_vm/config.py` |
-| VM definition | validated name, resources, absolute disk, state machine | `src/somnus_vm/contracts/vm.py` |
+| Host TOML/profile | strict types, disjoint roots, profile-scoped runtime sockets, secret references only | `src/somnus_vm/config.py` |
+| VM declaration/lifecycle wire data | strict versioned schemas, exact unknown-field rejection, no raw secrets | `src/somnus_protocol/vm.py` |
+| Guest endpoint/results | seven fixed endpoints; bounded health, command, and file-write result data | `src/somnus_protocol/agent.py` |
+| Negotiation wire data | two exact same-ID range offers plus highest-shared transcript; hashes are mismatch detection only | `src/somnus_protocol/version.py` |
+| Control/event wire data | correlated current-version envelopes; operation-owned machine bags; closed public errors and ordered events | `src/somnus_protocol/control.py`, `events.py` |
+| Authenticated internal control request | one bounded frame over a private Unix socket, current protocol envelope, kernel `SO_PEERCRED`, UID allowlist | `src/somnus_vm/transport.py`, `daemon.py`, `client.py` |
+| Base import intent | canonical local source path plus exact immutable image manifest; no URL or caller-selected final path | `src/somnus_vm/host/service.py`, `storage.py`, `images.py` |
+| Overlay materialization intent | registry-bound VM/generation/disk/base identities, expected revision, ownership token, and bounded virtual size | `src/somnus_vm/host/service.py`, `storage.py` |
 | Local guest payload | exact size/hash, safe name, bounded archive | `src/somnus_vm/guest/bootstrap.py` |
 | Snapshot/source claims | immutable JSON and file hashes | `snapshots/`, `source-manifest.json` |
 
@@ -141,185 +257,168 @@ produce no duplicates even when policy later rejects the second activation.
 
 | Output | Guarantee | Non-guarantee |
 | --- | --- | --- |
-| Doctor report | read-only observed preflight with failure detail | host readiness when required checks fail |
-| Topology report | registered placement/disposition | runtime promotion outside the registry |
+| Protocol value | immutable, strict, versioned, JSON-safe vocabulary | observed machine action or durable persistence |
+| Negotiation transcript | exact offers, selected highest overlap, and mismatch-detecting fingerprints | peer authentication, replay storage, or permission for unsupported local decoding |
+| Public error envelope | stable registry-derived presentation and closed diagnostic references | caller prose, raw diagnostics, diagnostic resolution, or authorization |
+| Request/success machine bag | bounded canonical machine-keyed data under its authenticated operation | generic semantic validation, redaction, or log safety |
+| Doctor report | read-only observed preflight with failure detail | readiness when required checks fail |
+| Topology report | registered placement/disposition | promotion outside registry |
 | QEMU plan | deterministic shell-free argv and bounded paths | reserved ports or a running VM |
-| Bootstrap result | verified local payload placement and idempotency state | network acquisition or arbitrary install commands |
-| Proof bundle | exact harness observations for that run | untested future lifecycle capability |
+| Internal registry response | idempotent, checkpointed SQLite mutation under one writer | public CLI exposure, lifecycle transition, or machine readiness |
+| Registered base evidence | immutable bytes/manifest plus exact registry-bound filesystem and qemu-img observations | a booted VM or permission to replace the file |
+| Materialized overlay evidence | independent sparse qcow2, exact base chain, ownership marker, registry row, and startup reconciliation | mounted filesystem, guest writes, QEMU launch, or mutable-runtime reconciliation |
+| Bootstrap result | verified local payload placement and idempotency state | network acquisition or arbitrary commands |
+| Proof bundle | exact checked observations for that run | physical lifecycle capability not exercised |
 
-### Future handoff contracts
+### Live internal P2/P3 handoffs
 
-- **Kerminal → control client → daemon:** operator intent enters through a stable
-  protocol; Kerminal never constructs QEMU.
-- **Daemon → QEMU/QMP:** daemon owns process and lifecycle truth.
-- **Daemon → guest agent:** authenticated request/response with VM ID, boot ID,
-  protocol version, bounds, and redaction.
-- **Artifact worker → ingress manifest → guest:** only approved measured outputs
-  cross the boundary.
-- **VM-Go ↔ compatibility contract:** measured parity without repository merger.
+- **Daemon composition → recovery → listener:** `daemon_runtime.run()` opens the
+  registry, recovers every nonterminal operation, reconciles registered storage,
+  and only then constructs the Unix listener.
+- **Authenticated Unix peer → service:** one bounded canonical request crosses
+  `SO_PEERCRED` and the UID membrane before `RegistryMutationService` owns its
+  semantics.
+- **Service → registry:** one process-held writer and one mutation lock own
+  intent, resources, idempotency, checkpoints, base records, and disk records.
+- **Service → ImageStore → qemu-img:** only base import and overlay creation are
+  live. `QemuImgBackend` uses argv-only bounded subprocesses, and
+  `exec_guard.py` arms Linux parent-death containment before `exec`.
 
----
+### Physical handoff contracts still gated
 
-## Complexity distribution
-
-```mermaid
-flowchart LR
-    CLI["THIN: CLI dispatch"] --> CFG["MEDIUM: strict config"]
-    CLI --> CT["DENSE: contracts + state"]
-    CFG --> DOC["MEDIUM: truthful doctor"]
-    CT --> PLAN["DENSE: QEMU/port planning"]
-    BOOT["DENSE: bootstrap byte trust"] --> GUEST["Future guest runtime"]
-    PLAN -. "future physical gate" .-> QMP["DENSE: QMP/process identity"]
-    QMP -.-> REG["DENSE: daemon/registry ownership"]
-    REG -.-> AG["DENSE: authenticated guest control"]
-    TEST["DENSE: physical proof"] --> CT
-    TEST --> PLAN
-    TEST --> BOOT
-```
-
-| Component | Density | Why |
-| --- | --- | --- |
-| `cli.py`, `__main__.py` | THIN | dispatch and presentation only |
-| `config.py` | MEDIUM | strict types, path safety, component policy |
-| `contracts/vm.py` | DENSE | legal state, identity, resource invariants |
-| `host/ports.py` | DENSE | bind-check vs. durable lease distinction |
-| `host/qemu.py` | DENSE | argv safety, networking, path delimiters |
-| `doctor.py` | MEDIUM | observation classification; fail honesty |
-| `guest/bootstrap.py` | DENSE | TOCTOU, archive safety, atomicity, recovery |
-| `topology.py` | MEDIUM | runtime promotion authority |
-| `test/vm_lab/test_vm_lab.py` | DENSE | semantic proof and false-success resistance |
-| candidate/lineage trees | VARIABLE | evidence only until separately archaeologized |
+- **Kerminal → control client → daemon:** operator intent uses protocol
+  envelopes; the internal client exists, but Kerminal integration is not yet
+  promoted and Kerminal never constructs QEMU.
+- **Daemon → QEMU/QMP:** P4 must add non-daemonized process ownership and
+  observed QMP identity/status to the existing daemon. P3 does not launch
+  `qemu-system-*`.
+- **Daemon → guest agent:** authenticated request/response ties VM ID, boot ID,
+  generation, protocol version, bounds, and operation-specific schemas to real
+  guest evidence; generic bags are never logged wholesale.
+- **Artifact worker → ingress manifest → guest:** only approved measured output
+  crosses the persistent AIPC boundary.
+- **VM-Go ↔ compatibility contract:** behavioral parity is measured without
+  merger or import-by-convenience.
 
 ---
 
 ## Dependency graph
 
 ```mermaid
-flowchart TD
-    ENTRY["python -m somnus_vm / vm-lab"] --> CLI["cli.py"]
-    CLI --> CONFIG["config.py"]
-    CLI --> DOCTOR["doctor.py"]
-    CLI --> TOPO["topology.py"]
-    CLI --> PLANNER["host/planner.py"]
-    PLANNER --> PORTS["host/ports.py"]
-    PLANNER --> QEMU["host/qemu.py"]
-    PLANNER --> VM["contracts/vm.py"]
-    DOCTOR --> CONFIG
-    DOCTOR --> TOPO
-    GENTRY["somnus-guest-bootstrap"] --> BOOT["guest/bootstrap.py"]
-    HARNESS["test/vm_lab"] --> ENTRY
-    HARNESS --> GENTRY
-    HARNESS --> MANIFESTS["source + snapshot manifests"]
-    CAND["components / extras / archive / quarantine"] -. "never boot-imported" .-> TOPO
+flowchart LR
+    CLI["THIN: host CLI"] --> CFG["MEDIUM: typed host config"]
+    CLI --> PLAN["DENSE: non-mutating plan"]
+    PLAN --> COMPAT["compat re-exports"]
+    COMPAT --> PROTO["DENSE: pure somnus_protocol"]
+    PROTO --> VM["lifecycle, agent, control, events"]
+    BOOT["DENSE: bootstrap byte trust"] --> GUEST["future guest runtime"]
+    DENTRY["separate daemon entrypoint"] --> REG["DENSE: SQLite authority"]
+    DENTRY --> REC["recover + reconcile before bind"]
+    REC --> UDS["authenticated Unix daemon"]
+    UDS --> SVC["DENSE: mutation service"]
+    SVC --> REG
+    SVC --> STORE["DENSE: ImageStore"]
+    STORE --> IMG["bounded QemuImgBackend"]
+    IMG --> QIMG["real qemu-img image operations"]
+    CLIENT["internal control client"] --> UDS
+    DENTRY -. "P4 gate: no launch yet" .-> QMP["future qemu-system + QMP"]
+    QMP -. "authenticated guest" .-> AGENT["in-guest control"]
+    KERMINAL["operator agency"] -. "future promotion" .-> CLIENT
+    ARTIFACT["disposable artifact"] -. "ingress manifest" .-> AGENT
+    TEST["direct + wheel proof"] --> PROTO
+    TEST --> PLAN
+    TEST --> BOOT
+    TEST --> DENTRY
+    TEST --> STORE
 ```
 
-The dotted edge is descriptive registration, not an import license.
+The public CLI and internal daemon entrypoint are separate roots. No arrow from
+candidate, cold, lineage, or quarantine code enters either live root, and no
+solid edge reaches `qemu-system-*`.
 
 ---
 
-## Baked-in decisions
+## Complexity distribution
 
-1. The v0.1 host package is non-mutating.
-2. The live runtime has no third-party dependencies.
-3. QEMU argv is shell-free, non-daemonized, and uses JSON `-blockdev`.
-4. Default network forwarding binds to `127.0.0.1`.
-5. Plan-time ports are availability probes, not leases.
-6. Guest bootstrap is local-payload-only and rejects arbitrary post-install work.
-7. Snapshot and rollback APIs remain withheld after lineage showed backing-chain
-   corruption risk.
-8. VM-Go, Kerminal, guest cognition, and Artifact processors retain separate
-   ownership.
-9. Quarantine is one-way until a replacement passes its current gate.
-10. Source preservation and snapshot manifests are immutable claims; state lives
-    elsewhere.
-
----
-
-## Anti-concepts
-
-| Looks like it belongs | Actually does not | Why |
+| Component | Density | Why |
 | --- | --- | --- |
-| Container orchestration | Persistent AIPC lifecycle | AIPC identity and disk history outlive processes |
-| QEMU command builder as supervisor | Planner only | no durable registry, adoption, or recovery owner |
-| Libvirt-style `192.168.122.x` address | Current user-network forwarding | v0.1 exposes loopback host forwards |
-| Open port as guest readiness | Authenticated guest protocol | wrong process can accept a connection |
-| PID existence as VM identity | QMP + process identity correlation | PID reuse and daemonization invalidate it |
-| Candidate module import | Promotion | provenance location is not runtime proof |
-| Sleep-based benchmark | VM performance evidence | measures scheduler delay, not VM work |
-| Passing doctor on missing metal | User friendliness | converts a truthful gate into false success |
-| Warm-pool optimization | Current policy | one-active-AIPC first; isolation correctness remains |
-| Cloud bootstrap convenience | v0.1 bootstrap | external acquisition is outside current trust boundary |
+| `somnus_protocol/_validation.py` | DENSE | exact types, bounds, canonical JSON, immutable decoding |
+| `somnus_protocol/vm.py` | DENSE | lifecycle/evidence/migration/secret-free generation invariants |
+| `somnus_protocol/version.py` | DENSE | pairwise transcript integrity versus local decode support |
+| `somnus_protocol/agent.py` | MEDIUM | endpoint/result bounds and serialization |
+| `somnus_protocol/control.py`, `events.py` | DENSE | correlation, machine-data bounds, closed public errors, diagnostic references |
+| `config.py` | DENSE | strict ownership roots, profile isolation, configuration policy |
+| `host/ports.py` | DENSE | bind-check versus durable lease distinction |
+| `host/qemu.py` | DENSE | argv safety, networking, path delimiters |
+| `daemon.py`, `transport.py`, `client.py` | DENSE | Unix ownership, `SO_PEERCRED`, bounded framing, deadlines, canonical correlation |
+| `daemon_runtime.py` | THIN | internal composition, recovery-before-bind ordering, signal shutdown |
+| `host/registry.py` | DENSE | schema migration, single writer, CAS, idempotency, checkpoints, durable physical identities |
+| `host/service.py` | DENSE | operation semantics, serialization, exact recovery prefixes, registry/storage commit ordering |
+| `host/images.py`, `host/storage.py` | DENSE | manifest trust, no-replace publication, qcow2/backing truth, sparse allocation, physical ownership |
+| `host/exec_guard.py` | THIN but critical | Linux parent-death signal immediately before native `exec` |
+| `guest/bootstrap.py` | DENSE | TOCTOU, archive safety, atomicity, recovery |
+| `cli.py`, `__main__.py` | THIN | dispatch/presentation only |
+| `topology.py` | MEDIUM | promotion authority and disposition checking |
+| `test/vm_lab/test_protocol_*.py` | DENSE | exact boundary, negative, migration, and import proof |
+| `test/vm_lab/test_*_p2.py`, `test_*_p3.py` | DENSE | real process, SQLite, filesystem, qemu-img, kill-point, tamper, and daemon composition proof |
+| candidate/lineage trees | VARIABLE | preserved evidence only |
 
 ---
 
-## Temporal structure
+## Anti-concepts and false-success taxonomy
 
-| Surface | Mutability | Change rule |
+| Wrong model | Required model | Why it fails |
 | --- | --- | --- |
-| `src/somnus_vm/` | active | one gated implementation unit at a time |
-| `test/vm_lab/` | active | grows with every promoted claim |
-| `PLAN.md` | living authority | gates may strengthen; weakening requires decision record |
-| `TASK.md` | volatile | exactly one current unit |
-| `STATE.md` | volatile | exact current phase/unit/command/blocker/evidence only |
-| `docs/plan-index.json` | living machine authority | every phase, dependency, gate, owner, status, and evidence path must validate |
-| `CONTEXT.md` | living index | update when current architecture/state changes |
-| `MEMORY.md` | append/curate | durable decisions and corrected history only |
-| `PROVENANCE.md` | chronological | append factual decisions and sessions |
-| `ARCHITECTURE_MAP.md` | living navigation | repair anchors after structural/line movement |
-| `snapshots/v0.1/` | immutable | superseded by a new snapshot, never rewritten as task state |
-| source archive mapping | immutable | every original remains represented once |
+| Schema transition equals VM action | Evidence-keyed protocol plus physical observation | schemas do not operate QEMU |
+| `VMRecord` carries agent token | host-owned secret reference outside protocol | serialized records/logs leak credentials |
+| Old `running` upgrades to QMP-running | explicit rejection/reconciliation | legacy state lacked QMP identity/status proof |
+| Port probe reserves a machine endpoint | temporary availability only | socket is released and no lease exists |
+| Compatibility re-export is protocol authority | canonical `somnus_protocol` owner | duplicate schema evolution diverges |
+| Negotiation fingerprint authenticates peer | mismatch detection plus future authenticated transport/replay store | a digest proves content consistency, not sender authority or freshness |
+| Pairwise overlap widens current decoder | transcript selection plus independent local range/schema enforcement | negotiated claims cannot add code or migrations the package lacks |
+| Bounded machine bag is log-safe | operation-specific projection/redaction before logging | values may remain sensitive despite structural bounds |
+| Caller supplies public error detail | closed registry plus private diagnostic reference | arbitrary prose and paths leak secrets and destabilize automation |
+| `diag:` reference authorizes access | opaque identifier resolved by a future private store | possession of an ID is not authorization |
+| Candidate shell owns host lifecycle | Kerminal control client through daemon | splits mutation authority |
+| ACE mediates model memory | separate OS-agency pillar | conflates distinct runtime functions |
+| Cache is model-near cognition | parallel result/cache infrastructure | collapses the multi-system architecture |
+| Container Artifact becomes AIPC | disposable worker with recorded ingress | persistent identity belongs to qcow2/guest |
+| Public lifecycle from plan output | named physical gate with observed truth | intent and argv are not external machine truth |
+| Valid qcow2 at the expected path is owned | registry identity plus exact manifest/marker/checkpoint evidence | a foreign file can be valid and correctly named |
+| Matching base bytes are the registered base | device/inode and all registered physical facts must match | same bytes at a new inode are a replacement, not continuity |
+| Checkpoint name permits recreation | exact ordered checkpoint payload plus re-observed candidate identity | replaying intent can overwrite or adopt foreign state |
+| Storage exception becomes terminal `failed` | every post-intent storage exception remains `recovery_required` until reconciled | bytes may already be published when SQLite/finalization fails |
+| `st_size` proves a sparse 100 GiB overlay | logical size, `st_blocks * 512`, and qemu `actual-size` must agree below the bound | qcow2 logical length is not physical allocation |
+| Native image child may outlive daemon | parent-death signal armed immediately before `exec` | orphan writers can mutate storage after authority exits |
+| P3 overlay evidence is already write-era evidence | P4 must version/update mutable allocation and chain observations with VM writes | P3 proves only initial materialization and stopped startup reconciliation |
 
 ---
 
-## Failure attractors
+## Verification hierarchy
 
-1. **Intent becomes state:** a method or log names a lifecycle action, so callers
-   treat it as executed.
-2. **Identity collapses to PID:** recovery signals or adopts a foreign process.
-3. **Port availability becomes ownership:** parallel clients receive the same
-   endpoint.
-4. **Candidate gravity:** sophisticated preserved modules attract imports before
-   their boundaries are repaired.
-5. **Snapshot familiarity:** file-copy intuitions overwrite qcow2 chain rules.
-6. **Doctor cosmetics:** expected environmental failures are softened until the
-   report lies.
-7. **Bootstrap convenience:** network/post-install functionality weakens the
-   one-read payload contract.
-8. **Evidence inflation:** a clean plan, schema, or smoke subcheck is described
-   as real lifecycle completion.
+1. **Protocol direct proof:** strict roundtrip, export identity, negotiation,
+   current-version enforcement, closed-error, negative, replay, and migration
+   tests under `test/vm_lab/test_protocol_*.py` establish the type boundary
+   only.
+2. **Public/guest consumed proof:** `PYTHONPATH=src python
+   test/vm_lab/smoke.py` establishes the read-only CLI/planner/config/bootstrap
+   and installed-wheel boundary.
+3. **P2 internal ownership proof:** real Unix processes, `SO_PEERCRED`, SQLite
+   writer locking/migration/CAS, multi-process races, and SIGKILL recovery prove
+   the separately invoked daemon/registry boundary without VM launch.
+4. **P3 physical storage proof:** the six core storage checks, eight
+   adversarial checks, and one real-daemon composition check prove 7 base plus
+   7 overlay kill checkpoints, one pinned base, and two independent sparse
+   100-GiB overlays through real `/usr/bin/qemu-img` 8.2.2. The complete
+   26/26 aggregate is sealed at `test/vm_lab/runs/20260805T211740Z/`; its source
+   fixture SHA256 is
+   `b3064efb500d71d6ccbe619b1716062b803e285116e040627b430aaee14cced6`.
+5. **Repository integrity:** `python scripts/verify_repository.py` validates
+   linked packet, topology fingerprint, anchors, JSON, source preservation, and
+   declared state.
+6. **P4+ physical VM proof:** later named `GATE-*` work must establish
+   non-daemonized QEMU ownership, QMP identity/status, mutable overlay evidence,
+   authenticated guest readiness, shutdown/reconcile, snapshot/rollback, and
+   measured guest-visible writes.
 
-Project-specific detection and recovery: [`FAILURE_GRAMMAR.md`](FAILURE_GRAMMAR.md).
-
----
-
-## Config file spine
-
-| File/surface | Present | Encodes |
-| --- | --- | --- |
-| `pyproject.toml` | yes | Python 3.12, two entrypoints, stdlib-only runtime |
-| `configs/*.toml` | yes | host paths, QEMU profile, port intervals, component policy |
-| `source-manifest.json` | yes | exact 33-file source preservation |
-| `snapshots/v0.1/manifest.json` | yes | promoted capabilities, proof path, system hash |
-| `AGENTS.md` | yes | repository operator kernel and navigation |
-| `PLAN.md` | yes | full destination and physical gates |
-| `STATE.md` | yes | current execution phase and exact unit |
-| `docs/plan-index.json` | yes | strict phase DAG, owners, statuses, gates, and evidence |
-| `.sovereign/` | yes | warm-state hint, topology fingerprint, golden paths |
-| `.github/` | yes | event-driven integrity enforcement |
-| `.codex/skills/vm-lab/` | yes | conditional repo skill router |
-| `.codegraph/` | local/ignored | regenerable structural code index |
-| `requirements*.txt` | yes | candidate/cold dependency evidence, not live boot deps |
-
----
-
-## Topology verification
-
-```bash
-python scripts/verify_repository.py
-PYTHONPATH=src python -m somnus_vm topology
-PYTHONPATH=src python test/vm_lab/smoke.py
-```
-
-The first checks the living packet and fingerprint, the second checks the
-machine-readable disposition registry, and the third proves current runtime
-behavior. None substitutes for the others.
+Do not promote a lower level as proof of a higher one.

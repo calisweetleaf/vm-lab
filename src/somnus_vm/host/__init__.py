@@ -1,4 +1,9 @@
-"""Promoted non-mutating host planning components."""
+"""Live internal daemon, registry, and storage owners behind a narrow facade.
+
+Modules in this package participate in the daemon's single-owner runtime, but
+the package deliberately re-exports only the non-mutating planning API.
+Storage and lifecycle mutation remain explicit internal imports.
+"""
 
 from __future__ import annotations
 

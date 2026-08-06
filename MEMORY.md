@@ -27,8 +27,9 @@ fabricated guest addresses, unsafe snapshot rollback, no-op scaling, fake
 orchestration, and synthetic benchmark evidence.
 
 **Future consequence:** v0.1 exposes only doctor, topology, plan, and guest
-bootstrap. Lifecycle returns phase-by-phase through physical gates, never by
-restoring old commands.
+bootstrap. The internal P2/P3 daemon may mutate registry and verified storage,
+but lifecycle returns phase-by-phase through physical gates, never by restoring
+old commands or broadening the public CLI ahead of proof.
 
 ### 2026-08-04 — Keep four authority planes separate
 
@@ -44,9 +45,54 @@ contracts. Direct cross-imports or repository consolidation are not shortcuts.
 Port allocation in v0.1 is a bind-check that releases sockets. QEMU construction
 returns argv only. `ports_reserved` is false.
 
-**Future consequence:** durable leases and launch state belong to one future
+**Future consequence:** durable leases and launch state belong to the one
 daemon transaction. Do not make CLI planner invocations compete as lifecycle
 owners.
+
+### 2026-08-05 — Canonical protocols live outside the backend package
+
+`src/somnus_protocol` is the dependency-free authority for version, control,
+event, agent, settings, and VM lifecycle schemas.
+`src/somnus_vm/contracts` is compatibility identity only.
+
+**Future consequence:** host, guest, Kerminal, and alternate backends consume
+the shared protocol. They do not fork the schemas or import backend ownership
+to obtain them.
+
+### 2026-08-05 — One daemon owns all durable mutation
+
+The current `somnus-vm-daemon` is the only process allowed to write the SQLite
+registry, resource leases, operation journal, immutable base slot, or
+per-generation overlay. The Unix membrane uses bounded framing and kernel
+`SO_PEERCRED`; planner/CLI calls remain non-mutating.
+
+**Future consequence:** P4 QEMU process/QMP state must extend this daemon and
+journal. It may not add a second supervisor, direct CLI writer, or operator
+shell ownership path.
+
+### 2026-08-05 — Image authority is measured, physical, and inode-bound
+
+P3 promoted clean `images.py` and `storage.py` owners instead of the candidate
+image manager. An image manifest separates asserted origin/vendor metadata from
+host-measured bytes, format, virtual size, backing chain, allocation, and tool
+identity. Published bases and overlays bind canonical path plus device/inode;
+same bytes at a new inode are not the same owned object.
+
+**Future consequence:** foreign finals are never adopted without exact
+journal/manifest/marker authority. Recovery reuses only the checkpoint-bound
+candidate, and a missing or replaced candidate blocks rather than recreates
+past a physical checkpoint. Arbitrary import, clone, export, detach, and
+deletion remain distinct future operations.
+
+### 2026-08-05 — Split immutable disk ownership from runtime observations
+
+P3 can bind exact allocation and `qemu-img` actual size only because no QEMU
+writer exists. P4 must preserve immutable owner facts while moving allocation,
+dirty/corrupt state, observation time, boot/lifecycle identity, and quiesce
+state into a mutable observed-truth surface.
+
+**Future consequence:** do not weaken P3 inode/path/base ownership checks merely
+because a running guest changes legitimate qcow2 allocation.
 
 ### 2026-08-04 — Guest bootstrap uses one-read verified bytes
 
@@ -84,6 +130,8 @@ architecture into every Markdown file.
 | Sleep benchmark | measures scheduler delay, not VM work | timed real QEMU/QMP/guest operation |
 | Import file processors during boot | no current caller; eager dependency cost | external disposable service plus ingress contract |
 | Treat architecture reports as proof | prior report validated absent files | current tree plus executable evidence only |
+| Promote candidate image manager | broad copies, SSH install, mutable JSON, exception returns, unsafe delete | no direct promotion; salvage only named behavior behind clean owners |
+| Adopt a byte-identical replacement image | hash equality does not preserve physical ownership | explicit future transfer operation with registry migration |
 
 ---
 
@@ -102,6 +150,14 @@ architecture into every Markdown file.
 9. Snapshot metadata is immutable evidence, not a convenient state file.
 10. Navigation that points to stale source is an operational failure, not a
     documentation cosmetic.
+11. A foreign final without its exact manifest or owner marker is not
+    recoverable state and must never be adopted.
+12. A checkpoint name is not sufficient recovery authority; its exact payload,
+    physical device/inode, and expected path must still agree.
+13. Failure after physical publication is `recovery_required`, not an excuse
+    to report ordinary terminal failure or delete the published object.
+14. Parent death must physically terminate a native child; process-group intent
+    alone is not containment evidence.
 
 ---
 
@@ -122,9 +178,8 @@ enhancements.
 
 These remain unresolved and must not be silently collapsed:
 
-- exact daemon IPC framing and service lifecycle;
-- SQLite journal mode after filesystem measurement;
-- first canonical disposable cloud image and checksum;
+- exact P4 QMP framing, process identity, and launch-checkpoint recovery;
+- immutable disk-owner versus mutable runtime-observation schema migration;
 - per-VM secret provisioning mechanism;
 - exact Kerminal and VM-Go compatibility contracts;
 - guest agent transport/authentication construction;

@@ -1,16 +1,16 @@
 {
   "schema_version": 1,
-  "session_id": "p0-execution-baseline-20260805",
+  "session_id": "p3-storage-closure-p4-activation-20260805",
   "workspace": ".",
-  "last_agent": "Codex",
-  "last_timestamp": "2026-08-05T00:57:10-05:00",
-  "last_action": "Closed and fully verified GATE-P0; promoted TASK-P1-001 to READY",
-  "active_task": null,
+  "last_agent": "Codex + Luna + Terra + Carver",
+  "last_timestamp": "2026-08-05T16:30:20-05:00",
+  "last_action": "Closed GATE-P3, reconciled P4-active repository state, and sealed post-transition proof 20260805T212927Z",
+  "active_task": "TASK-P4-001",
   "open_tasks": [
-    "Compose the canonical somnus_protocol boundary in TASK-P1-001"
+    "Compose QEMU process identity and bounded QMP ownership without crossing Daeron deployment authority"
   ],
-  "topology_hash": "sha256:28884764e6759144de2a2c62a38eb89cf0afc3497de0cfbb4899915522d6c4a4",
+  "topology_hash": "sha256:6bebc32cb5341c2b318e210093675843d62e0ba9a71f5bd92c913323b833b05e",
   "warm_start_valid": true,
   "notes": "This file is a last-close hint. Verify the topology fingerprint and current working tree before trusting warm state.",
-  "ready_task": "TASK-P1-001"
+  "ready_task": null
 }

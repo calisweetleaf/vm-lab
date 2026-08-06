@@ -1,0 +1,22 @@
+COMMAND
+/home/daeron/.local/bin/python test/vm_lab/smoke.py
+
+STDOUT
+[PASS] protocol_vm_primitives: round-tripped strict VM definition/ports, rejected coercion and unknown fields, preserved aliases, and proved cold import isolation
+[PASS] protocol_agent: round-tripped and adversarially validated 7 agent protocol surfaces
+[FAIL] contract_roundtrip: TypeError: VMRecord.__init__() got an unexpected keyword argument 'agent_token'
+[PASS] configuration: loaded resolved configs and rejected truthy booleans plus ambiguous QMP paths
+[PASS] port_allocation: bind-checked 24 distinct ephemeral ports across eight threads
+[PASS] qemu_plan: encoded a comma-bearing disk path with JSON blockdev and a valid QMP path
+[PASS] bootstrap_extraction: extracted bounded data and rejected traversal, links, duplicates, and size drift
+[PASS] bootstrap_idempotency: installed/recovered bounded payloads and rejected stale, ambiguous, mislabeled, or colliding intent
+[PASS] doctor_truthfulness: reported 9 source-aware checks with healthy=False
+[PASS] cli_entrypoint: ran checkout-independent topology, redacted planning, and clean port-exhaustion errors
+[PASS] wheel_runtime: installed a wheel with checkout-free CLI and clean malformed-payload exit behavior
+[PASS] plan_contract: validated 405 unique execution IDs across phases P0-P18
+[PASS] plan_index: validated live plan index with 1733 direct observations
+[PASS] plan_index_rejections: rejected 8 hostile plan fixtures: duplicate-json-key, missing-dependency, dependency-cycle, missing-gate, multiple-current-phases, completed-without-evidence, owner-path-escape, duplicate-plan-id
+[PASS] source_manifest: verified 33/33 preserved source files against their byte hashes
+
+STDERR
+<none captured by harness>

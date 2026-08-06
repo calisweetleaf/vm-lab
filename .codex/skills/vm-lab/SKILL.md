@@ -27,14 +27,18 @@ repository has one living topology rather than duplicated skill copies.
 
 ## Non-negotiable kernel
 
-1. Only `src/somnus_vm/` is live at v0.1.
-2. Host planning is non-mutating.
-3. External observed truth owns every VM success claim.
-4. Host, guest, Kerminal/operator, Artifact worker, and VM-Go boundaries remain
+1. `src/somnus_protocol/` is the live pure shared authority and
+   `src/somnus_vm/` is the live implementation package.
+2. The public CLI and host planner are permanently non-mutating; internal
+   mutation belongs only to the separately invoked daemon.
+3. P3 proves verified base/overlay storage through real `qemu-img`; it does not
+   prove QEMU/QMP, guest readiness, or public VM lifecycle.
+4. External observed truth owns every VM success claim.
+5. Host, guest, Kerminal/operator, Artifact worker, and VM-Go boundaries remain
    separate.
-5. Candidate, cold, lineage, and quarantine locations are evidence—not
+6. Candidate, cold, lineage, and quarantine locations are evidence—not
    capability.
-6. Exactly one active unit lives in [`TASK.md`](../../../TASK.md).
+7. Exactly one active unit lives in [`TASK.md`](../../../TASK.md).
 
 ## Verification
 
@@ -43,5 +47,6 @@ python scripts/verify_repository.py
 PYTHONPATH=src python test/vm_lab/smoke.py
 ```
 
-Use the first for the living repository contract and the second for promoted
-v0.1 runtime behavior. A future physical gate requires its own direct evidence.
+Use the first for the living repository contract and the second for the current
+P1-P3 consumed runtime boundary. Every later physical gate requires its own
+direct evidence.

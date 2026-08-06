@@ -5,7 +5,7 @@ Every original file remains represented once in the reorganized tree. Placement 
 | Original surface | New surface | Disposition | Reason |
 | --- | --- | --- | --- |
 | `vm_supervisor.py` | `archive/lineage/host/vm_supervisor.py` | lineage | preserves architecture source; unsafe PID/network/snapshot semantics cannot boot |
-| `vm_image_manager.py` | `components/host/vm_image_manager.py` | candidate | real image logic needs a known-image integration pass |
+| `vm_image_manager.py` | `components/host/vm_image_manager.py` | candidate | P3 replaced its narrow useful boundary with live `host/images.py` and `host/storage.py`; broad copy, SSH-install, mutable-metadata, and deletion behavior remains unpromoted |
 | `vm_bootstrap.py` | `archive/lineage/guest/vm_bootstrap.py` | lineage | replaced by hash-required safe bootstrap |
 | `ai_advanced_shell.py` | `components/operator/ai_advanced_shell.py` | candidate | monolith preserved; host/guest and Docker boundaries still need repair |
 | `ai_action_orchestrator.py` | `components/operator/ai_action_orchestrator.py` | candidate | client/result shapes salvageable; embedded supervisor is not |
@@ -25,3 +25,16 @@ Every original file remains represented once in the reorganized tree. Placement 
 | `benchmark_vm_system.py` | `quarantine/tests/` | quarantine | simulated sleeps are not benchmarks |
 | old 9/9 report | `quarantine/evidence/` | quarantine | validates absent files from another tree |
 | architecture documents | `docs/lineage/` | lineage | design intent retained without treating claims as current proof |
+
+## P3 image replacement settlement
+
+[`GATE-P3`](../test/vm_lab/runs/20260805T211740Z/result.json) promotes the clean
+replacement in `src/somnus_vm/host/images.py` and
+`src/somnus_vm/host/storage.py`: a strict manifest, an argv-only observed
+`qemu-img` backend, immutable base import, owned sparse overlay publication, and
+checkpointed recovery under the one daemon.
+
+`components/host/vm_image_manager.py` remains candidate donor evidence. P3
+neither imports it nor promotes its whole-image copies, embedded boot/install
+workflow, mutable best-effort JSON, broad exception returns, or unverified
+deletion.

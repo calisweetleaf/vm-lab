@@ -1,0 +1,24 @@
+{
+  "agent_token": "legacy-fixture-token-never-use",
+  "created_at": "2026-08-05T12:00:00+00:00",
+  "definition": {
+    "disk_path": "/tmp/legacy-v0.qcow2",
+    "enable_kvm": false,
+    "memory_mib": 4096,
+    "name": "legacy-v0",
+    "vcpus": 2
+  },
+  "last_error": null,
+  "log_path": "/tmp/somnus-vm/legacy-v0/qemu.log",
+  "pid": null,
+  "pid_file": "/tmp/somnus-vm/legacy-v0/qemu.pid",
+  "ports": {
+    "agent": 9901,
+    "ssh": 2222,
+    "vnc": 5900
+  },
+  "qmp_socket": "/tmp/somnus-vm/legacy-v0.qmp",
+  "state": "declared",
+  "updated_at": "2026-08-05T12:00:00+00:00",
+  "vm_id": "11111111-1111-4111-8111-111111111111"
+}

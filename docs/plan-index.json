@@ -22,7 +22,7 @@
     "P18",
     "P17"
   ],
-  "current_phase": "P1",
+  "current_phase": "P4",
   "baseline_evidence": [
     "source-manifest.json",
     "snapshots/v0.1/manifest.json",
@@ -109,307 +109,572 @@
     {
       "id": "P1",
       "title": "canonical protocols, states, and settings",
-      "status": "ready",
+      "status": "complete",
       "depends_on": [
         "P0"
       ],
       "gate_id": "GATE-P1",
       "owner_files": [
+        "src/somnus_protocol/__init__.py",
+        "src/somnus_protocol/_validation.py",
+        "src/somnus_protocol/version.py",
+        "src/somnus_protocol/control.py",
+        "src/somnus_protocol/events.py",
+        "src/somnus_protocol/agent.py",
+        "src/somnus_protocol/vm.py",
         "src/somnus_vm/contracts/vm.py",
         "src/somnus_vm/contracts/agent.py",
-        "src/somnus_vm/config.py"
+        "src/somnus_vm/config.py",
+        "src/somnus_vm/host/planner.py",
+        "test/vm_lab/test_protocol_vm_primitives.py",
+        "test/vm_lab/test_protocol_agent.py",
+        "test/vm_lab/test_protocol_control.py",
+        "test/vm_lab/test_protocol_settings.py",
+        "test/vm_lab/test_protocol_host_consumption.py",
+        "test/vm_lab/test_protocol_vm_lifecycle.py"
       ],
       "items": [
         {
           "id": "P1-001",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_protocol/__init__.py",
+            "src/somnus_vm/contracts/vm.py",
+            "test/vm_lab/runs/20260805T182129Z/result.json"
+          ]
         },
         {
           "id": "P1-002",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_protocol/version.py",
+            "test/vm_lab/test_protocol_control.py",
+            "test/vm_lab/runs/20260805T182129Z/result.json"
+          ]
         },
         {
           "id": "P1-003",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_protocol/control.py",
+            "src/somnus_protocol/events.py",
+            "test/vm_lab/runs/20260805T182129Z/result.json"
+          ]
         },
         {
           "id": "P1-004",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_protocol/control.py",
+            "docs/decisions/0005-errors-and-exit-codes.md",
+            "test/vm_lab/runs/20260805T182129Z/result.json"
+          ]
         },
         {
           "id": "P1-005",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_protocol/vm.py",
+            "test/vm_lab/test_protocol_vm_lifecycle.py",
+            "test/vm_lab/runs/20260805T182129Z/result.json"
+          ]
         },
         {
           "id": "P1-006",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_protocol/_validation.py",
+            "test/vm_lab/test_protocol_control.py",
+            "test/vm_lab/runs/20260805T182129Z/result.json"
+          ]
         },
         {
           "id": "P1-007",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_protocol/vm.py",
+            "test/vm_lab/test_protocol_vm_lifecycle.py",
+            "test/vm_lab/runs/20260805T182129Z/result.json"
+          ]
         },
         {
           "id": "P1-008",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_protocol/vm.py",
+            "test/vm_lab/test_protocol_vm_lifecycle.py",
+            "test/vm_lab/runs/20260805T182129Z/result.json"
+          ]
         },
         {
           "id": "P1-009",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_protocol/vm.py",
+            "test/vm_lab/test_protocol_vm_lifecycle.py",
+            "test/vm_lab/runs/20260805T182129Z/result.json"
+          ]
         },
         {
           "id": "P1-010",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_protocol/vm.py",
+            "test/vm_lab/test_protocol_vm_lifecycle.py",
+            "test/vm_lab/runs/20260805T182129Z/result.json"
+          ]
         },
         {
           "id": "P1-011",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_protocol/vm.py",
+            "test/vm_lab/test_protocol_vm_lifecycle.py",
+            "test/vm_lab/runs/20260805T182129Z/result.json"
+          ]
         },
         {
           "id": "P1-012",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_protocol/vm.py",
+            "test/vm_lab/test_protocol_vm_lifecycle.py",
+            "test/vm_lab/runs/20260805T182129Z/result.json"
+          ]
         },
         {
           "id": "P1-013",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/config.py",
+            "test/vm_lab/test_protocol_settings.py",
+            "test/vm_lab/runs/20260805T182129Z/result.json"
+          ]
         },
         {
           "id": "P1-014",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/config.py",
+            "test/vm_lab/test_protocol_settings.py",
+            "test/vm_lab/runs/20260805T182129Z/result.json"
+          ]
         },
         {
           "id": "P1-015",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/config.py",
+            "test/vm_lab/test_vm_lab.py",
+            "test/vm_lab/runs/20260805T182129Z/result.json"
+          ]
         },
         {
           "id": "P1-016",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/config.py",
+            "test/vm_lab/test_protocol_settings.py",
+            "test/vm_lab/runs/20260805T182129Z/result.json"
+          ]
         },
         {
           "id": "P1-017",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/config.py",
+            "test/vm_lab/test_protocol_settings.py",
+            "test/vm_lab/runs/20260805T182129Z/result.json"
+          ]
         },
         {
           "id": "P1-018",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/config.py",
+            "test/vm_lab/test_protocol_host_consumption.py",
+            "test/vm_lab/runs/20260805T182129Z/result.json"
+          ]
         },
         {
           "id": "P1-019",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/config.py",
+            "test/vm_lab/test_protocol_settings.py",
+            "test/vm_lab/runs/20260805T182129Z/result.json"
+          ]
         }
       ],
-      "evidence": []
+      "evidence": [
+        "test/vm_lab/runs/20260805T182129Z/result.json",
+        "test/vm_lab/runs/20260805T182129Z/result.md",
+        "test/vm_lab/runs/20260805T182129Z/result.log",
+        "SOTA_RUN.md"
+      ]
     },
     {
       "id": "P2",
       "title": "one daemon, transactional registry, and ownership",
-      "status": "pending",
+      "status": "complete",
       "depends_on": [
         "P1"
       ],
       "gate_id": "GATE-P2",
       "owner_files": [
-        "PLAN.md",
-        "src/somnus_vm/host/"
+        "src/somnus_vm/transport.py",
+        "src/somnus_vm/daemon.py",
+        "src/somnus_vm/client.py",
+        "src/somnus_vm/daemon_runtime.py",
+        "src/somnus_vm/host/registry.py",
+        "src/somnus_vm/host/service.py",
+        "test/vm_lab/test_daemon_transport_p2.py",
+        "test/vm_lab/test_registry_p2.py",
+        "test/vm_lab/test_registry_service_p2.py",
+        "test/vm_lab/test_daemon_registry_p2.py"
       ],
       "items": [
         {
           "id": "P2-001",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/daemon_runtime.py",
+            "pyproject.toml",
+            "test/vm_lab/test_daemon_registry_p2.py",
+            "test/vm_lab/runs/20260805T194938Z/result.json"
+          ]
         },
         {
           "id": "P2-002",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/client.py",
+            "test/vm_lab/test_registry_service_p2.py",
+            "test/vm_lab/runs/20260805T194938Z/result.json"
+          ]
         },
         {
           "id": "P2-003",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/daemon_runtime.py",
+            "src/somnus_vm/daemon.py",
+            "test/vm_lab/test_daemon_registry_p2.py",
+            "test/vm_lab/runs/20260805T194938Z/result.json"
+          ]
         },
         {
           "id": "P2-004",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/transport.py",
+            "src/somnus_vm/daemon.py",
+            "src/somnus_vm/client.py",
+            "test/vm_lab/test_daemon_transport_p2.py",
+            "test/vm_lab/runs/20260805T194938Z/result.json"
+          ]
         },
         {
           "id": "P2-005",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/daemon_runtime.py",
+            "src/somnus_vm/host/service.py",
+            "src/somnus_vm/host/registry.py",
+            "test/vm_lab/test_daemon_registry_p2.py",
+            "test/vm_lab/runs/20260805T194938Z/result.json"
+          ]
         },
         {
           "id": "P2-006",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/host/registry.py",
+            "test/vm_lab/test_registry_p2.py",
+            "test/vm_lab/runs/20260805T194938Z/result.json"
+          ]
         },
         {
           "id": "P2-007",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/host/registry.py",
+            "test/vm_lab/test_registry_p2.py",
+            "test/vm_lab/runs/20260805T194938Z/result.json"
+          ]
         },
         {
           "id": "P2-008",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/host/registry.py",
+            "src/somnus_vm/host/service.py",
+            "test/vm_lab/test_registry_service_p2.py",
+            "test/vm_lab/runs/20260805T194938Z/result.json"
+          ]
         },
         {
           "id": "P2-009",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/host/registry.py",
+            "test/vm_lab/test_registry_p2.py",
+            "test/vm_lab/runs/20260805T194938Z/result.json"
+          ]
         },
         {
           "id": "P2-010",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/host/registry.py",
+            "test/vm_lab/test_registry_p2.py",
+            "test/vm_lab/runs/20260805T194938Z/result.json"
+          ]
         },
         {
           "id": "P2-011",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/host/registry.py",
+            "test/vm_lab/test_registry_p2.py",
+            "test/vm_lab/runs/20260805T194938Z/result.json"
+          ]
         },
         {
           "id": "P2-012",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/host/registry.py",
+            "test/vm_lab/test_registry_p2.py",
+            "test/vm_lab/runs/20260805T194938Z/result.json"
+          ]
         },
         {
           "id": "P2-013",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/host/registry.py",
+            "test/vm_lab/test_registry_p2.py",
+            "test/vm_lab/runs/20260805T194938Z/result.json"
+          ]
         },
         {
           "id": "P2-014",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/host/service.py",
+            "test/vm_lab/test_registry_service_p2.py",
+            "test/vm_lab/runs/20260805T194938Z/result.json"
+          ]
         },
         {
           "id": "P2-015",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/host/service.py",
+            "src/somnus_vm/host/registry.py",
+            "test/vm_lab/test_daemon_registry_p2.py",
+            "test/vm_lab/runs/20260805T194938Z/result.json"
+          ]
         },
         {
           "id": "P2-016",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/host/service.py",
+            "src/somnus_vm/host/registry.py",
+            "test/vm_lab/test_registry_service_p2.py",
+            "test/vm_lab/runs/20260805T194938Z/result.json"
+          ]
         },
         {
           "id": "P2-017",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/host/service.py",
+            "test/vm_lab/test_registry_service_p2.py",
+            "test/vm_lab/test_daemon_registry_p2.py",
+            "test/vm_lab/runs/20260805T194938Z/result.json"
+          ]
         }
       ],
-      "evidence": []
+      "evidence": [
+        "test/vm_lab/runs/20260805T194938Z/result.json",
+        "test/vm_lab/runs/20260805T194938Z/result.md",
+        "test/vm_lab/runs/20260805T194938Z/result.log",
+        "SOTA_RUN.md"
+      ]
     },
     {
       "id": "P3",
       "title": "image provenance and persistent AIPC storage",
-      "status": "pending",
+      "status": "complete",
       "depends_on": [
         "P2"
       ],
       "gate_id": "GATE-P3",
       "owner_files": [
-        "PLAN.md",
-        "components/host/vm_image_manager.py",
-        "src/somnus_vm/host/"
+        "src/somnus_vm/daemon_runtime.py",
+        "src/somnus_vm/host/exec_guard.py",
+        "src/somnus_vm/host/images.py",
+        "src/somnus_vm/host/registry.py",
+        "src/somnus_vm/host/service.py",
+        "src/somnus_vm/host/storage.py",
+        "test/vm_lab/fixtures/images/ubuntu-minimal-noble-amd64-20260801.json",
+        "test/vm_lab/test_storage_p3.py",
+        "test/vm_lab/test_storage_p3_adversarial.py",
+        "test/vm_lab/test_daemon_storage_p3.py"
       ],
       "items": [
         {
           "id": "P3-001",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/host/images.py",
+            "test/vm_lab/fixtures/images/ubuntu-minimal-noble-amd64-20260801.json",
+            "test/vm_lab/test_storage_p3.py",
+            "test/vm_lab/runs/20260805T211740Z/result.json"
+          ]
         },
         {
           "id": "P3-002",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/host/images.py",
+            "test/vm_lab/test_storage_p3.py",
+            "test/vm_lab/runs/20260805T211740Z/result.json"
+          ]
         },
         {
           "id": "P3-003",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/host/storage.py",
+            "test/vm_lab/test_storage_p3.py",
+            "test/vm_lab/runs/20260805T211740Z/result.json"
+          ]
         },
         {
           "id": "P3-004",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/host/images.py",
+            "src/somnus_vm/host/storage.py",
+            "test/vm_lab/test_storage_p3.py",
+            "test/vm_lab/runs/20260805T211740Z/result.json"
+          ]
         },
         {
           "id": "P3-005",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "test/vm_lab/fixtures/images/ubuntu-minimal-noble-amd64-20260801.json",
+            "test/vm_lab/test_storage_p3.py",
+            "test/vm_lab/runs/20260805T211740Z/result.json"
+          ]
         },
         {
           "id": "P3-006",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/host/images.py",
+            "src/somnus_vm/host/storage.py",
+            "test/vm_lab/test_storage_p3.py",
+            "test/vm_lab/runs/20260805T211740Z/result.json"
+          ]
         },
         {
           "id": "P3-007",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/host/images.py",
+            "test/vm_lab/test_storage_p3.py",
+            "test/vm_lab/test_daemon_storage_p3.py",
+            "test/vm_lab/runs/20260805T211740Z/result.json"
+          ]
         },
         {
           "id": "P3-008",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/host/storage.py",
+            "src/somnus_vm/host/service.py",
+            "test/vm_lab/test_storage_p3.py",
+            "test/vm_lab/runs/20260805T211740Z/result.json"
+          ]
         },
         {
           "id": "P3-009",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/host/registry.py",
+            "src/somnus_vm/host/service.py",
+            "test/vm_lab/test_storage_p3.py",
+            "test/vm_lab/runs/20260805T211740Z/result.json"
+          ]
         },
         {
           "id": "P3-010",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/host/registry.py",
+            "src/somnus_vm/host/storage.py",
+            "test/vm_lab/test_storage_p3.py",
+            "test/vm_lab/test_storage_p3_adversarial.py",
+            "test/vm_lab/runs/20260805T211740Z/result.json"
+          ]
         },
         {
           "id": "P3-011",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/config.py",
+            "src/somnus_vm/host/storage.py",
+            "test/vm_lab/test_protocol_settings.py",
+            "test/vm_lab/runs/20260805T211740Z/result.json"
+          ]
         },
         {
           "id": "P3-012",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/host/storage.py",
+            "test/vm_lab/test_storage_p3.py",
+            "test/vm_lab/test_storage_p3_adversarial.py",
+            "test/vm_lab/runs/20260805T211740Z/result.json"
+          ]
         },
         {
           "id": "P3-013",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/host/storage.py",
+            "src/somnus_vm/host/service.py",
+            "test/vm_lab/runs/20260805T211740Z/result.json"
+          ]
         },
         {
           "id": "P3-014",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/host/storage.py",
+            "src/somnus_vm/host/service.py",
+            "docs/DISPOSABLE_FIXTURE_POLICY.md",
+            "test/vm_lab/runs/20260805T211740Z/result.json"
+          ]
         }
       ],
-      "evidence": []
+      "evidence": [
+        "test/vm_lab/runs/20260805T211740Z/result.json",
+        "test/vm_lab/runs/20260805T211740Z/result.md",
+        "test/vm_lab/runs/20260805T211740Z/result.log",
+        "SOTA_RUN.md"
+      ]
     },
     {
       "id": "P4",
       "title": "QEMU process truth and QMP",
-      "status": "pending",
+      "status": "active",
       "depends_on": [
         "P3"
       ],

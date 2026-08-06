@@ -27,8 +27,10 @@
 > records chronological decisions. Do not duplicate the phase plan into those
 > files.
 >
-> **Ready unit:** [`TASK-P1-001`](TASK.md) — compose the canonical protocol
-> boundary. P0 is closed; no P2 or physical work begins before `GATE-P1`.
+> **Active unit:** [`TASK-P4-001`](TASK.md) — compose QEMU process truth and a
+> bounded QMP control boundary. P3 is closed by real `qemu-img` storage
+> evidence; no VM is running and no public lifecycle command is promoted
+> before `GATE-P4`.
 
 ## 0. Document contract
 
@@ -314,93 +316,147 @@ fixture rejections, with zero failures or skips.
 
 ### Shared protocol package
 
-- [ ] `P1-001` Extract pure shared contracts from `somnus_vm.contracts` into `somnus_protocol` without host or guest imports.
-- [ ] `P1-002` Add an explicit protocol semantic version and negotiation rules.
-- [ ] `P1-003` Add request IDs, correlation IDs, VM IDs, boot IDs, generation numbers, and timestamps to all control envelopes.
-- [ ] `P1-004` Define bounded error envelopes with stable machine codes, human detail, retryability, and remediation.
-- [ ] `P1-005` Define canonical resource specifications, storage references, process identity, image provenance, snapshots, and runtime observations.
-- [ ] `P1-006` Define a single serialization format and reject unknown fields where they could hide operator intent.
-- [ ] `P1-007` Add schema-version migrations and fail-loud behavior for future or corrupt records.
+- [x] `P1-001` Extract pure shared contracts from `somnus_vm.contracts` into `somnus_protocol` without host or guest imports.
+- [x] `P1-002` Add an explicit protocol semantic version and negotiation rules.
+- [x] `P1-003` Add request IDs, correlation IDs, VM IDs, boot IDs, generation numbers, and timestamps to all control envelopes.
+- [x] `P1-004` Define bounded error envelopes with closed machine codes, registry-derived human detail/retry/remediation, and diagnostic references.
+- [x] `P1-005` Define canonical resource specifications, storage references, process identity, image provenance, snapshots, and runtime observations.
+- [x] `P1-006` Define canonical JSON-compatible mappings and deterministic wire JSON, rejecting unknown fields where they could hide operator intent.
+- [x] `P1-007` Add schema-version migrations and fail-loud behavior for future or corrupt records.
 
 ### Lifecycle state machine
 
-- [ ] `P1-008` Replace the minimal state set with states that distinguish declaration, provisioning, booting, QMP-running, guest-ready, quiescing, snapshotting, rollback, stopping, stopped, error, and destroyed.
-- [ ] `P1-009` Define legal transitions in one table and attach required evidence to each transition.
-- [ ] `P1-010` Make repeated stop, reconcile, readiness, and recovery operations idempotent where appropriate.
-- [ ] `P1-011` Require an error code and causal record for every transition to `ERROR`.
-- [ ] `P1-012` Prevent `DESTROYED` records from re-entering active states; restoration creates a new generation or new VM ID.
+- [x] `P1-008` Replace the minimal state set with states that distinguish declaration, provisioning, booting, QMP-running, guest-ready, quiescing, snapshotting, rollback, stopping, stopped, error, and destroyed.
+- [x] `P1-009` Define legal transitions in one table and attach required evidence to each transition.
+- [x] `P1-010` Make repeated stop, reconcile, readiness, and recovery operations idempotent where appropriate.
+- [x] `P1-011` Require an error code and causal record for every transition to `ERROR`.
+- [x] `P1-012` Prevent `DESTROYED` records from re-entering active states; restoration creates a new generation or new VM ID.
 
 ### Settings
 
-- [ ] `P1-013` Split host, daemon, storage, network, agent, security, and policy settings into typed dataclasses.
-- [ ] `P1-014` Reject unknown TOML keys, truthy non-booleans, control characters, ambiguous QEMU delimiters, unsafe socket paths, and overlapping directories.
-- [ ] `P1-015` Make installed defaults available through `importlib.resources` or generated per-user configuration without checkout assumptions.
-- [ ] `P1-016` Define `lab-tcg`, `host-kvm`, and constrained-host profiles without embedding machine-specific paths.
-- [ ] `P1-017` Add `max_active_vms = 1` as the normal policy and separate it from the correctness of multi-VM allocation.
-- [ ] `P1-018` Keep secrets out of TOML. Configuration references secret locations or provisioning mechanisms only.
-- [ ] `P1-019` Validate that state, runtime, image, backup, and log roots are not aliases or unsafe descendants of one another.
+- [x] `P1-013` Split host, daemon, storage, network, agent, security, and policy settings into typed dataclasses.
+- [x] `P1-014` Reject unknown TOML keys, truthy non-booleans, control characters, ambiguous QEMU delimiters, unsafe socket paths, and overlapping directories.
+- [x] `P1-015` Make installed defaults available through `importlib.resources` or generated per-user configuration without checkout assumptions.
+- [x] `P1-016` Define `lab-tcg`, `host-kvm`, and constrained-host profiles without embedding machine-specific paths.
+- [x] `P1-017` Add `max_active_vms = 1` as the normal policy and separate it from the correctness of multi-VM allocation.
+- [x] `P1-018` Keep secrets out of TOML. Configuration references secret locations or provisioning mechanisms only.
+- [x] `P1-019` Validate that state, runtime, image, backup, and log roots are not aliases or unsafe descendants of one another.
 
 ### Gate P1
 
-- [ ] `GATE-P1` Contract tests round-trip every schema, reject every illegal transition and unknown field, migrate the previous supported schema, and prove zero host or guest side effects during import.
+- [x] `GATE-P1` Contract tests round-trip every schema, reject every illegal transition and unknown field, migrate the previous supported schema, and prove zero host or guest side effects during import.
+
+Gate evidence:
+[`test/vm_lab/runs/20260805T182129Z/result.json`](test/vm_lab/runs/20260805T182129Z/result.json)
+records 19 passes with zero failures or skips, including twelve canonical VM
+schemas, sixteen states, forty-eight exact lifecycle edges, strict control,
+agent, and settings contracts, real planner/CLI consumption, and an installed
+wheel outside the checkout. Independent Terra re-audits found and then
+re-probed closed boundaries for wire-size symmetry, public errors, timestamp
+normalization, transcript commitment, lifecycle replay, migration provenance,
+and process-observation freshness. No daemon, lifecycle mutation, or physical
+VM capability was promoted.
 
 ## 10. Phase P2 — one daemon, transactional registry, and ownership
 
 ### Long-lived owner
 
-- [ ] `P2-001` Add `somnus-vm-daemon` as the only mutation-capable process.
-- [ ] `P2-002` Keep CLI `doctor`, `topology`, and `plan` usable without the daemon; route lifecycle commands through a Unix-socket client.
-- [ ] `P2-003` Run the daemon as a dedicated unprivileged service account with a private runtime directory.
-- [ ] `P2-004` Authenticate local control clients through Unix-socket permissions and peer credentials.
-- [ ] `P2-005` Ensure the daemon constructs exactly one supervisor and one registry connection pool.
+- [x] `P2-001` Add `somnus-vm-daemon` as the only mutation-capable process.
+- [x] `P2-002` Keep CLI `doctor`, `topology`, and `plan` usable without the
+  daemon; provide one Unix-socket client that future lifecycle commands must
+  use only after their physical gates pass.
+- [x] `P2-003` Refuse UID 0, require an unprivileged deployment identity, and
+  create/validate the daemon runtime tree as private. Host account creation and
+  service activation remain Daeron-owned deployment actions rather than a
+  repository side effect.
+- [x] `P2-004` Authenticate local control clients through mode-`0600`
+  Unix-socket ownership and Linux `SO_PEERCRED`.
+- [x] `P2-005` Ensure the daemon constructs exactly one registry/service
+  authority. It constructs no QEMU supervisor before P4; when that owner is
+  introduced, this composition root is its only permitted constructor.
 
 ### SQLite registry
 
-- [ ] `P2-006` Implement a stdlib SQLite registry with explicit schema versioning and migrations.
-- [ ] `P2-007` Store VM records, lifecycle events, port leases, disk ownership, snapshots, process identities, and idempotency requests in normalized tables.
-- [ ] `P2-008` Use transactions spanning record load, policy check, lease allocation, storage mutation intent, and state update.
-- [ ] `P2-009` Add unique constraints for VM ID, normalized name, active disk path, QMP socket, SSH port, agent port, and display endpoint.
-- [ ] `P2-010` Use foreign keys and deletion restrictions so a disk or snapshot cannot outlive its ownership record invisibly.
-- [ ] `P2-011` Use WAL only after measuring filesystem support; otherwise select and document the safe journal mode.
-- [ ] `P2-012` Back up the registry atomically before migrations and prove rollback from a failed migration.
-- [ ] `P2-013` Detect corruption at startup and enter read-only recovery rather than overwriting the registry.
+- [x] `P2-006` Implement a stdlib SQLite registry with explicit schema versioning and migrations.
+- [x] `P2-007` Store VM records, lifecycle events, port leases, disk ownership, snapshots, process identities, and idempotency requests in normalized tables.
+- [x] `P2-008` Use transactions spanning record load, ownership checks, lease allocation, storage mutation intent, and state update.
+- [x] `P2-009` Add unique constraints for VM ID, normalized name, active disk path, QMP socket, SSH port, agent port, and display endpoint.
+- [x] `P2-010` Use foreign keys and deletion restrictions so a disk or snapshot cannot outlive its ownership record invisibly.
+- [x] `P2-011` Use WAL only after measuring filesystem support; otherwise select and persist the measured safe journal mode.
+- [x] `P2-012` Back up the registry atomically before migrations and prove rollback from a failed migration.
+- [x] `P2-013` Detect corruption at startup and enter read-only recovery rather than overwriting the registry.
 
 ### Operation journal
 
-- [ ] `P2-014` Journal intent before external mutation and completion after observed truth.
-- [ ] `P2-015` Assign each mutating operation an idempotency key and resumable checkpoint.
-- [ ] `P2-016` Record exact owned paths and leases before they are exposed to another phase.
-- [ ] `P2-017` Add deterministic recovery handlers for incomplete declare, create-disk, start, stop, snapshot, rollback, and destroy operations.
+- [x] `P2-014` Journal intent before owned-state mutation and completion after
+  registry readback; this P2 observation is metadata truth, never VM truth.
+- [x] `P2-015` Assign each mutating operation an idempotency key and resumable checkpoint.
+- [x] `P2-016` Record exact owned paths and leases before they are exposed to another phase.
+- [x] `P2-017` Add deterministic recovery for the only P2 mutations—declare,
+  lease, revision update, and cancel—and fail every future physical lifecycle
+  kind closed until its owning phase supplies an observed-truth handler.
 
 ### Gate P2
 
-- [ ] `GATE-P2` Twenty or more independent client processes race declare, lease, update, and cancel operations against one daemon without lost rows, duplicate ports, duplicate disks, stale locks, or contradictory events; killing the daemon between every journal checkpoint produces deterministic recovery.
+- [x] `GATE-P2` Twenty or more independent client processes race declare,
+  lease, update, and cancel operations against one daemon without lost rows,
+  duplicate ports, duplicate disks, stale locks, or contradictory events;
+  killing the daemon between every journal checkpoint produces deterministic
+  recovery.
+
+Gate evidence:
+[`test/vm_lab/runs/20260805T194938Z/result.json`](test/vm_lab/runs/20260805T194938Z/result.json)
+records twenty-three consumed checks with zero failures or skips. The P2
+boundary includes a real daemon entry point, kernel-authenticated `SO_PEERCRED`
+transport, one process-held writer, twenty-four simultaneous declarers and
+ninety-six total client-process mutations, exact acquisition/release
+provenance, and twelve real `SIGKILL` windows spanning four operations and all
+three durable checkpoints. No QEMU binary, qcow2 byte, process identity,
+lifecycle event, snapshot, or public lifecycle command was fabricated.
 
 ## 11. Phase P3 — image provenance and persistent AIPC storage
 
 ### Base image authority
 
-- [ ] `P3-001` Define an image manifest containing source URI or local origin, expected SHA256, byte size, format, virtual size, backing chain, architecture, OS metadata, creation tool versions, and guest payload manifest.
-- [ ] `P3-002` Require `qemu-img info --output=json --backing-chain` and reject non-qcow2, unexpected backing files, corrupt JSON, or mismatched virtual size.
-- [ ] `P3-003` Treat the base image as immutable and read-only after verification.
-- [ ] `P3-004` Verify downloaded or imported image bytes before placing them into the image store.
-- [ ] `P3-005` Use a tiny known cloud-image fixture for physical tests and keep its checksum in fixture metadata.
+- [x] `P3-001` Define an image manifest containing source URI or local origin, expected SHA256, byte size, format, virtual size, backing chain, architecture, OS metadata, creation tool versions, and guest payload manifest.
+- [x] `P3-002` Require `qemu-img info --output=json --backing-chain` and reject non-qcow2, unexpected backing files, corrupt JSON, or mismatched virtual size.
+- [x] `P3-003` Treat the base image as immutable and read-only after verification.
+- [x] `P3-004` Verify downloaded or imported image bytes before placing them into the image store.
+- [x] `P3-005` Use a tiny known cloud-image fixture for physical tests and keep its checksum in fixture metadata.
 
 ### Per-AIPC disks
 
-- [ ] `P3-006` Create each overlay in a private temporary directory and atomically publish it only after `qemu-img info` and `qemu-img check` pass.
-- [ ] `P3-007` Set the default AIPC virtual capacity to approximately 100 GB while preserving sparse allocation.
-- [ ] `P3-008` Store disks only under the exact owner root `vms/<vm_id>/storage/`.
-- [ ] `P3-009` Record an ownership token, disk generation, base-image hash, and active flag in the registry.
-- [ ] `P3-010` Reject two records pointing at the same writable image, including paths that resolve through symlinks or hard links.
-- [ ] `P3-011` Refuse a base image located inside an instance-owned directory.
-- [ ] `P3-012` Fsync files and parent directories across publish and metadata transitions.
-- [ ] `P3-013` Define disk import, clone, export, and detach as separate explicit operations.
-- [ ] `P3-014` Never delete an imported external disk unless it was explicitly transferred into managed ownership.
+- [x] `P3-006` Create each overlay in a private temporary directory and atomically publish it only after `qemu-img info` and `qemu-img check` pass.
+- [x] `P3-007` Set the default AIPC virtual capacity to approximately 100 GB while preserving sparse allocation.
+- [x] `P3-008` Store disks only under the exact owner root `vms/<vm_id>/storage/`.
+- [x] `P3-009` Record an ownership token, disk generation, base-image hash, and active flag in the registry.
+- [x] `P3-010` Reject two records pointing at the same writable image, including paths that resolve through symlinks or hard links.
+- [x] `P3-011` Refuse a base image located inside an instance-owned directory.
+- [x] `P3-012` Fsync files and parent directories across publish and metadata transitions.
+- [x] `P3-013` Define disk import, clone, export, and detach as separate explicit operations.
+- [x] `P3-014` Never delete an imported external disk unless it was explicitly transferred into managed ownership.
 
 ### Gate P3
 
-- [ ] `GATE-P3` A real `qemu-img` run creates two independent sparse overlays from one verified base, proves their backing chains and virtual sizes, rejects alias ownership, and leaves zero partial images after injected failures at every create checkpoint.
+- [x] `GATE-P3` A real `qemu-img` run creates two independent sparse overlays from one verified base, proves their backing chains and virtual sizes, rejects alias ownership, and leaves zero partial images after injected failures at every create checkpoint.
+
+Gate evidence:
+[`test/vm_lab/runs/20260805T211740Z/result.json`](test/vm_lab/runs/20260805T211740Z/result.json)
+records twenty-six consumed checks with zero failures or skips. Fifteen focused
+P3 tests used `/usr/bin/qemu-img` 8.2.2 and the checksum-bound Ubuntu 24.04
+Minimal fixture
+`b3064efb500d71d6ccbe619b1716062b803e285116e040627b430aaee14cced6`
+to import one immutable base and create two independent sparse 100 GiB
+overlays. The proof observed complete backing chains, virtual sizes, filesystem
+allocation, registry ownership, exact daemon restart reconciliation, seven
+base-import and seven overlay-create termination checkpoints, foreign-file
+non-adoption, symlink/hard-link rejection, stage replacement rejection,
+post-publication recovery, and native-child parent-death containment.
+`P3-013` and `P3-014` close by executable separation: the storage owner defines
+arbitrary import, clone, export, detach, and deletion as distinct unimplemented
+operations, while the service accepts only `storage.import_base` and
+`storage.create_overlay`; no generic delete path exists. No QEMU VM was
+launched, no image was mounted, and no public lifecycle command was promoted.
 
 ## 12. Phase P4 — QEMU process truth and QMP
 

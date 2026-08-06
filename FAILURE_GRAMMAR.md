@@ -26,6 +26,14 @@ gates, see [`PLAN.md`](PLAN.md).
 | Doctor becomes green without QEMU/image/KVM | failures were downgraded or skipped | compare check inputs with host filesystem and binaries |
 | Bootstrap reopens original payload after hash | TOCTOU restored | trace bytes from source read to installed destination |
 | Clean JSON with no warnings after complex mutation | broad exception or intended state normalized to success | inspect raw stderr/events and unexpected exception handling |
+| Valid qcow2 at the configured final path is adopted | pathname/format mistaken for daemon ownership | compare manifest or marker, operation lineage, registry identity, device/inode, mode, allocation, and chain |
+| Recovery recreates a missing staged image | checkpoint label mistaken for replay authority | compare the entire ordered checkpoint prefix and exact candidate identity |
+| Base hash matches but startup blocks | bytes are equal but the registered inode was replaced | compare every stored physical fact, especially device/inode |
+| Storage operation is terminal `failed` after publication | metadata failure hid possibly committed bytes | inspect checkpoint prefix and physical final paths; require `recovery_required` |
+| “Sparse” overlay proof reports only virtual/file length | logical size mistaken for allocation | compare `st_blocks * 512` with qemu `actual-size` and the configured sparse bound |
+| Daemon dies while `qemu-img` continues writing | native child lacks parent-death containment | kill parent while observing child PID and wait status |
+| Startup socket appears despite storage tamper | listener bound before recovery/reconciliation | trace composition order and independently re-observe every registered/unmaterialized path |
+| Rejecting a staged symlink changes an unrelated file mode | chmod happened before no-follow identity validation | compare victim mode/bytes before and after rejection |
 | Architecture link lands on another symbol | map anchor drift | run `python scripts/verify_repository.py`, then inspect symbol name |
 
 These smells require investigation. They are not themselves proof.
@@ -119,6 +127,126 @@ skip, warning, or synthetic number.
 **Recovery:** fail honestly with remediation. Continue independent non-physical
 checks, but leave the capability unpromoted.
 
+## P3 storage authority and recovery failures
+
+### FS-VM-09: Valid image pathname masquerades as owned storage
+
+**Mechanism:** an existing qcow2 at the configured base or overlay path is
+accepted because its format, bytes, or backing chain look valid. The required
+manifest/marker, operation lineage, registry row, and physical identity are
+missing or disagree.
+
+**Damage:** a foreign administrator-created or attacker-replaced image becomes
+daemon-owned. Later recovery or deletion can preserve the wrong AIPC or destroy
+someone else's file.
+
+**Recovery:** never adopt from pathname or qcow2 validity. A base requires the
+exact manifest and registry-bound filesystem/qemu evidence; an overlay requires
+the exact operation-owned marker, registry disk row, base identity, and chain.
+`test/vm_lab/test_storage_p3_adversarial.py:194` and `:230` prove both foreign
+final-path cases are rejected.
+
+### FS-VM-10: Checkpoint name masquerades as replay authority
+
+**Mechanism:** recovery sees a familiar checkpoint label and re-executes the
+stage, recreates a missing candidate, or adopts whatever now occupies the
+candidate/final path. The ordinal or canonical checkpoint payload is ignored.
+
+**Damage:** a retry ceases to be recovery of the original mutation and becomes
+a new unrecorded mutation under the old operation ID.
+
+**Recovery:** accept only the exact ordered prefix of ordinal, name, canonical
+payload bytes, and payload SHA256. Once a checkpoint claims candidate or
+published identity, missing/replaced state is `recovery_required`; never
+recreate it. The missing-base and replaced-overlay cases are exercised at
+`test/vm_lab/test_storage_p3_adversarial.py:350` and `:408`.
+
+### FS-VM-11: Content equality masquerades as registered base continuity
+
+**Mechanism:** startup or overlay creation hashes the base and accepts matching
+bytes even though the registered file was unlinked and replaced with a new
+inode.
+
+**Damage:** content-addressing silently overrides physical ownership. A file
+outside the original operation lineage can back a persistent AIPC.
+
+**Recovery:** require all registered base facts: canonical path, manifest,
+device/inode, file and allocated size, mode, qemu-img version, and chain digest.
+Re-observe before and after overlay creation. The same-bytes/new-inode case at
+`test/vm_lab/test_storage_p3_adversarial.py:503` must block both direct use and
+daemon startup reconciliation.
+
+### FS-VM-12: Terminal failure hides a possibly published mutation
+
+**Mechanism:** base or overlay bytes publish successfully, then a SQLite
+constraint/CAS/finalization step fails and generic error handling marks the
+operation terminal `failed`.
+
+**Damage:** the next startup skips the operation as settled while owned-looking
+physical state has no complete durable authority.
+
+**Recovery:** after storage intent persistence, every exception keeps the
+operation `recovery_required` unless completion is durably observed. Startup
+must replay/reconcile it before binding the listener. A real SQLite trigger
+forces this conflict at
+`test/vm_lab/test_storage_p3_adversarial.py:566`.
+
+### FS-VM-13: Logical size masquerades as sparse allocation proof
+
+**Mechanism:** a 100-GiB qcow2 is called sparse because its virtual size is 100
+GiB or because `st_size` is small, without measuring allocated filesystem
+blocks or qemu's allocation view.
+
+**Damage:** accidental preallocation can consume the host disk while every
+logical-format assertion still passes.
+
+**Recovery:** during initial materialization, require logical size,
+`st_blocks * 512`, and qemu `actual-size` to remain below the sparse bound and
+within the observer tolerance. This is creation-time proof, not a promise that a
+legitimately written overlay never grows.
+
+### FS-VM-14: Native image child outlives the mutation owner
+
+**Mechanism:** `qemu-img` is launched as an ordinary subprocess. SIGKILL or
+abrupt daemon death removes the registry owner while the child keeps modifying
+staged or published storage.
+
+**Damage:** recovery races an orphan writer and can observe a moving file as
+durable truth.
+
+**Recovery:** keep argv-only execution and arm Linux
+`PR_SET_PDEATHSIG(SIGKILL)` immediately before native `exec`, including the
+parent-PID race check. `test/vm_lab/test_storage_p3_adversarial.py:624` observes
+the live child exit by `SIGKILL` when its guard parent dies.
+
+### FS-VM-15: Safety action mutates an untrusted symlink target
+
+**Mechanism:** cleanup or preparation calls `chmod`, `fsync`, copy, or unlink
+through a staged pathname before proving with no-follow metadata that the path
+is the expected regular file.
+
+**Damage:** merely rejecting hostile storage input changes an unrelated victim.
+
+**Recovery:** inspect with `lstat`/`O_NOFOLLOW`, compare identity, and reject
+before any mutating operation. The staged-symlink check at
+`test/vm_lab/test_storage_p3_adversarial.py:281` proves the victim's mode and
+bytes remain unchanged.
+
+### FS-VM-16: Listener availability masquerades as reconciled storage
+
+**Mechanism:** the Unix socket is bound before incomplete journal recovery and
+physical storage reconciliation, or startup checks only registered files while
+ignoring physical claimants for unmaterialized disks.
+
+**Damage:** clients receive a healthy-looking control endpoint while the
+registry and filesystem disagree.
+
+**Recovery:** compose registry/service first; recover every noncompleted storage
+operation (including incorrectly terminalized legacy state); reject
+unregistered bases and physical files/markers for unmaterialized disks;
+re-observe every registered base/overlay; only then bind. The real composition
+boundary is exercised at `test/vm_lab/test_daemon_storage_p3.py:194`.
+
 ---
 
 ## Security and destructive-action signatures
@@ -130,6 +258,15 @@ checks, but leave the capability unpromoted.
 - a base image lives beneath an instance-owned directory;
 - deletion discovers targets by glob rather than recorded ownership;
 - external imported disks are treated as daemon-owned by default;
+- a valid image is adopted without its exact manifest/marker, operation, and
+  registry-bound device/inode evidence;
+- recovery recreates a missing checkpointed candidate or accepts a replacement;
+- staged paths are chmodded, fsynced, copied, or unlinked before no-follow
+  identity/type validation;
+- a storage operation becomes terminal `failed` after intent persistence;
+- sparse allocation is inferred from virtual size or `st_size` alone;
+- native image writers can survive abrupt daemon death;
+- the Unix listener binds before journal recovery and physical reconciliation;
 - fsync/atomic publish boundaries are absent.
 
 ### Guest control
@@ -196,9 +333,13 @@ hide an environment block in test scaffolding.
 3. Run the smallest check that separates the leading mechanisms.
 4. Classify the failure using the list above.
 5. Repair the direct owner, not the symptom surface.
-6. Re-run the failed boundary and its immediate regression boundary.
-7. If a public claim was false, retract it from CLI/docs/state before continuing.
-8. Record a durable lesson in [`MEMORY.md`](MEMORY.md) only when it will change
+6. For P3 storage, read the durable operation/checkpoint prefix before touching
+   any stage or final path. If a persisted checkpoint's exact physical claimant
+   is missing or replaced, preserve the discrepancy and require recovery; do
+   not recreate, adopt, chmod, or delete it.
+7. Re-run the failed boundary and its immediate regression boundary.
+8. If a public claim was false, retract it from CLI/docs/state before continuing.
+9. Record a durable lesson in [`MEMORY.md`](MEMORY.md) only when it will change
    future execution; record chronological facts in
    [`PROVENANCE.md`](PROVENANCE.md).
 
@@ -220,6 +361,12 @@ complete.
 | doctor passes without required metal | High | `doctor.py` |
 | bootstrap source reopened | Critical | `guest/bootstrap.py` |
 | plan described as reservation | High | CLI/docs/planner |
+| foreign qcow2 adopted by path/format | Critical | `host/storage.py`, `host/service.py` |
+| checkpointed image recreated/replaced | Critical | `host/service.py`, `host/storage.py` |
+| same bytes accepted at new inode | Critical | `host/storage.py` |
+| post-publication operation marked failed | Critical | `host/service.py`, `host/registry.py` |
+| sparse proof lacks allocation observers | High | `host/images.py`, `host/storage.py` |
+| native image child survives daemon | Critical | `host/images.py`, `host/exec_guard.py` |
+| listener binds before reconciliation | Critical | `daemon_runtime.py`, `host/service.py` |
 | synthetic performance evidence | High | test harness |
 | stale navigation anchor | Medium | `ARCHITECTURE_MAP.md` |
-

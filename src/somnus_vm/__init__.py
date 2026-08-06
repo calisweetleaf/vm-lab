@@ -8,7 +8,45 @@ Purpose: Exposes the contract-first host runtime without importing lineage or
 
 from __future__ import annotations
 
-from .contracts.vm import VMDefinition, VMPorts, VMRecord, VMState
+from .contracts.vm import (
+    ImageProvenance,
+    ObservationSource,
+    ProcessIdentity,
+    RuntimeObservation,
+    SnapshotReference,
+    StorageReference,
+    TransitionCause,
+    TransitionEvidence,
+    TransitionRecord,
+    VMContractError,
+    VMDefinition,
+    VMMigrationError,
+    VMPorts,
+    VMRecord,
+    VMResourceSpec,
+    VMState,
+    VMTransitionError,
+    migrate_vm_record,
+)
 
-__all__ = ["VMDefinition", "VMPorts", "VMRecord", "VMState"]
+__all__ = [
+    "ImageProvenance",
+    "ObservationSource",
+    "ProcessIdentity",
+    "RuntimeObservation",
+    "SnapshotReference",
+    "StorageReference",
+    "TransitionCause",
+    "TransitionEvidence",
+    "TransitionRecord",
+    "VMContractError",
+    "VMDefinition",
+    "VMMigrationError",
+    "VMPorts",
+    "VMRecord",
+    "VMResourceSpec",
+    "VMState",
+    "VMTransitionError",
+    "migrate_vm_record",
+]
 __version__ = "0.1.0"

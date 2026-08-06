@@ -97,8 +97,9 @@ def main(argv: Sequence[str] | None = None) -> int:
                 vcpus=args.vcpus,
                 enable_kvm=False if args.tcg else None,
             )
+            # The canonical protocol record is secret-free by construction.
+            # Planning never generates, stores, or redacts an agent credential.
             record_payload = record.to_dict()
-            record_payload.pop("agent_token", None)
             payload = {"record": record_payload, "argv": list(plan.argv), "ports_reserved": False}
             if args.json:
                 print(json.dumps(payload, indent=2, sort_keys=True))

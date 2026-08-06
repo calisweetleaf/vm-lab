@@ -1,0 +1,133 @@
+{
+  "checks": [
+    {
+      "detail": "round-tripped strict VM definition/ports, rejected coercion and unknown fields, preserved aliases, and proved cold import isolation",
+      "duration_ms": 50.829,
+      "name": "protocol_vm_primitives",
+      "status": "pass"
+    },
+    {
+      "detail": "round-tripped and adversarially validated 8 agent protocol surfaces",
+      "duration_ms": 56.319,
+      "name": "protocol_agent",
+      "status": "pass"
+    },
+    {
+      "detail": "round-tripped and adversarially bounded 17 version/control/event protocol cases with a cold-import proof",
+      "duration_ms": 56.153,
+      "name": "protocol_control",
+      "status": "pass"
+    },
+    {
+      "detail": "validated 9 strict typed-settings cases across legacy, split, generated-profile, root-ownership, and secret-reference paths",
+      "duration_ms": 42.5,
+      "name": "protocol_settings",
+      "status": "pass"
+    },
+    {
+      "detail": "proved canonical VMRecord identity through compatibility imports and the real non-mutating planner/CLI; public plan output is versioned, secret-free, and leaves no host state or port reservation",
+      "duration_ms": 79.737,
+      "name": "protocol_host_consumption",
+      "status": "pass"
+    },
+    {
+      "detail": "round-tripped every canonical VM schema; exhaustively enforced all lifecycle edges and physical evidence; proved immutable records, deterministic secret-free v0 migration, terminal destruction/new generation, idempotent operations, and cold import isolation",
+      "duration_ms": 68.772,
+      "name": "protocol_vm_lifecycle",
+      "status": "pass"
+    },
+    {
+      "detail": "round-tripped one canonical secret-free record, rejected an illegal state jump, and fixed guest endpoint names",
+      "duration_ms": 0.388,
+      "name": "contract_roundtrip",
+      "status": "pass"
+    },
+    {
+      "detail": "loaded resolved configs and rejected truthy booleans plus ambiguous QMP paths",
+      "duration_ms": 5.603,
+      "name": "configuration",
+      "status": "pass"
+    },
+    {
+      "detail": "bind-checked 24 distinct ephemeral ports across eight threads",
+      "duration_ms": 3.825,
+      "name": "port_allocation",
+      "status": "pass"
+    },
+    {
+      "detail": "encoded a comma-bearing disk path with JSON blockdev and a valid QMP path",
+      "duration_ms": 2.695,
+      "name": "qemu_plan",
+      "status": "pass"
+    },
+    {
+      "detail": "extracted bounded data and rejected traversal, links, duplicates, and size drift",
+      "duration_ms": 2.049,
+      "name": "bootstrap_extraction",
+      "status": "pass"
+    },
+    {
+      "detail": "installed/recovered bounded payloads and rejected stale, ambiguous, mislabeled, or colliding intent",
+      "duration_ms": 3.186,
+      "name": "bootstrap_idempotency",
+      "status": "pass"
+    },
+    {
+      "detail": "reported 9 source-aware checks with healthy=False",
+      "duration_ms": 2.53,
+      "name": "doctor_truthfulness",
+      "status": "pass"
+    },
+    {
+      "detail": "ran checkout-independent topology, redacted planning, and clean port-exhaustion errors",
+      "duration_ms": 240.409,
+      "name": "cli_entrypoint",
+      "status": "pass"
+    },
+    {
+      "detail": "installed a wheel with checkout-free CLI and clean malformed-payload exit behavior",
+      "duration_ms": 1571.169,
+      "name": "wheel_runtime",
+      "status": "pass"
+    },
+    {
+      "detail": "validated 405 unique execution IDs across phases P0-P18",
+      "duration_ms": 3.381,
+      "name": "plan_contract",
+      "status": "pass"
+    },
+    {
+      "detail": "validated live plan index with 1733 direct observations",
+      "duration_ms": 61.349,
+      "name": "plan_index",
+      "status": "pass"
+    },
+    {
+      "detail": "rejected 8 hostile plan fixtures: duplicate-json-key, missing-dependency, dependency-cycle, missing-gate, multiple-current-phases, completed-without-evidence, owner-path-escape, duplicate-plan-id",
+      "duration_ms": 563.722,
+      "name": "plan_index_rejections",
+      "status": "pass"
+    },
+    {
+      "detail": "verified 33/33 preserved source files against their byte hashes",
+      "duration_ms": 1.985,
+      "name": "source_manifest",
+      "status": "pass"
+    }
+  ],
+  "counts": {
+    "failed": 0,
+    "passed": 19,
+    "skipped": 0
+  },
+  "domain": "vm_lab",
+  "ended_at": "2026-08-05T17:12:15.714504+00:00",
+  "fail_count": 0,
+  "mode": "COMPOSE",
+  "pass_count": 19,
+  "scope": "SCOPE.md",
+  "skip_count": 0,
+  "started_at": "2026-08-05T17:12:12.897754+00:00",
+  "status": "pass",
+  "target_module": "src/somnus_protocol/ with explicit compatibility exports"
+}

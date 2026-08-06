@@ -8,9 +8,17 @@ IO: Uses temporary files, bind probes, subprocess CLI, and run artifacts.
 
 Modified: 2026-08-05
 Modified by: daeron and Codex
-Justification: Phase P0 adds a machine plan index whose real verifier CLI and
-    hostile fixture behavior must be exercised by the consumed smoke boundary.
-Provenance: PROVENANCE.md, Phase P0 execution-baseline session.
+Justification: Phase P0 plan enforcement remains covered; Phase P1 composes
+    canonical VM lifecycle, control/event, guest-agent result, and typed
+    settings contracts that must pass through the same consumed smoke and
+    installed-wheel boundaries. Phase P2 adds the authenticated single-owner
+    daemon, normalized registry, operation service, and process-kill recovery
+    gate without promoting QEMU lifecycle mutation. Phase P3 adds verified
+    image ownership, and Phase P4 adds pure command planning plus focused
+    process, guarded-log, composed-QMP-identity, append-only runtime-storage,
+    and launch-journal proof without public lifecycle.
+Provenance: PROVENANCE.md, Phase P0 baseline, TASK-P1-001 composition, and
+    TASK-P2-001 through TASK-P4-001 gates.
 Files: test/vm_lab/test_vm_lab.py
 """
 
@@ -36,6 +44,7 @@ import stat
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SOURCE_ROOT = PROJECT_ROOT / "src"
+EXPECTED_CHECK_COUNT = 37
 if str(SOURCE_ROOT) not in sys.path:
     sys.path.insert(0, str(SOURCE_ROOT))
 
@@ -52,6 +61,12 @@ from somnus_vm.guest.bootstrap import (
 )
 from somnus_vm.host.planner import VMPlanner
 from somnus_vm.host.ports import PortAllocator
+from test_protocol_agent import run_agent_protocol_checks
+from test_protocol_control import run_control_protocol_checks
+from test_protocol_host_consumption import run_host_protocol_consumption_checks
+from test_protocol_settings import run_settings_protocol_checks
+from test_protocol_vm_lifecycle import run_vm_lifecycle_checks
+from test_protocol_vm_primitives import run_vm_primitive_checks
 
 
 @dataclass(frozen=True, slots=True)
@@ -87,7 +102,7 @@ def _fixture_config(directory: Path) -> Path:
                 "[host]",
                 'state_dir = "state"',
                 f'runtime_dir = "/tmp/svm-{directory.name[-8:]}"',
-                'base_image = "base.qcow2"',
+                'base_image = "images/base.qcow2"',
                 'qemu_binary = "qemu-system-x86_64"',
                 'qemu_img_binary = "qemu-img"',
                 "enable_kvm = false",
@@ -130,16 +145,15 @@ def check_contract_roundtrip() -> str:
     record = VMRecord(
         definition=VMDefinition(name="contract-one", disk_path="/tmp/contract-one.qcow2"),
         ports=VMPorts(ssh=2222, agent=9901, vnc=5900),
-        agent_token="fixture-token",
     )
-    record.transition(VMState.STARTING)
-    record.transition(VMState.RUNNING)
-    record.transition(VMState.READY)
     assert VMRecord.from_dict(record.to_dict()).to_dict() == record.to_dict()
-    _expect(VMTransitionError, lambda: record.transition(VMState.DECLARED))
+    _expect(VMTransitionError, lambda: record.transition(VMState.PROVISIONED))
     assert AgentEndpoint.EXECUTE.value == "/execute"
     assert AgentEndpoint.FILE_WRITE.value == "/files/write"
-    return "round-tripped one record, rejected an illegal transition, and fixed endpoint names"
+    return (
+        "round-tripped one canonical secret-free record, rejected an illegal "
+        "state jump, and fixed guest endpoint names"
+    )
 
 
 def check_configuration() -> str:
@@ -182,7 +196,7 @@ def check_port_allocation() -> str:
 
 
 def check_qemu_plan() -> str:
-    """Prove non-mutating argv, bounded QMP path, and exact disk encoding."""
+    """Prove the non-mutating P4 headless/no-network command contract."""
 
     with tempfile.TemporaryDirectory(dir=PROJECT_ROOT.resolve()) as temporary:
         root = Path(temporary).resolve()
@@ -190,14 +204,52 @@ def check_qemu_plan() -> str:
         disk = (root / "disk,with,commas.qcow2").resolve()
         record, plan = VMPlanner(config).preview("plan-one", disk, enable_kvm=None)
         argv = list(plan.argv)
-        assert "-daemonize" not in argv and "-blockdev" in argv
+        assert "-daemonize" not in argv
+        for flag in ("-no-user-config", "-nodefaults", "-no-reboot"):
+            assert argv.count(flag) == 1
+        assert argv[argv.index("-sandbox") + 1] == (
+            "on,obsolete=deny,elevateprivileges=deny,"
+            "spawn=deny,resourcecontrol=deny"
+        )
+        assert argv[argv.index("-display") + 1] == "none"
+        assert argv[argv.index("-nic") + 1] == "none"
+        assert argv[argv.index("-monitor") + 1] == "none"
+        for forbidden in ("-net", "-netdev", "-spice", "-vnc"):
+            assert forbidden not in argv
+        assert not any("hostfwd" in value or "virtio-net" in value for value in argv)
+
+        assert "-blockdev" in argv
         blockdev = json.loads(argv[argv.index("-blockdev") + 1])
         assert blockdev["file"]["filename"] == str(disk)
-        assert "-qmp" in argv and "-pidfile" in argv
-        assert any("127.0.0.1" in value and "hostfwd" in value for value in argv)
-        assert len(os.fsencode(plan.qmp_socket)) <= 107
+        assert str(disk) not in argv
+        assert argv[argv.index("-qmp") + 1] == (
+            f"unix:{plan.qmp_socket},server=on,wait=off"
+        )
+        assert argv[argv.index("-pidfile") + 1] == str(plan.pid_file)
+        assert argv[argv.index("-serial") + 1] == "stdio"
+        assert "-D" not in argv
+        assert str(plan.serial_log_path) not in argv
+        assert str(plan.qemu_log_path) not in argv
+        assert plan.log_path == plan.serial_log_path
+        assert plan.serial_log_path != plan.qemu_log_path
+        command_bytes = json.dumps(
+            argv,
+            ensure_ascii=True,
+            separators=(",", ":"),
+        ).encode("ascii")
+        assert plan.command_sha256 == hashlib.sha256(command_bytes).hexdigest()
+        assert record.qmp_socket == str(plan.qmp_socket)
+        assert record.pid_file == str(plan.pid_file)
+        assert record.log_path == str(plan.serial_log_path)
+        assert len(os.fsencode(plan.qmp_socket)) <= 103
         assert not record.definition.enable_kvm
-    return "encoded a comma-bearing disk path with JSON blockdev and a valid QMP path"
+        assert str(config.host.security.guest_agent_token_file) not in json.dumps(argv)
+        assert not config.host.runtime_dir.exists()
+        assert not config.host.storage.log_root.exists()
+    return (
+        "encoded a comma-bearing disk with JSON blockdev, closed sandbox, "
+        "headless/no-network argv, separate logs, and exact command identity"
+    )
 
 
 def check_bootstrap_extraction() -> str:
@@ -367,7 +419,46 @@ def check_cli_entrypoint() -> str:
         cwd = Path(temporary)
         topology = _module_command(["topology", "--json"], SOURCE_ROOT, cwd)
         assert topology.returncode == 0, topology.stderr
-        assert any(item["name"] == "host_planning" for item in json.loads(topology.stdout))
+        topology_rows = json.loads(topology.stdout)
+        topology_by_name = {item["name"]: item for item in topology_rows}
+        live_names = {
+            name
+            for name, item in topology_by_name.items()
+            if item["disposition"] == "live"
+        }
+        assert live_names == {
+            "daemon_runtime",
+            "guest_bootstrap",
+            "host_planner",
+            "host_planning_api",
+            "host_port_allocator",
+            "host_qemu_plan_builder",
+            "native_exec_guard",
+            "persistent_image_storage",
+            "protocol_compatibility",
+            "protocol_contracts",
+            "qemu_img_provenance",
+            "registry_mutation_service",
+            "sqlite_registry",
+            "unix_control_client",
+            "unix_control_daemon",
+            "unix_transport",
+        }
+        assert all(
+            topology_by_name[name]["boot_import"] is False
+            for name in {
+                "daemon_runtime",
+                "native_exec_guard",
+                "persistent_image_storage",
+                "qemu_img_provenance",
+                "registry_mutation_service",
+                "sqlite_registry",
+                "unix_control_daemon",
+                "unix_control_client",
+                "unix_transport",
+            }
+        )
+        assert topology_by_name["image_manager"]["disposition"] == "candidate"
         plan = _module_command(
             ["--config", str(PROJECT_ROOT / "configs/lab.toml"), "plan", "--name", "cli-one", "--disk", "/tmp/cli.qcow2", "--json"],
             SOURCE_ROOT,
@@ -433,6 +524,18 @@ def check_wheel_runtime() -> str:
         assert built.returncode == 0, built.stderr
         wheels = list(wheel_dir.glob("*.whl"))
         assert len(wheels) == 1
+        with zipfile.ZipFile(wheels[0]) as wheel:
+            entry_points = [
+                name
+                for name in wheel.namelist()
+                if name.endswith(".dist-info/entry_points.txt")
+            ]
+            assert len(entry_points) == 1
+            entry_point_text = wheel.read(entry_points[0]).decode("utf-8")
+            assert (
+                "somnus-vm-daemon = somnus_vm.daemon_runtime:main"
+                in entry_point_text
+            )
         installed = subprocess.run(
             [sys.executable, "-m", "pip", "install", "--no-index", "--no-deps", "--target", str(site_dir), str(wheels[0])],
             env=pip_environment,
@@ -442,6 +545,73 @@ def check_wheel_runtime() -> str:
             timeout=120,
         )
         assert installed.returncode == 0, installed.stderr
+        protocol_import = subprocess.run(
+            [
+                sys.executable,
+                "-I",
+                "-c",
+                (
+                    "import sys;"
+                    f"sys.path.insert(0,{str(site_dir)!r});"
+                    "from somnus_protocol.vm import VMDefinition as canonical;"
+                    "from somnus_protocol.vm import VMRecord as canonical_record;"
+                    "from somnus_vm import VMDefinition as root;"
+                    "from somnus_vm import VMRecord as root_record;"
+                    "from somnus_vm.contracts.vm import VMDefinition as compat;"
+                    "from somnus_vm.contracts.vm import VMRecord as compat_record;"
+                    "from somnus_protocol.agent import AgentHealth as agent;"
+                    "from somnus_vm.contracts.agent import AgentHealth as agent_compat;"
+                    "from somnus_protocol import DiagnosticReference as diagnostic_root;"
+                    "from somnus_protocol import ProtocolNegotiation as negotiation_root;"
+                    "from somnus_protocol import ProtocolValidationError as validation_root;"
+                    "from somnus_protocol import RuntimeObservation as observation_root;"
+                    "from somnus_protocol._validation import ProtocolValidationError as validation;"
+                    "from somnus_protocol.control import DiagnosticReference as diagnostic;"
+                    "from somnus_protocol.version import ProtocolNegotiation as negotiation;"
+                    "from somnus_protocol.vm import RuntimeObservation as observation;"
+                    "assert canonical is root is compat;"
+                    "assert canonical_record is root_record is compat_record;"
+                    "assert agent is agent_compat;"
+                    "assert diagnostic is diagnostic_root;"
+                    "assert negotiation is negotiation_root;"
+                    "assert validation is validation_root;"
+                    "assert observation is observation_root"
+                ),
+            ],
+            cwd=root,
+            env=pip_environment,
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        assert protocol_import.returncode == 0, protocol_import.stderr
+        daemon_entrypoint = site_dir / "bin" / "somnus-vm-daemon"
+        assert daemon_entrypoint.is_file()
+        daemon_environment = os.environ.copy()
+        daemon_environment["PYTHONPATH"] = str(site_dir)
+        daemon_help = subprocess.run(
+            [str(daemon_entrypoint), "--help"],
+            cwd=root,
+            env=daemon_environment,
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        assert daemon_help.returncode == 0, daemon_help.stderr
+        assert (
+            "single local VM registry and image mutation owner"
+            in daemon_help.stdout
+        )
+        for lifecycle_command in (
+            " start ",
+            " stop ",
+            " destroy ",
+            " snapshot ",
+            " rollback ",
+        ):
+            assert lifecycle_command not in daemon_help.stdout
         topology = _module_command(["topology", "--json"], site_dir, root)
         assert topology.returncode == 0, topology.stderr
         doctor = _module_command(["doctor", "--json"], site_dir, root)
@@ -488,7 +658,158 @@ def check_wheel_runtime() -> str:
         assert "Traceback" not in invalid_run.stderr
         shutil.rmtree(root)
     assert not root.exists(), f"Wheel workspace leaked: {root}"
-    return "installed a wheel with checkout-free CLI and clean malformed-payload exit behavior"
+    return (
+        "installed a wheel with canonical/compatibility protocol identity, "
+        "checkout-free CLI, the registry/storage daemon entry point, and clean "
+        "malformed-payload exit behavior"
+    )
+
+
+def _run_physical_test_module(filename: str, detail: str) -> str:
+    """Run one focused proof module as a consumed smoke boundary."""
+
+    environment = os.environ.copy()
+    environment["PYTHONPATH"] = str(SOURCE_ROOT)
+    completed = subprocess.run(
+        [sys.executable, str(PROJECT_ROOT / "test" / "vm_lab" / filename)],
+        cwd=PROJECT_ROOT,
+        env=environment,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=180,
+    )
+    assert completed.returncode == 0, (
+        f"{filename} failed\nstdout:\n{completed.stdout}\n"
+        f"stderr:\n{completed.stderr}"
+    )
+    return detail
+
+
+def check_daemon_transport_p2() -> str:
+    return _run_physical_test_module(
+        "test_daemon_transport_p2.py",
+        "proved bounded SO_PEERCRED Unix transport and exclusive daemon ownership",
+    )
+
+
+def check_registry_p2() -> str:
+    return _run_physical_test_module(
+        "test_registry_p2.py",
+        "proved normalized SQLite ownership, integrity, migration, and writer locking",
+    )
+
+
+def check_registry_service_p2() -> str:
+    return _run_physical_test_module(
+        "test_registry_service_p2.py",
+        "proved strict metadata operations and abrupt writer-exit recovery",
+    )
+
+
+def check_daemon_registry_p2() -> str:
+    return _run_physical_test_module(
+        "test_daemon_registry_p2.py",
+        "proved 24-process operation races and real SIGKILL recovery at every checkpoint",
+    )
+
+
+def check_storage_p3() -> str:
+    return _run_physical_test_module(
+        "test_storage_p3.py",
+        "proved pinned-base import, two real 100 GiB overlays, and exact checkpoint recovery",
+    )
+
+
+def check_storage_p3_adversarial() -> str:
+    return _run_physical_test_module(
+        "test_storage_p3_adversarial.py",
+        "proved foreign-image non-adoption, checkpoint tamper rejection, and parent-death containment",
+    )
+
+
+def check_daemon_storage_p3() -> str:
+    return _run_physical_test_module(
+        "test_daemon_storage_p3.py",
+        "proved real daemon/client storage composition and startup physical reconciliation",
+    )
+
+
+def check_qemu_planning_p4() -> str:
+    return _run_physical_test_module(
+        "test_qemu_planning_p4.py",
+        "proved hardened QEMU planning through builder, planner, and public CLI",
+    )
+
+
+def check_qemu_process_p4() -> str:
+    return _run_physical_test_module(
+        "test_qemu_process_p4.py",
+        "proved exact Linux process identity, pidfiles, and signal revalidation",
+    )
+
+
+def check_qemu_exec_guard_p4() -> str:
+    return _run_physical_test_module(
+        "test_qemu_exec_guard_p4.py",
+        "proved journal-before-exec handoff, parent-death containment, and exact adoption",
+    )
+
+
+def check_qemu_logs_p4() -> str:
+    return _run_physical_test_module(
+        "test_qemu_logs_p4.py",
+        "proved private redaction, bounded rotation, dual-pipe drain, and durable guardian release",
+    )
+
+
+def check_qmp_p4() -> str:
+    return _run_physical_test_module(
+        "test_qmp_p4.py",
+        "proved bounded QMP framing, negotiation, response/event separation, and identity",
+    )
+
+
+def check_qmp_identity_p4() -> str:
+    return _run_physical_test_module(
+        "test_qmp_identity_p4.py",
+        "proved strict stabilized QMP identity composition and foreign-process rejection",
+    )
+
+
+def check_registry_p4() -> str:
+    return _run_physical_test_module(
+        "test_registry_p4.py",
+        "proved registry-owned P4 process and disk-runtime observation authority",
+    )
+
+
+def check_storage_runtime_p4() -> str:
+    return _run_physical_test_module(
+        "test_storage_runtime_p4.py",
+        "proved real qcow2 growth remains append-only runtime evidence without rewriting P3 ownership",
+    )
+
+
+def check_qemu_runtime_journal_p4() -> str:
+    return _run_physical_test_module(
+        "test_qemu_runtime_journal_p4.py",
+        "proved the internal runtime.launch journal, exact identity binding, and crash-safe adoption",
+    )
+
+
+def check_qemu_runtime_p4() -> str:
+    return _run_physical_test_module(
+        "test_qemu_runtime_p4.py",
+        "proved pidfd liveness, bounded pidfile readiness, and no-replace runtime-path retirement",
+    )
+
+
+def check_daemon_runtime_p4() -> str:
+    return _run_physical_test_module(
+        "test_daemon_runtime_p4.py",
+        "proved internal runtime reconciliation precedes serving while public lifecycle remains absent",
+    )
 
 
 def check_source_manifest() -> str:
@@ -691,7 +1012,13 @@ def check_plan_index_rejections() -> str:
     def multiple_current_phases(root: Path) -> None:
         path = root / "docs" / "plan-index.json"
         payload = json.loads(path.read_text(encoding="utf-8"))
-        payload["phases"][2]["status"] = "ready"
+        current_phase = payload["current_phase"]
+        competing = next(
+            phase
+            for phase in payload["phases"]
+            if phase["id"] != current_phase and phase["status"] == "pending"
+        )
+        competing["status"] = "ready"
         path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
     scenarios.append(("multiple-current-phases", multiple_current_phases))
@@ -776,7 +1103,6 @@ def _write_artifacts(results: list[CheckResult], started_at: datetime, ended_at:
 
     timestamp = ended_at.strftime("%Y%m%dT%H%M%SZ")
     run_dir = PROJECT_ROOT / "test" / "vm_lab" / "runs" / timestamp
-    run_dir.mkdir(parents=True, exist_ok=True)
     scope_text = (PROJECT_ROOT / "SCOPE.md").read_text(encoding="utf-8")
     mode_match = re.search(r"^- mode: (WRAP|EDIT|COMPOSE)$", scope_text, re.MULTILINE)
     target_match = re.search(r"^- target_module: (.+)$", scope_text, re.MULTILINE)
@@ -784,6 +1110,7 @@ def _write_artifacts(results: list[CheckResult], started_at: datetime, ended_at:
         raise ValueError("SCOPE.md is missing a machine-readable mode or target_module")
     mode = mode_match.group(1)
     target_module = target_match.group(1).replace("`", "")
+    run_dir.mkdir(parents=True, exist_ok=True)
     passed = sum(result.status == "pass" for result in results)
     failed = sum(result.status == "fail" for result in results)
     payload = {
@@ -804,7 +1131,7 @@ def _write_artifacts(results: list[CheckResult], started_at: datetime, ended_at:
     markdown = [
         "# VM Lab Integration Run",
         "",
-        f"I ran {len(results)} checks against the promoted non-mutating boundary and guest bootstrap.",
+        f"I ran {len(results)} checks against the public read-only CLI, internal daemon/registry/storage boundary, and guest bootstrap.",
         f"I observed {passed} passes, {failed} failures, and 0 skips.",
         "",
         "## What I exercised",
@@ -816,7 +1143,7 @@ def _write_artifacts(results: list[CheckResult], started_at: datetime, ended_at:
             "",
             "## What was surprising",
             "",
-            "I intentionally accept an unhealthy doctor report on hosts without QEMU. The test passes when the doctor names those blockers accurately. Lifecycle mutation is withheld until a real-metal QMP gate exists.",
+            "I intentionally accept an unhealthy doctor report on hosts without QEMU. The test passes when the doctor names those blockers accurately. QEMU launch, QMP identity, and public lifecycle mutation remain withheld until their physical gates pass.",
             "",
         ]
     )
@@ -857,6 +1184,12 @@ def main() -> int:
 
     started_at = datetime.now(timezone.utc)
     checks = [
+        ("protocol_vm_primitives", run_vm_primitive_checks),
+        ("protocol_agent", run_agent_protocol_checks),
+        ("protocol_control", run_control_protocol_checks),
+        ("protocol_settings", run_settings_protocol_checks),
+        ("protocol_host_consumption", run_host_protocol_consumption_checks),
+        ("protocol_vm_lifecycle", run_vm_lifecycle_checks),
         ("contract_roundtrip", check_contract_roundtrip),
         ("configuration", check_configuration),
         ("port_allocation", check_port_allocation),
@@ -866,11 +1199,30 @@ def main() -> int:
         ("doctor_truthfulness", check_doctor_truthfulness),
         ("cli_entrypoint", check_cli_entrypoint),
         ("wheel_runtime", check_wheel_runtime),
+        ("daemon_transport_p2", check_daemon_transport_p2),
+        ("registry_p2", check_registry_p2),
+        ("registry_service_p2", check_registry_service_p2),
+        ("daemon_registry_p2", check_daemon_registry_p2),
+        ("storage_p3", check_storage_p3),
+        ("storage_p3_adversarial", check_storage_p3_adversarial),
+        ("daemon_storage_p3", check_daemon_storage_p3),
+        ("qemu_planning_p4", check_qemu_planning_p4),
+        ("qemu_process_p4", check_qemu_process_p4),
+        ("qemu_exec_guard_p4", check_qemu_exec_guard_p4),
+        ("qemu_logs_p4", check_qemu_logs_p4),
+        ("qmp_p4", check_qmp_p4),
+        ("qmp_identity_p4", check_qmp_identity_p4),
+        ("registry_p4", check_registry_p4),
+        ("storage_runtime_p4", check_storage_runtime_p4),
+        ("qemu_runtime_journal_p4", check_qemu_runtime_journal_p4),
+        ("qemu_runtime_p4", check_qemu_runtime_p4),
+        ("daemon_runtime_p4", check_daemon_runtime_p4),
         ("plan_contract", check_plan_contract),
         ("plan_index", check_plan_index),
         ("plan_index_rejections", check_plan_index_rejections),
         ("source_manifest", check_source_manifest),
     ]
+    assert len(checks) == EXPECTED_CHECK_COUNT
     results = [_run_check(name, function) for name, function in checks]
     ended_at = datetime.now(timezone.utc)
     run_dir = _write_artifacts(results, started_at, ended_at)
