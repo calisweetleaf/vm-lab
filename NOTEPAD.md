@@ -62,13 +62,16 @@ These are the current working invariants supplied or corrected by Daeron:
 
 ## Current frontier
 
-- Phase: `P1`
-- Unit: `TASK-P1-001`
+- Phase: `P4`
+- Unit: `TASK-P4-001`
 - State: active
-- P1 COMPOSE scope declared on 2026-08-05.
-- P1 must define protocols capable of naming the persistent computer, the
-  resident deployment, the operational agent, and the human/model harness
-  boundary without implementing all those later phases inside P1.
+- P1 through P3 are closed at their recorded gates. Public host capability
+  remains `doctor`, `topology`, and non-mutating `plan`.
+- P4 has composed substantial process, QMP, journal, log-guardian, and mutable
+  disk-observation substrate, but it does not yet satisfy the dual-storage
+  descriptor-binding acceptance boundary below.
+- No disposable QEMU VM has been authorized or launched in the current P4
+  execution.
 
 ---
 
@@ -436,3 +439,125 @@ normalization and immutable evidence. Carver owns the canonical internal
 runtime-launch journal/checkpoint codec. Root owns their composition into the
 single daemon runtime, recovery/shutdown ordering, consumed-boundary harness,
 and the authority-gated physical QEMU matrix.
+
+### 2026-08-05 (time not retained) — P4 FD-BOUND STORAGE ACCEPTANCE
+
+**Owner:** Luna QEMU 8.2.2 read-only inspection lane, incorporating Terra's
+adversarial acceptance finding
+**Evidence:** Local `/usr/bin/qemu-system-x86_64` reports QEMU 8.2.2. Its
+installed invocation and QMP references document `-add-fd`, `/dev/fdset/N`,
+explicit file/qcow2 `-blockdev` nodes, nullable backing references,
+`query-fdsets`, `query-named-block-nodes`, `query-block`, and
+`query-blockstats`. The current runtime passes only its control and executable
+descriptors through the guard, while the current QMP identity contract treats
+canonical host path strings as block identity. No VM was launched during this
+inspection.
+
+**Acceptance correction:** A writable overlay pathname is not sufficient
+authority to let QEMU write. Before spawn, the daemon must hold and validate
+both P3 storage owners: the writable overlay descriptor and the immutable base
+descriptor. Both must survive the guard exec, and the later QMP graph must bind
+their distinct roles back to descriptor truth from the authenticated QMP peer
+process. Otherwise a rename/replacement window or an unproved embedded backing
+path can make QEMU consume bytes other than the registered storage owners.
+
+**Exact documented disk argv shape:**
+
+```text
+-add-fd
+fd=<OVERLAY_FD>,set=1,opaque=somnus-overlay-rw
+-add-fd
+fd=<BASE_FD>,set=2,opaque=somnus-base-ro
+
+-blockdev
+{"auto-read-only":false,"driver":"file","filename":"/dev/fdset/1","locking":"on","node-name":"somnus-overlay-file","read-only":false}
+-blockdev
+{"auto-read-only":false,"driver":"file","filename":"/dev/fdset/2","locking":"on","node-name":"somnus-base-file","read-only":true}
+-blockdev
+{"auto-read-only":false,"backing":null,"driver":"qcow2","file":"somnus-base-file","node-name":"somnus-base-qcow2","read-only":true}
+-blockdev
+{"auto-read-only":false,"backing":"somnus-base-qcow2","driver":"qcow2","file":"somnus-overlay-file","node-name":"somnus-disk","read-only":false}
+
+-device
+virtio-blk-pci,id=somnus-root-disk,drive=somnus-disk
+```
+
+Use deterministic compact JSON. The two fdsets must remain distinct: QEMU
+selects a descriptor within a set by requested access mode, so separate sets
+make the overlay/base role binding exact rather than selection-dependent.
+Explicit root `backing` prevents fallback to the overlay header's pathname;
+`backing:null` prevents the immutable base from silently opening another
+metadata-declared backing layer. `auto-read-only:false` forbids silent
+read-write to read-only fallback. `/dev/fdset/N` is QEMU pseudo-path syntax,
+not a host path that the identity parser may resolve or `stat()`.
+
+**Descriptor acquisition and lifetime:**
+
+1. Open the overlay with `O_RDWR | O_CLOEXEC | O_NOFOLLOW` and the base with
+   `O_RDONLY | O_CLOEXEC | O_NOFOLLOW`.
+2. Before constructing the executed argv, require two distinct descriptors
+   above standard I/O, regular-file type, exact registry-owned device/inode,
+   expected ownership/mode/link policy, no overlay/base alias, and the
+   immutable base identity/hash.
+3. Record the actual descriptor numbers in the executed argv/hash and runtime
+   journal. A pure public plan may name symbolic roles; it must not guess fixed
+   process descriptor numbers.
+4. Spawn the guard with `close_fds=True` and
+   `pass_fds=(control_fd, executable_fd, overlay_fd, base_fd)`. The guard must
+   revalidate both role bindings and leave both disk descriptors inheritable
+   across its `execve`.
+5. The daemon closes its copies on every failure branch. On success, retain
+   them through target-exec proof and preferably the first coherent
+   QMP/fdset/process-descriptor sample; QEMU's fdset and file node then own
+   their internal duplicates.
+6. Recovery may adopt only after re-proving the live QEMU fdset, graph, and
+   peer-process descriptors. Reopening the saved path cannot reconstruct lost
+   descriptor authority.
+
+**Required QMP and peer-process evidence:**
+
+- `query-fdsets`: normalize the unordered result by `fdset-id`; require exactly
+  overlay set 1 and base set 2, one descriptor per set, exact non-secret opaque
+  roles, and no unexpected member. QMP reports QEMU-internal descriptor
+  numbers, not necessarily the daemon's inherited numbers. Resolve those
+  reported descriptors only under the authenticated QMP peer PID and compare
+  `/proc/<pid>/fd/<fd>` plus `/proc/<pid>/fdinfo/<fd>` device, inode, and
+  access-mode evidence with the pre-spawn owners.
+- `query-named-block-nodes`: normalize by `node-name`; require exactly the
+  writable `somnus-overlay-file`, read-only `somnus-base-file`, read-only
+  backing-free `somnus-base-qcow2`, and writable depth-one `somnus-disk`
+  inventory with the expected drivers.
+- `query-block`: require one guest-visible block device whose
+  `qdev` is `somnus-root-disk` and whose inserted root is writable qcow2 node
+  `somnus-disk`. This proves frontend attachment, not every internal edge.
+- `query-blockstats`: use the stable recursive `parent` and `backing` members to
+  prove `somnus-disk.parent = somnus-overlay-file`,
+  `somnus-disk.backing = somnus-base-qcow2`, and
+  `somnus-base-qcow2.parent = somnus-base-file`. Named-node inventory plus
+  `query-block` alone does not prove those child node-name edges.
+
+**Remaining physical observation variable:** QMP object member order is not
+authority, and the exact optional fields and filename/image rendering emitted
+by this packaged QEMU 8.2.2 have not been observed because no VM was launched.
+The parser may normalize the documented invariant fields now, but the
+Daeron-authorized disposable `GATE-P4` run must capture the actual
+`query-fdsets`, `query-named-block-nodes`, `query-block`, and
+`query-blockstats` responses before an exact physical response fixture is
+sealed. Do not turn an anticipated response example into proof.
+
+### 2026-08-05 — guard release-time mutation adversary
+
+Terra ran the real exec guard with real overlay/base files and
+`/usr/bin/sleep`, but no QEMU. After the guard emitted `READY`, the exact
+overlay inode was overwritten in place and the immutable base was temporarily
+made writable, overwritten with same-length bytes, and restored to mode
+`0444`. The first descriptor-aware guard accepted `RELEASE` because its second
+fence rechecked device, inode, UID, mode, link count, and access mode only.
+Both mutated byte prefixes survived into the target process.
+
+This invalidates identity-only descriptor revalidation. The guard's final
+pre-`execve` authority fence must also bind the overlay's stable size,
+allocation, mtime, and ctime; retain and hash-check a pinned owner-marker
+descriptor; and hash-check the complete immutable base descriptor. The
+discriminating real-process regression is: mutate either exact inode after
+`READY`, send `RELEASE`, and prove the target never executes.

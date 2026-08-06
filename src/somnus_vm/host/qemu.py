@@ -38,11 +38,11 @@ QEMU_OVERLAY_FDSET_PATH: Final[str] = (
     f"/dev/fdset/{QEMU_OVERLAY_FDSET_ID}"
 )
 QEMU_BASE_FDSET_PATH: Final[str] = f"/dev/fdset/{QEMU_BASE_FDSET_ID}"
-QEMU_OVERLAY_FDSET_OPAQUE: Final[str] = "rdwr:somnus-overlay"
-QEMU_BASE_FDSET_OPAQUE: Final[str] = "rdonly:somnus-base"
+QEMU_OVERLAY_FDSET_OPAQUE: Final[str] = "somnus-overlay-rw"
+QEMU_BASE_FDSET_OPAQUE: Final[str] = "somnus-base-ro"
 QEMU_OVERLAY_FILE_NODE: Final[str] = "somnus-overlay-file"
 QEMU_BASE_FILE_NODE: Final[str] = "somnus-base-file"
-QEMU_BASE_FORMAT_NODE: Final[str] = "somnus-base"
+QEMU_BASE_FORMAT_NODE: Final[str] = "somnus-base-qcow2"
 _FORBIDDEN_OPTIONS: Final[frozenset[str]] = frozenset(
     {
         "-add-fd",
@@ -169,29 +169,63 @@ def _fdset_option(fd: int, *, base: bool) -> str:
     )
 
 
-def _fd_bound_blockdev() -> str:
+def _encode_blockdev(value: dict[str, object]) -> str:
     return json.dumps(
-        {
-            "backing": {
-                "driver": "qcow2",
-                "file": {
-                    "driver": "file",
-                    "filename": QEMU_BASE_FDSET_PATH,
-                    "node-name": QEMU_BASE_FILE_NODE,
-                },
-                "node-name": QEMU_BASE_FORMAT_NODE,
-            },
-            "driver": "qcow2",
-            "file": {
-                "driver": "file",
-                "filename": QEMU_OVERLAY_FDSET_PATH,
-                "node-name": QEMU_OVERLAY_FILE_NODE,
-            },
-            "node-name": _BLOCK_NODE_NAME,
-        },
+        value,
         separators=(",", ":"),
         sort_keys=True,
     )
+
+
+def _fd_bound_blockdevs() -> tuple[str, ...]:
+    """Return the explicit overlay-to-base node graph in dependency order."""
+
+    return (
+        _encode_blockdev(
+            {
+                "auto-read-only": False,
+                "driver": "file",
+                "filename": QEMU_OVERLAY_FDSET_PATH,
+                "locking": "on",
+                "node-name": QEMU_OVERLAY_FILE_NODE,
+                "read-only": False,
+            }
+        ),
+        _encode_blockdev(
+            {
+                "auto-read-only": False,
+                "driver": "file",
+                "filename": QEMU_BASE_FDSET_PATH,
+                "locking": "on",
+                "node-name": QEMU_BASE_FILE_NODE,
+                "read-only": True,
+            }
+        ),
+        _encode_blockdev(
+            {
+                "auto-read-only": False,
+                "backing": None,
+                "driver": "qcow2",
+                "file": QEMU_BASE_FILE_NODE,
+                "node-name": QEMU_BASE_FORMAT_NODE,
+                "read-only": True,
+            }
+        ),
+        _encode_blockdev(
+            {
+                "auto-read-only": False,
+                "backing": QEMU_BASE_FORMAT_NODE,
+                "driver": "qcow2",
+                "file": QEMU_OVERLAY_FILE_NODE,
+                "node-name": _BLOCK_NODE_NAME,
+                "read-only": False,
+            }
+        ),
+    )
+
+
+def _blockdev_argv(values: tuple[str, ...]) -> tuple[str, ...]:
+    return tuple(item for value in values for item in ("-blockdev", value))
 
 
 def bind_block_fds(
@@ -228,8 +262,7 @@ def bind_block_fds(
         _fdset_option(overlay, base=False),
         "-add-fd",
         _fdset_option(base, base=True),
-        "-blockdev",
-        _fd_bound_blockdev(),
+        *_blockdev_argv(_fd_bound_blockdevs()),
         *plan.argv[block_index + 2 :],
     )
     _validate_argv(tuple(bound), allow_storage_fdsets=True)
@@ -289,8 +322,7 @@ def validate_fd_bound_execution(
         _fdset_option(overlay, base=False),
         "-add-fd",
         _fdset_option(base, base=True),
-        "-blockdev",
-        _fd_bound_blockdev(),
+        *_blockdev_argv(_fd_bound_blockdevs()),
         *planned_argv[block_index + 2 :],
     )
     if executed_argv[1:] != tuple(expected)[1:]:

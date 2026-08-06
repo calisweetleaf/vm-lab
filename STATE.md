@@ -8,10 +8,12 @@
 ## Outcome lock
 
 > Deliver Phase P4 QEMU process truth and QMP; done when actual QEMU launches
-> one disposable P3-owned overlay, completes greeting/capabilities and matching
-> executable/start-time/pidfile/VM-UUID/QMP-UUID/status observations, captures
-> serial output, and daemon death at each launch checkpoint adopts or cleans
-> the child without orphaning it or signaling a foreign process.
+> one disposable P3-owned overlay with both the writable overlay and immutable
+> base descriptor-bound through the process guard into the proved QEMU block
+> graph, completes greeting/capabilities and matching executable/start-time/
+> pidfile/VM-UUID/QMP-UUID/status observations, captures serial output, and
+> daemon death at each launch checkpoint adopts or cleans the child without
+> orphaning it or signaling a foreign process.
 
 ## Live execution
 
@@ -20,12 +22,19 @@
   consumed-boundary smoke is 26 pass, 0 fail, 0 skip in
   `test/vm_lab/runs/20260805T212927Z`, while the immutable P3 gate remains
   `test/vm_lab/runs/20260805T211740Z`
-- current blocker: none for the P4 contract/process/QMP composition; the
-  physical launch gate remains authority-bound to a Daeron-approved disposable
-  overlay and must not touch a production AIPC
-- next action: split immutable disk ownership from mutable runtime
-  observations, inspect the existing QEMU planner and registry transition
-  owners, then compose the separate QMP and child-process boundaries
+- current blocker: the live launch path does not yet pin both the writable
+  overlay and its immutable base before QEMU can write, inherit both descriptors
+  through the guard, or prove their exact fdset roles and four-node block edges
+  through QMP plus the QMP peer PID's `/proc` descriptor truth; a real
+  no-QEMU adversarial run also proved that same-inode bytes can change after
+  guard `READY` unless the release fence revalidates full overlay metadata, a
+  pinned owner marker, and the immutable base digest; no disposable physical
+  QEMU launch has been authorized or performed
+- next action: bind both P3 storage owners to validated descriptors, carry
+  those descriptors plus the owner-marker proof through the guard's final
+  content/metadata fence into the explicit fdset-backed block graph, and close
+  the non-launch contract/parser tests before requesting the authority-gated
+  physical response capture
 - dirty files: inspect with `git status --short`; unrelated operator changes
   and every retained adversarial run bundle must remain untouched
 

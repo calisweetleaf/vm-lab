@@ -217,30 +217,52 @@ are accepted.
 **Outcome lock**
 
 > Deliver Phase P4 QEMU process truth and QMP; done when actual QEMU launches
-> one disposable P3-owned overlay, completes greeting/capabilities and matching
-> executable/start-time/pidfile/VM-UUID/QMP-UUID/status observations, captures
-> serial output, and daemon death at each launch checkpoint adopts or cleans
-> the child without orphaning it or signaling a foreign process.
+> one disposable P3-owned overlay with both the writable overlay and immutable
+> base descriptor-bound through the process guard into the proved QEMU block
+> graph, completes greeting/capabilities and matching executable/start-time/
+> pidfile/VM-UUID/QMP-UUID/status observations, captures serial output, and
+> daemon death at each launch checkpoint adopts or cleans the child without
+> orphaning it or signaling a foreign process.
 
 **Plan owner:** [`PLAN.md`](PLAN.md) §12, Phase P4.
 
-**First bounded unit**
+**Active bounded unit**
 
 1. split immutable disk ownership facts from mutable runtime observations
    before any QEMU write can occur;
-2. keep the existing planner non-mutating and compose a separate
-   non-daemonized child-process owner that consumes validated P3 records;
-3. implement bounded QMP framing, greeting/capability negotiation, command-ID
+2. open and validate the P3-owned writable overlay and its registered immutable
+   base as two distinct pinned descriptors before spawn; path-only reopening
+   cannot establish either storage owner after validation;
+3. pin the overlay owner marker for the guard and, after the release token but
+   before target `execve`, revalidate the overlay's full stable metadata, the
+   marker's exact bytes/digest, and the immutable base's full bytes/digest;
+   same-inode mutation after guard `READY` must fail before QEMU executes;
+4. keep the existing public planner non-mutating while the internal runtime
+   carries both descriptors through the process guard into distinct fdsets and
+   four explicit nodes whose required edges are
+   `somnus-disk.file -> somnus-overlay-file`,
+   `somnus-disk.backing -> somnus-base-qcow2`, and
+   `somnus-base-qcow2.file -> somnus-base-file`, with the base node's own
+   backing disabled;
+5. implement bounded QMP framing, greeting/capability negotiation, command-ID
    correlation, event separation, and exact UUID/status/block observations;
-4. bind PID, process start time, executable, argv hash, pidfile, VM UUID, and
+6. bind PID, process start time, executable, argv hash, pidfile, VM UUID, and
    QMP UUID into one fail-closed runtime identity;
-5. journal launch checkpoints and recovery without exposing a public lifecycle
+7. prove the two exact fdset roles through `query-fdsets` and the authenticated
+   QMP peer PID's `/proc/<pid>/fd` plus `fdinfo` device, inode, and access-mode
+   observations; prove the four-node inventory through
+   `query-named-block-nodes`, the guest attachment through `query-block`, and
+   every file/backing edge through recursive `query-blockstats`;
+8. journal launch checkpoints and recovery without exposing a public lifecycle
    command or signaling any process whose identity cannot be re-proven.
 
 Do not treat a PID, socket pathname, open port, log line, or QEMU argv as
 machine truth. Do not claim guest readiness, promote P5 networking, expose
 `start`/`stop`/`destroy`, or launch Daeron's production AIPC. The physical
-`GATE-P4` run requires Daeron-authorized disposable VM execution.
+`GATE-P4` run requires Daeron-authorized disposable VM execution. Do not freeze
+guessed optional QMP fields, member ordering, or filename rendering into the
+contract: the authorized QEMU 8.2.2 gate must capture the emitted response
+shape before those physical fixtures become authoritative.
 
 ---
 

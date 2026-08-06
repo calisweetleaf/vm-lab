@@ -27,7 +27,20 @@ if str(SOURCE_ROOT) not in sys.path:
 from somnus_protocol.vm import VMDefinition, VMPorts, VMRecord
 from somnus_vm.config import HostConfiguration, LabConfiguration, load_configuration
 from somnus_vm.host.planner import VMPlanner
-from somnus_vm.host.qemu import QemuCommandBuilder, QemuLaunchPlan, QemuPlanError
+from somnus_vm.host.qemu import (
+    QEMU_BASE_FDSET_OPAQUE,
+    QEMU_BASE_FDSET_PATH,
+    QEMU_BASE_FILE_NODE,
+    QEMU_BASE_FORMAT_NODE,
+    QEMU_OVERLAY_FDSET_OPAQUE,
+    QEMU_OVERLAY_FDSET_PATH,
+    QEMU_OVERLAY_FILE_NODE,
+    QemuCommandBuilder,
+    QemuLaunchPlan,
+    QemuPlanError,
+    bind_block_fds,
+    validate_fd_bound_execution,
+)
 from somnus_vm.host.qemu_process import command_sha256
 
 
@@ -380,6 +393,98 @@ def check_runtime_binding_and_policy_rejection() -> str:
     )
 
 
+def check_fd_bound_execution_membrane() -> str:
+    """Prove the only executable rewrite is the explicit pinned-storage graph."""
+
+    with tempfile.TemporaryDirectory() as temporary:
+        root = Path(temporary).resolve()
+        lab = load_configuration(_write_configuration(root, enable_kvm=False))
+        disk = root / "path-bearing-public-plan.qcow2"
+        plan = QemuCommandBuilder(lab.host).build(_record(disk))
+        before = plan.argv
+
+        bound = bind_block_fds(plan, overlay_fd=101, base_fd=102)
+        assert plan.argv == before
+        assert bound.count("-add-fd") == 2
+        assert bound.count("-blockdev") == 4
+        assert str(disk) not in json.dumps(bound)
+        assert (
+            f"fd=101,set=1,opaque={QEMU_OVERLAY_FDSET_OPAQUE}" in bound
+        )
+        assert f"fd=102,set=2,opaque={QEMU_BASE_FDSET_OPAQUE}" in bound
+
+        blockdevs = [
+            json.loads(bound[index + 1])
+            for index, value in enumerate(bound)
+            if value == "-blockdev"
+        ]
+        assert blockdevs == [
+            {
+                "auto-read-only": False,
+                "driver": "file",
+                "filename": QEMU_OVERLAY_FDSET_PATH,
+                "locking": "on",
+                "node-name": QEMU_OVERLAY_FILE_NODE,
+                "read-only": False,
+            },
+            {
+                "auto-read-only": False,
+                "driver": "file",
+                "filename": QEMU_BASE_FDSET_PATH,
+                "locking": "on",
+                "node-name": QEMU_BASE_FILE_NODE,
+                "read-only": True,
+            },
+            {
+                "auto-read-only": False,
+                "backing": None,
+                "driver": "qcow2",
+                "file": QEMU_BASE_FILE_NODE,
+                "node-name": QEMU_BASE_FORMAT_NODE,
+                "read-only": True,
+            },
+            {
+                "auto-read-only": False,
+                "backing": QEMU_BASE_FORMAT_NODE,
+                "driver": "qcow2",
+                "file": QEMU_OVERLAY_FILE_NODE,
+                "node-name": "somnus-disk",
+                "read-only": False,
+            },
+        ]
+
+        executed = ("/usr/bin/qemu-system-x86_64", *bound[1:])
+        assert validate_fd_bound_execution(plan.argv, executed) == (101, 102)
+
+        _expect_rejected(
+            lambda: bind_block_fds(plan, overlay_fd=101, base_fd=101),
+            QemuPlanError,
+        )
+        swapped = tuple(
+            (
+                f"fd=102,set=1,opaque={QEMU_OVERLAY_FDSET_OPAQUE}"
+                if value
+                == f"fd=101,set=1,opaque={QEMU_OVERLAY_FDSET_OPAQUE}"
+                else value
+            )
+            for value in executed
+        )
+        _expect_rejected(
+            lambda: validate_fd_bound_execution(plan.argv, swapped),
+            QemuPlanError,
+        )
+        drifted = (*executed, "-object", "secret,id=forbidden,data=value")
+        _expect_rejected(
+            lambda: validate_fd_bound_execution(plan.argv, drifted),
+            QemuPlanError,
+        )
+
+    return (
+        "derived one exact two-fdset four-node execution graph without "
+        "reopening a storage path or mutating the public plan"
+    )
+
+
 def check_real_planner_and_cli_consumption() -> str:
     """Prove the real planner and CLI consume the hardened builder without QEMU."""
 
@@ -444,6 +549,7 @@ def run_qemu_planning_p4_checks() -> list[str]:
     return [
         check_hardened_deterministic_plan(),
         check_runtime_binding_and_policy_rejection(),
+        check_fd_bound_execution_membrane(),
         check_real_planner_and_cli_consumption(),
     ]
 

@@ -29,7 +29,11 @@ from somnus_protocol import (
     VMState,
 )
 from somnus_vm.config import load_configuration
-from somnus_vm.host.qemu import QemuCommandBuilder
+from somnus_vm.host.qemu import (
+    QemuCommandBuilder,
+    bind_block_fds,
+    validate_fd_bound_execution,
+)
 from somnus_vm.host.qemu_process import (
     command_sha256,
     inspect_executable,
@@ -267,6 +271,14 @@ class _Authority:
             self.disk,
             self.plan,
             inspect_executable(os.fspath(SYSTEM_EXECUTABLE)),
+            executed_argv=(
+                os.fspath(SYSTEM_EXECUTABLE),
+                *bind_block_fds(
+                    self.plan,
+                    overlay_fd=101,
+                    base_fd=102,
+                )[1:],
+            ),
         )
         self.log_process = _process_fact(
             self.intent,
@@ -536,6 +548,13 @@ class QemuRuntimeJournalP4Tests(unittest.TestCase):
         self.assertEqual(intent.planned_argv[0], "sleep")
         self.assertEqual(intent.executed_argv[0], os.fspath(SYSTEM_EXECUTABLE))
         self.assertNotEqual(intent.planned_argv, intent.executed_argv)
+        self.assertEqual(
+            validate_fd_bound_execution(
+                intent.planned_argv,
+                intent.executed_argv,
+            ),
+            (101, 102),
+        )
         self.assertEqual(
             intent.planned_command_sha256,
             command_sha256(intent.planned_argv),
@@ -993,7 +1012,7 @@ class QemuRuntimeJournalP4Tests(unittest.TestCase):
         )
         with self.assertRaisesRegex(
             RuntimeLaunchJournalError,
-            "cannot rewrite",
+            "fd-bound storage rewrite",
         ):
             replace(
                 intent,
