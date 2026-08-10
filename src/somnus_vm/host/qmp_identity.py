@@ -19,6 +19,7 @@ import os
 import re
 import stat
 import unicodedata
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Final
@@ -67,6 +68,18 @@ _MACHINE_NAME_PATTERN: Final[re.Pattern[str]] = re.compile(
     r"[A-Za-z0-9._-]{1,63}",
     re.ASCII,
 )
+_NODE_NAME_PATTERN: Final[re.Pattern[str]] = re.compile(
+    r"[A-Za-z][A-Za-z0-9._-]{0,127}",
+    re.ASCII,
+)
+
+QMP_OVERLAY_FDSET_ID: Final[int] = 1
+QMP_BASE_FDSET_ID: Final[int] = 2
+QMP_OVERLAY_FDSET_OPAQUE: Final[str] = "somnus-overlay-rw"
+QMP_BASE_FDSET_OPAQUE: Final[str] = "somnus-base-ro"
+QMP_OVERLAY_FILE_NODE: Final[str] = "somnus-overlay-file"
+QMP_BASE_FILE_NODE: Final[str] = "somnus-base-file"
+QMP_BASE_FORMAT_NODE: Final[str] = "somnus-base-qcow2"
 
 _BLOCK_INFO_REQUIRED: Final[frozenset[str]] = frozenset(
     {
@@ -330,6 +343,7 @@ class QMPBlockLayer:
     virtual_size_bytes: int
     device_id: int
     inode: int
+    qmp_filename: str | None = None
 
     def __post_init__(self) -> None:
         selected = _strict_path(self.path, "block layer path")
@@ -347,6 +361,12 @@ class QMPBlockLayer:
         )
         _strict_int(self.device_id, "block layer device_id", minimum=1)
         _strict_int(self.inode, "block layer inode", minimum=1)
+        if self.qmp_filename is not None:
+            _strict_string(
+                self.qmp_filename,
+                "block layer QMP filename",
+                maximum=_MAX_PATH_BYTES,
+            )
         details = selected.stat(follow_symlinks=False)
         if details.st_dev != self.device_id or details.st_ino != self.inode:
             raise QMPIdentityError(
@@ -356,13 +376,46 @@ class QMPBlockLayer:
         object.__setattr__(self, "format", selected_format)
 
     def to_dict(self) -> dict[str, object]:
-        return {
+        encoded = {
             "device_id": self.device_id,
             "format": self.format,
             "inode": self.inode,
             "path": os.fspath(self.path),
             "virtual_size_bytes": self.virtual_size_bytes,
         }
+        if self.qmp_filename is not None and self.qmp_filename != os.fspath(
+            self.path
+        ):
+            encoded["qmp_filename"] = self.qmp_filename
+        return encoded
+
+
+@dataclass(frozen=True, slots=True)
+class QMPFdsetIdentity:
+    """One exact QEMU inherited storage fdset and its opaque role."""
+
+    fdset_id: int
+    opaque: str
+    fd: int
+
+
+@dataclass(frozen=True, slots=True)
+class QMPNamedBlockNodeIdentity:
+    """One normalized node in the four-node fd-bound storage graph."""
+
+    node_name: str
+    driver: str
+    read_only: bool
+    reported_file: str
+
+
+@dataclass(frozen=True, slots=True)
+class QMPBlockstatsNodeIdentity:
+    """One recursive query-blockstats node edge observation."""
+
+    node_name: str
+    parent_node: str | None
+    backing_node: str | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -890,6 +943,195 @@ def _response_value(response: QMPResponse, command: str) -> object:
     return plain
 
 
+def normalize_qmp_fdsets(response: QMPResponse) -> tuple[QMPFdsetIdentity, ...]:
+    """Normalize the exact overlay/base fdsets inherited by QEMU."""
+
+    value = _response_value(response, "query-fdsets")
+    if not isinstance(value, list) or len(value) != 2:
+        raise QMPIdentityError("query-fdsets must report exactly two fdsets")
+    selected: list[QMPFdsetIdentity] = []
+    expected = {
+        QMP_OVERLAY_FDSET_ID: QMP_OVERLAY_FDSET_OPAQUE,
+        QMP_BASE_FDSET_ID: QMP_BASE_FDSET_OPAQUE,
+    }
+    for index, item in enumerate(value):
+        row = _strict_object(
+            item,
+            required=frozenset({"fdset-id", "fds"}),
+            label=f"query-fdsets entry[{index}]",
+        )
+        fdset_id = _strict_int(
+            row["fdset-id"],
+            f"query-fdsets entry[{index}] fdset-id",
+            minimum=1,
+            maximum=2**31 - 1,
+        )
+        if fdset_id not in expected or fdset_id in {
+            item.fdset_id for item in selected
+        }:
+            raise QMPIdentityError("query-fdsets IDs are not exactly 1 and 2")
+        fds = row["fds"]
+        if not isinstance(fds, list) or len(fds) != 1:
+            raise QMPIdentityError("each query-fdsets entry requires one fd")
+        fd_row = _strict_object(
+            fds[0],
+            required=frozenset({"fd", "opaque"}),
+            label=f"query-fdsets entry[{index}] fd",
+        )
+        opaque = _strict_string(
+            fd_row["opaque"],
+            f"query-fdsets entry[{index}] opaque",
+            maximum=128,
+        )
+        if opaque != expected[fdset_id]:
+            raise QMPIdentityError("query-fdsets opaque role is unexpected")
+        fd = _strict_int(
+            fd_row["fd"],
+            f"query-fdsets entry[{index}] fd",
+            minimum=0,
+            maximum=2**31 - 1,
+        )
+        selected.append(QMPFdsetIdentity(fdset_id, opaque, fd))
+    if len({entry.fd for entry in selected}) != 2:
+        raise QMPIdentityError("query-fdsets descriptors are duplicated")
+    return tuple(sorted(selected, key=lambda entry: entry.fdset_id))
+
+
+def normalize_qmp_named_block_nodes(
+    response: QMPResponse,
+) -> tuple[QMPNamedBlockNodeIdentity, ...]:
+    """Normalize the exact four-node fd-bound qcow2 graph inventory."""
+
+    value = _response_value(response, "query-named-block-nodes")
+    if not isinstance(value, list) or len(value) != 4:
+        raise QMPIdentityError(
+            "query-named-block-nodes must report exactly four nodes"
+        )
+    selected: dict[str, QMPNamedBlockNodeIdentity] = {}
+    for index, item in enumerate(value):
+        if not isinstance(item, Mapping):
+            raise QMPIdentityError(
+                f"query-named-block-nodes entry[{index}] must be an object"
+            )
+        row = dict(item)
+        if not {"node-name", "drv", "ro", "file"}.issubset(row):
+            raise QMPIdentityError(
+                "query-named-block-nodes entry lacks stable required fields"
+            )
+        node_name = _strict_string(
+            row["node-name"],
+            f"query-named-block-nodes entry[{index}] node-name",
+            maximum=128,
+            pattern=_NODE_NAME_PATTERN,
+        )
+        if node_name in selected:
+            raise QMPIdentityError("named block node names are duplicated")
+        driver = _strict_string(
+            row["drv"],
+            f"query-named-block-nodes {node_name} driver",
+            maximum=32,
+        )
+        read_only = _strict_bool(
+            row["ro"],
+            f"query-named-block-nodes {node_name} ro",
+        )
+        reported_file = _strict_string(
+            row["file"],
+            f"query-named-block-nodes {node_name} file",
+            maximum=_MAX_PATH_BYTES,
+        )
+        selected[node_name] = QMPNamedBlockNodeIdentity(
+            node_name=node_name,
+            driver=driver,
+            read_only=read_only,
+            reported_file=reported_file,
+        )
+    expected_names = {
+        QMP_OVERLAY_FILE_NODE,
+        QMP_BASE_FILE_NODE,
+        QMP_BASE_FORMAT_NODE,
+        QMP_ROOT_BLOCK_NODE,
+    }
+    if set(selected) != expected_names:
+        raise QMPIdentityError("named block node inventory is not canonical")
+    overlay = selected[QMP_OVERLAY_FILE_NODE]
+    base_file = selected[QMP_BASE_FILE_NODE]
+    base = selected[QMP_BASE_FORMAT_NODE]
+    root = selected[QMP_ROOT_BLOCK_NODE]
+    if (
+        overlay.driver != "file"
+        or overlay.read_only
+        or overlay.reported_file != "/dev/fdset/1"
+        or base_file.driver != "file"
+        or not base_file.read_only
+        or base_file.reported_file != "/dev/fdset/2"
+        or base.driver != "qcow2"
+        or not base.read_only
+        or root.driver != "qcow2"
+        or root.read_only
+    ):
+        raise QMPIdentityError("named block node inventory or roles are invalid")
+    return tuple(selected[name] for name in sorted(selected))
+
+
+def normalize_qmp_blockstats(
+    response: QMPResponse,
+) -> tuple[QMPBlockstatsNodeIdentity, ...]:
+    """Normalize recursive blockstats parent/backing edges for the graph."""
+
+    value = _response_value(response, "query-blockstats")
+    if not isinstance(value, list) or len(value) != 1:
+        raise QMPIdentityError("query-blockstats must report one root graph")
+    selected: dict[str, QMPBlockstatsNodeIdentity] = {}
+    active: set[str] = set()
+
+    def visit(item: object, label: str) -> str:
+        if not isinstance(item, Mapping) or "node-name" not in item:
+            raise QMPIdentityError(f"{label} lacks a stable node-name")
+        row = dict(item)
+        node_name = _strict_string(
+            row["node-name"],
+            f"{label} node-name",
+            maximum=128,
+            pattern=_NODE_NAME_PATTERN,
+        )
+        if node_name in active:
+            raise QMPIdentityError("query-blockstats graph contains a cycle")
+        if node_name in selected:
+            raise QMPIdentityError("query-blockstats nodes are duplicated")
+        active.add(node_name)
+        parent = row.get("parent")
+        backing = row.get("backing")
+        parent_name = visit(parent, f"{label} parent") if parent is not None else None
+        backing_name = (
+            visit(backing, f"{label} backing")
+            if backing is not None
+            else None
+        )
+        active.remove(node_name)
+        selected[node_name] = QMPBlockstatsNodeIdentity(
+            node_name=node_name,
+            parent_node=parent_name,
+            backing_node=backing_name,
+        )
+        return node_name
+
+    root_name = visit(value[0], "query-blockstats root")
+    expected = {
+        QMP_ROOT_BLOCK_NODE: (QMP_OVERLAY_FILE_NODE, QMP_BASE_FORMAT_NODE),
+        QMP_BASE_FORMAT_NODE: (QMP_BASE_FILE_NODE, None),
+        QMP_OVERLAY_FILE_NODE: (None, None),
+        QMP_BASE_FILE_NODE: (None, None),
+    }
+    if root_name != QMP_ROOT_BLOCK_NODE or set(selected) != set(expected):
+        raise QMPIdentityError("query-blockstats graph inventory is not canonical")
+    for node_name, edges in expected.items():
+        node = selected[node_name]
+        if (node.parent_node, node.backing_node) != edges:
+            raise QMPIdentityError("query-blockstats graph edges are invalid")
+    return tuple(selected[name] for name in sorted(selected))
+
+
 def normalize_qmp_status(response: QMPResponse) -> QMPStatusIdentity:
     """Strictly normalize one final ``query-status`` fence response.
 
@@ -949,6 +1191,12 @@ def _validate_current_layer(layer: QMPBlockLayer, label: str) -> None:
         raise QMPIdentityError(
             "QMP-reported block path no longer matches storage-owned evidence"
         )
+
+
+def _expected_qmp_filename(layer: QMPBlockLayer) -> str:
+    """Return the wire filename while keeping host path authority separate."""
+
+    return layer.qmp_filename or os.fspath(layer.path)
 
 
 def _validate_format_specific(
@@ -1038,8 +1286,12 @@ def _validate_image(
     )
     expected = layers[index]
     _validate_current_layer(expected, f"{label} path")
-    filename = _strict_path(row["filename"], f"{label} filename")
-    if filename != expected.path:
+    filename = _strict_string(
+        row["filename"],
+        f"{label} filename",
+        maximum=_MAX_PATH_BYTES,
+    )
+    if filename != _expected_qmp_filename(expected):
         raise QMPIdentityError("QMP image filename is not the planned layer")
     image_format = _strict_string(
         row["format"],
@@ -1099,11 +1351,12 @@ def _validate_image(
             raise QMPIdentityError("QMP image backing chain is incomplete")
         backing = layers[index + 1]
         for field_name in ("backing-filename", "full-backing-filename"):
-            path = _strict_path(
+            path = _strict_string(
                 row[field_name],
                 f"{label} {field_name}",
+                maximum=_MAX_PATH_BYTES,
             )
-            if path != backing.path:
+            if path != _expected_qmp_filename(backing):
                 raise QMPIdentityError(
                     "QMP image backing path disagrees with storage evidence"
                 )
@@ -1162,11 +1415,12 @@ def _normalize_block(
         label="query-block inserted device",
     )
     top = contract.layers[0]
-    top_path = _strict_path(
+    top_path = _strict_string(
         inserted["file"],
         "query-block inserted file",
+        maximum=_MAX_PATH_BYTES,
     )
-    if top_path != top.path:
+    if top_path != _expected_qmp_filename(top):
         raise QMPIdentityError("QMP inserted file is not the planned disk")
     if inserted["node-name"] != contract.node_name:
         raise QMPIdentityError("QMP block node name is not canonical")
@@ -1190,11 +1444,12 @@ def _normalize_block(
     if depth:
         if "backing_file" not in inserted:
             raise QMPIdentityError("QMP backing file is missing")
-        backing_path = _strict_path(
+        backing_path = _strict_string(
             inserted["backing_file"],
             "query-block backing_file",
+            maximum=_MAX_PATH_BYTES,
         )
-        if backing_path != contract.layers[1].path:
+        if backing_path != _expected_qmp_filename(contract.layers[1]):
             raise QMPIdentityError(
                 "QMP backing file disagrees with storage-owned chain"
             )
@@ -1550,16 +1805,26 @@ def compose_qmp_identity_evidence(
 
 __all__ = [
     "MIN_QMP_STABILIZATION_NS",
+    "QMP_BASE_FDSET_ID",
+    "QMP_BASE_FDSET_OPAQUE",
+    "QMP_BASE_FILE_NODE",
+    "QMP_BASE_FORMAT_NODE",
     "QMPBlockContract",
     "QMPBlockIdentity",
     "QMPBlockLayer",
+    "QMPBlockstatsNodeIdentity",
     "QMPDiskRuntimeEvidence",
+    "QMPFdsetIdentity",
     "QMPCPUIdentity",
     "QMPIdentityError",
     "QMPIdentityEvidence",
     "QMPIdentityExpectation",
     "QMPIdentitySample",
     "QMPIdentitySnapshot",
+    "QMPNamedBlockNodeIdentity",
+    "QMP_OVERLAY_FDSET_ID",
+    "QMP_OVERLAY_FDSET_OPAQUE",
+    "QMP_OVERLAY_FILE_NODE",
     "QMPStatusIdentity",
     "QMP_IDENTITY_EVIDENCE_SCHEMA",
     "QMP_IDENTITY_SCHEMA",
@@ -1571,4 +1836,7 @@ __all__ = [
     "greeting_sha256",
     "normalize_qmp_status",
     "normalize_qmp_identity_sample",
+    "normalize_qmp_blockstats",
+    "normalize_qmp_fdsets",
+    "normalize_qmp_named_block_nodes",
 ]

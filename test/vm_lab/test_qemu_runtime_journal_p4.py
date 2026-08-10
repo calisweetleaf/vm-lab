@@ -9,6 +9,7 @@ used.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import socket
@@ -38,6 +39,10 @@ from somnus_vm.host.qemu_process import (
     command_sha256,
     inspect_executable,
     resolve_executable,
+)
+from somnus_vm.host.launch_authority import (
+    DisposableLaunchReceipt,
+    ProductionExclusion,
 )
 from somnus_vm.host.qemu_runtime_journal import (
     CHECKPOINT_ORDER,
@@ -223,6 +228,13 @@ class _Authority:
         self.disk_path.parent.mkdir(mode=0o700, parents=True)
         self.disk_path.write_bytes(b"physical-P3-owner\n")
         self.disk_path.chmod(0o600)
+        self.base_path = root / "images" / "base.qcow2"
+        self.base_path.parent.mkdir(mode=0o700, parents=True)
+        self.base_path.write_bytes(b"immutable-P3-base\n")
+        self.base_path.chmod(0o444)
+        self.marker_path = Path(f"{self.disk_path}.owner.json")
+        self.marker_path.write_bytes(b'{"owner":"vm-lab"}\n')
+        self.marker_path.chmod(0o600)
         configuration = load_configuration(_write_configuration(root)).host
         configuration.daemon.runtime_root.mkdir(mode=0o700, parents=True)
         configuration.storage.log_root.mkdir(mode=0o700, parents=True)
@@ -279,6 +291,27 @@ class _Authority:
                     base_fd=102,
                 )[1:],
             ),
+            launch_authority=DisposableLaunchReceipt(
+                permit_id=uuid4(),
+                run_id=uuid4(),
+                vm_id=self.record.vm_id,
+                generation=self.record.generation,
+                disk_id=self.disk.disk_id,
+                disk_path=os.fspath(self.disk_path),
+                base_sha256=self.disk.base_image_sha256,
+                fixture_root=os.fspath(self.root),
+                fixture_device_id=self.root.stat().st_dev,
+                fixture_inode=self.root.stat().st_ino,
+                marker_sha256="5" * 64,
+                production_exclusions=(
+                    ProductionExclusion(
+                        label="journal-production-exclusion",
+                        path=self.root / "production-aipc.qcow2",
+                        device_id=self.root.stat().st_dev,
+                        inode=self.root.stat().st_ino + 1,
+                    ),
+                ),
+            ),
         )
         self.log_process = _process_fact(
             self.intent,
@@ -311,6 +344,113 @@ class _Authority:
         log_details = configuration.storage.log_root.stat(
             follow_symlinks=False
         )
+        overlay_details = self.disk_path.stat(follow_symlinks=False)
+        base_details = self.base_path.stat(follow_symlinks=False)
+        marker_details = self.marker_path.stat(follow_symlinks=False)
+        self.storage_graph = {
+            "schema": "somnus.qmp-storage-graph-evidence.v1",
+            "peer_pid": self.process["pid"],
+            "fdsets": [
+                {
+                    "fd": 201,
+                    "fdset_id": 1,
+                    "opaque": "somnus-overlay-rw",
+                },
+                {
+                    "fd": 202,
+                    "fdset_id": 2,
+                    "opaque": "somnus-base-ro",
+                },
+            ],
+            "named_nodes": [
+                {
+                    "driver": "file",
+                    "node_name": "somnus-base-file",
+                    "reported_file": "/dev/fdset/2",
+                    "read_only": True,
+                },
+                {
+                    "driver": "qcow2",
+                    "node_name": "somnus-base-qcow2",
+                    "reported_file": "/dev/fdset/2",
+                    "read_only": True,
+                },
+                {
+                    "driver": "qcow2",
+                    "node_name": "somnus-disk",
+                    "reported_file": "/dev/fdset/1",
+                    "read_only": False,
+                },
+                {
+                    "driver": "file",
+                    "node_name": "somnus-overlay-file",
+                    "reported_file": "/dev/fdset/1",
+                    "read_only": False,
+                },
+            ],
+            "blockstats": [
+                {
+                    "backing_node": None,
+                    "node_name": "somnus-base-file",
+                    "parent_node": None,
+                },
+                {
+                    "backing_node": None,
+                    "node_name": "somnus-base-qcow2",
+                    "parent_node": "somnus-base-file",
+                },
+                {
+                    "backing_node": "somnus-base-qcow2",
+                    "node_name": "somnus-disk",
+                    "parent_node": "somnus-overlay-file",
+                },
+                {
+                    "backing_node": None,
+                    "node_name": "somnus-overlay-file",
+                    "parent_node": None,
+                },
+            ],
+            "peer_descriptors": [
+                {
+                    "access_mode": "rw",
+                    "device_id": overlay_details.st_dev,
+                    "fd": 201,
+                    "inode": overlay_details.st_ino,
+                    "role": "overlay",
+                },
+                {
+                    "access_mode": "r",
+                    "device_id": base_details.st_dev,
+                    "fd": 202,
+                    "inode": base_details.st_ino,
+                    "role": "base",
+                },
+            ],
+        }
+
+        def storage_fact(
+            role: str,
+            descriptor: int,
+            details: os.stat_result,
+            access_mode: str,
+            content_sha256: str | None,
+        ) -> dict[str, object]:
+            return {
+                "role": role,
+                "descriptor": descriptor,
+                "device_id": details.st_dev,
+                "inode": details.st_ino,
+                "owner_uid": details.st_uid,
+                "owner_gid": details.st_gid,
+                "mode": stat.S_IMODE(details.st_mode),
+                "link_count": details.st_nlink,
+                "size_bytes": details.st_size,
+                "allocated_size_bytes": details.st_blocks * 512,
+                "mtime_ns": details.st_mtime_ns,
+                "ctime_ns": details.st_ctime_ns,
+                "access_mode": access_mode,
+                "content_sha256": content_sha256,
+            }
         serial_read, serial_write = os.pipe()
         qemu_read, qemu_write = os.pipe()
         try:
@@ -353,6 +493,29 @@ class _Authority:
             },
             "executable_pinned": {
                 "executable": self.intent.executable.to_dict(),
+                "storage": {
+                    "overlay": storage_fact(
+                        "overlay",
+                        101,
+                        overlay_details,
+                        "rw",
+                        None,
+                    ),
+                    "base": storage_fact(
+                        "base",
+                        102,
+                        base_details,
+                        "r",
+                        hashlib.sha256(self.base_path.read_bytes()).hexdigest(),
+                    ),
+                    "owner_marker": storage_fact(
+                        "owner-marker",
+                        103,
+                        marker_details,
+                        "r",
+                        hashlib.sha256(self.marker_path.read_bytes()).hexdigest(),
+                    ),
+                },
             },
             "log_guard_spawned": {
                 "process": self.log_process,
@@ -403,6 +566,10 @@ class _Authority:
             "qmp_identity_verified": {
                 "evidence": self.qmp_evidence,
                 "evidence_sha256": self.qmp_evidence.evidence_sha256,
+                "storage_graph": self.storage_graph,
+                "storage_graph_sha256": canonical_evidence_sha256(
+                    self.storage_graph
+                ),
             },
             "process_identity_recorded": {
                 "process_record_id": str(self.intent.process_record_id),
@@ -536,6 +703,8 @@ class QemuRuntimeJournalP4Tests(unittest.TestCase):
         intent = self.authority.intent
         identities = {
             intent.operation_id,
+            intent.launch_authority.permit_id,
+            intent.launch_authority.run_id,
             intent.vm_id,
             intent.boot_id,
             intent.disk_id,
@@ -544,7 +713,15 @@ class QemuRuntimeJournalP4Tests(unittest.TestCase):
             intent.lifecycle_evidence_id,
             intent.disk_observation_id,
         }
-        self.assertEqual(len(identities), 8)
+        self.assertEqual(len(identities), 10)
+        self.assertEqual(
+            intent.launch_authority.vm_id,
+            intent.vm_id,
+        )
+        self.assertEqual(
+            intent.launch_authority.disk_id,
+            intent.disk_id,
+        )
         self.assertEqual(intent.planned_argv[0], "sleep")
         self.assertEqual(intent.executed_argv[0], os.fspath(SYSTEM_EXECUTABLE))
         self.assertNotEqual(intent.planned_argv, intent.executed_argv)
@@ -568,6 +745,18 @@ class QemuRuntimeJournalP4Tests(unittest.TestCase):
             intent.owned_resources_bytes(),
         )
         self.assertEqual(persisted, intent)
+        tampered = json.loads(intent.intent_bytes())
+        tampered["launch_authority"]["marker_sha256"] = "0" * 64
+        tampered_bytes = json.dumps(
+            tampered,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("ascii")
+        with self.assertRaises(RuntimeLaunchJournalError):
+            RuntimeLaunchIntent.from_persisted(
+                tampered_bytes,
+                intent.owned_resources_bytes(),
+            )
         self.assertLessEqual(len(intent.intent_bytes()), 262_144)
         self.assertLessEqual(len(intent.owned_resources_bytes()), 262_144)
 
@@ -662,6 +851,93 @@ class QemuRuntimeJournalP4Tests(unittest.TestCase):
                     prefix.crash_class,
                     CrashClass.NOT_PERSISTED,
                 )
+
+    def test_orphan_emergency_is_durable_and_replays_exact_process_prefix(
+        self,
+    ) -> None:
+        """An unproved child remains recovery-required with explicit authority."""
+
+        database = self.root / "registry" / "registry.sqlite3"
+        state = RuntimeLaunchJournal(self.authority.intent)
+        state, intent_checkpoint = state.advance("intent_persisted")
+        with SQLiteRegistry.open(database) as registry:
+            with registry.write_transaction() as transaction:
+                transaction.insert_vm(self.authority.record)
+                transaction.begin_operation(
+                    **state.begin_operation_kwargs()
+                )
+                transaction.append_checkpoint(
+                    **intent_checkpoint.append_checkpoint_kwargs()
+                )
+                transaction.set_operation_status(
+                    **state.running_status_write().set_operation_status_kwargs()
+                )
+            for name in CHECKPOINT_ORDER[1 : CHECKPOINT_ORDER.index(
+                "process_observed"
+            ) + 1]:
+                state, checkpoint = state.advance(
+                    name,
+                    self.authority.facts[name],
+                )
+                with registry.write_transaction() as transaction:
+                    transaction.append_checkpoint(
+                        **checkpoint.append_checkpoint_kwargs()
+                    )
+            orphan_write = state.recovery_status_write(
+                "exact_child_cleanup_unproved",
+                cleanup_state="orphaned",
+            )
+            with registry.write_transaction() as transaction:
+                transaction.set_operation_status(
+                    **orphan_write.set_operation_status_kwargs()
+                )
+            operation = registry.get_operation(
+                self.authority.intent.operation_id
+            )
+            checkpoints = registry.list_checkpoints(
+                self.authority.intent.operation_id
+            )
+            assert operation is not None
+            self.assertEqual(operation.result, orphan_write.result)
+            result = json.loads(operation.result)
+            self.assertEqual(operation.status, "recovery_required")
+            self.assertEqual(result["cleanup_state"], "orphaned")
+            self.assertEqual(
+                result["recovery_disposition"],
+                RecoveryDisposition.ORPHAN_EMERGENCY.value,
+            )
+            replay = RuntimeLaunchJournal.replay(operation, checkpoints)
+            self.assertEqual(replay.latest_checkpoint, "process_observed")
+            self.assertEqual(
+                replay.recovery_disposition,
+                RecoveryDisposition.ORPHAN_EMERGENCY,
+            )
+            self.assertEqual(
+                replay.observed_process_at("process_observed").to_dict(),
+                self.authority.process,
+            )
+
+        # Replay from a fresh registry instance proves the emergency record is
+        # not process-local state and that the exact PID identity survives a
+        # daemon restart boundary.
+        with SQLiteRegistry.open(database) as registry:
+            operation = registry.get_operation(
+                self.authority.intent.operation_id
+            )
+            checkpoints = registry.list_checkpoints(
+                self.authority.intent.operation_id
+            )
+            assert operation is not None
+            replay = RuntimeLaunchJournal.replay(operation, checkpoints)
+            self.assertEqual(operation.status, "recovery_required")
+            self.assertEqual(
+                json.loads(operation.result)["cleanup_state"],
+                "orphaned",
+            )
+            self.assertEqual(
+                replay.observed_process_at("process_observed").pid,
+                self.authority.process["pid"],
+            )
 
     def test_observed_process_access_is_typed_restricted_and_copy_safe(
         self,

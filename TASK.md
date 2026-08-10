@@ -212,57 +212,77 @@ are accepted.
 
 ---
 
-## ACTIVE — `TASK-P4-001`: Prove QEMU process truth and QMP identity
+## ACTIVE — `TASK-P4-019`: Prove disposable QEMU machine truth
 
 **Outcome lock**
 
 > Deliver Phase P4 QEMU process truth and QMP; done when actual QEMU launches
-> one disposable P3-owned overlay with both the writable overlay and immutable
-> base descriptor-bound through the process guard into the proved QEMU block
-> graph, completes greeting/capabilities and matching executable/start-time/
-> pidfile/VM-UUID/QMP-UUID/status observations, captures serial output, and
-> daemon death at each launch checkpoint adopts or cleans the child without
-> orphaning it or signaling a foreign process.
+> one disposable P3-owned overlay through the daemon-owned runtime, QMP proves
+> the expected machine UUID, running state, and root-disk attachment, serial
+> output is retained, and daemon restart adopts or cleans the exact child
+> without touching a foreign process.
 
 **Plan owner:** [`PLAN.md`](PLAN.md) §12, Phase P4.
 
+**Compiled progress:** all 18 bounded P4 phase items have direct current-source
+evidence. The runtime consumes P3 storage through exact pinned
+overlay/base/owner-marker descriptors; the guard revalidates metadata and
+immutable hashes at release; the QEMU argv uses two fdsets and four explicit
+block nodes; QMP observers bind fdsets, named nodes, recursive edges, and the
+authenticated peer's `/proc` descriptors back to storage-owned inodes. Doctor
+consumes the selected sandbox option projection, and ambiguous recovery records
+a durable orphan emergency. A one-shot `DisposableLaunchPermit` now binds the
+actual `QemuRuntimeOwner.launch()` boundary to a private marked fixture,
+explicit production exclusions, immutable base identity, and a durable launch
+receipt. The daemon also exposes a Python-only activation hook to the physical
+gate without adding a CLI or AF_UNIX lifecycle operation.
+
+The actual-QEMU `GATE-P4` remains open. The explicit non-public coordinator is
+implemented in `src/somnus_vm/host/p4_gate.py` and
+`scripts/run_gate_p4.py`. It now defines the canonical full matrix
+specification, exact preflight/result validators, seventeen isolated compact
+scenario roots (`00-success` plus every `CHECKPOINT_ORDER` case), strict serial
+execution, resume only from sealed validated scenarios, stop-and-preserve on
+failure, and aggregate matrix sealing. Successful runtime-log bytes are sealed;
+per-scenario validation requires the exact checkpoint prefix and conditional
+adoption/cleanup evidence with explicit cleanup scope
+`runtime-process-only;fixture-retained`. The deterministic execution phrase is
+only an accidental-execution fence, not authentication or proof of Daeron
+authority. `test/vm_lab/test_p4_gate_coordinator.py` proves 8/8 non-launch cases.
+
+The exact pinned source remains restored and verified at
+`/tmp/vm-lab-p3-fixture-20260801.qcow2` with size 264,306,688, mode 0600,
+uid 1000, nlink 1, and SHA-256
+`b3064efb500d71d6ccbe619b1716062b803e285116e040627b430aaee14cced6`.
+Current-HEAD aggregate `test/vm_lab/runs/20260807T123747Z/result.json`
+records 40 pass, 0 fail, and 0 skip across 40 checks. No Daeron physical launch
+authorization has been supplied. Read-only host discovery found no deployed
+qcow2, libvirt domain, QEMU process, or Somnus/AIPC production state, so the
+non-launch coordinator conservatively excluded `/home/daeron` and
+`/media/daeron/usb-128gb` and prepared/preflighted frozen matrix
+`b9aca76a-a016-4d0c-9002-f0a90f383b21` under
+`/tmp/vm-lab-gate-p4-matrix-20260807T124705Z`. No qemu-system VM or matrix has
+launched, and no actual success/checkpoint machine truth exists.
+This is implementation and full local proof, not physical gate closure.
+
 **Active bounded unit**
 
-1. split immutable disk ownership facts from mutable runtime observations
-   before any QEMU write can occur;
-2. open and validate the P3-owned writable overlay and its registered immutable
-   base as two distinct pinned descriptors before spawn; path-only reopening
-   cannot establish either storage owner after validation;
-3. pin the overlay owner marker for the guard and, after the release token but
-   before target `execve`, revalidate the overlay's full stable metadata, the
-   marker's exact bytes/digest, and the immutable base's full bytes/digest;
-   same-inode mutation after guard `READY` must fail before QEMU executes;
-4. keep the existing public planner non-mutating while the internal runtime
-   carries both descriptors through the process guard into distinct fdsets and
-   four explicit nodes whose required edges are
-   `somnus-disk.file -> somnus-overlay-file`,
-   `somnus-disk.backing -> somnus-base-qcow2`, and
-   `somnus-base-qcow2.file -> somnus-base-file`, with the base node's own
-   backing disabled;
-5. implement bounded QMP framing, greeting/capability negotiation, command-ID
-   correlation, event separation, and exact UUID/status/block observations;
-6. bind PID, process start time, executable, argv hash, pidfile, VM UUID, and
-   QMP UUID into one fail-closed runtime identity;
-7. prove the two exact fdset roles through `query-fdsets` and the authenticated
-   QMP peer PID's `/proc/<pid>/fd` plus `fdinfo` device, inode, and access-mode
-   observations; prove the four-node inventory through
-   `query-named-block-nodes`, the guest attachment through `query-block`, and
-   every file/backing edge through recursive `query-blockstats`;
-8. journal launch checkpoints and recovery without exposing a public lifecycle
-   command or signaling any process whose identity cannot be re-proven.
+1. obtain Daeron's explicit authority to execute prepared disposable matrix
+   `b9aca76a-a016-4d0c-9002-f0a90f383b21`;
+2. run `scripts/run_gate_p4.py execute-matrix` against its frozen spec and
+   generated accidental-invocation phrase through the daemon-owned runtime;
+3. capture actual QEMU 8.2.2 fdset/named-node/blockstats response shapes,
+   UUID/status/root-disk truth, sealed serial/QEMU log bytes, exact process
+   identity, and every scenario's checkpoint adoption/cleanup outcome;
+4. only then close `GATE-P4`, move the active phase to P5, and promote no public
+   lifecycle command beyond the physically proved boundary.
 
 Do not treat a PID, socket pathname, open port, log line, or QEMU argv as
 machine truth. Do not claim guest readiness, promote P5 networking, expose
 `start`/`stop`/`destroy`, or launch Daeron's production AIPC. The physical
-`GATE-P4` run requires Daeron-authorized disposable VM execution. Do not freeze
-guessed optional QMP fields, member ordering, or filename rendering into the
-contract: the authorized QEMU 8.2.2 gate must capture the emitted response
-shape before those physical fixtures become authoritative.
+`GATE-P4` run requires Daeron-authorized disposable VM execution. Keep
+additional adversarial checks only when they discriminate this consumed path;
+they are not a parallel phase and do not replace the physical gate.
 
 ---
 

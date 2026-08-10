@@ -3,8 +3,16 @@
 **Current promoted snapshot:** [`v0.1`](SNAPSHOT.md)
 **Closed composition:** P1 protocol, P2 local daemon/registry, and P3 verified
 image/storage authority
-**Next phase:** P4 QEMU process ownership and QMP truth; see
-[`TASK.md`](TASK.md) and [`STATE.md`](STATE.md).
+**Current P4 boundary:** daemon-wired internal QEMU/QMP runtime owner, launch
+journal, descriptor-bound storage handoff, process/log, doctor, QMP block-graph,
+recovery, one-shot disposable launch authority, and the explicit non-public
+physical-gate coordinator have direct non-launch proof. All eighteen bounded
+phase items are implemented. The coordinator now defines the canonical full
+17-scenario matrix, isolated compact roots, strict serial execution/resume,
+stop-and-preserve failure handling, and sealed aggregate validation. The valid
+full-matrix execute authority, explicit production exclusions, checkpoint
+matrix execution, and actual-QEMU `GATE-P4` remain open; see [`TASK.md`](TASK.md)
+and [`STATE.md`](STATE.md).
 **Source of current truth:** live source, direct proof, then this index.
 
 This is a structured current-state index, not a second plan. Use
@@ -38,18 +46,57 @@ promoted capabilities:
 - **Internal P3 image/storage authority:** manifest-bound `qemu-img`
   observation, one immutable base slot, independently owned sparse overlays,
   crash-safe publication/reconciliation, and a native parent-death guard.
+- **Internal P4 runtime implementation:** daemon composition constructs one
+  `QemuRuntimeOwner`, settles runtime launches before generic recovery/listener
+  bind, and owns its frozen launch journal, exact P3 overlay/base/marker
+  descriptor handoff, QMP identity/client and fdset/block-graph observers,
+  process/log guards, runtime disk observation, orphan-emergency state, and
+  restart recovery. A one-shot disposable launch permit binds a private marked
+  fixture, exact P3 disk/base identity, six configuration roots, and explicit
+  production exclusions; its canonical receipt enters the launch journal.
+  The daemon exposes a Python-only activation seam unavailable to its public
+  CLI and AF_UNIX request vocabulary. `host/p4_gate.py` now coordinates exact
+  preflight, one-shot authorization, activation, checkpoint/recovery evidence,
+  raw QMP response history, and sealed result validation. It prepares 17 isolated
+  compact scenario roots (`00-success` plus every `CHECKPOINT_ORDER` case),
+  requires exact checkpoint prefixes and conditional recovery evidence, seals
+  successful runtime-log bytes, and enforces cleanup scope
+  `runtime-process-only;fixture-retained`. `scripts/run_gate_p4.py` exposes
+  `prepare-matrix`, `preflight-matrix`, and `execute-matrix` as the non-public
+  driver. The deterministic execution phrase is only an accidental-execution
+  fence, not authentication or proof of Daeron authority. Doctor consumes the
+  selected QEMU sandbox options without launching a VM. The coordinator and
+  direct P4 modules are implementation/non-launch evidence, not physical launch
+  evidence.
 - **Guest bootstrap:** a separate local-only, one-read hash/size-bounded payload
   installer with hostile archive checks and atomic placement.
-- **Current proof:** direct P1/P2/P3 modules plus the 26/26 aggregate integration
-  and installed-wheel bundle at
-  `test/vm_lab/runs/20260805T211740Z/`.
+- **Current proof:** the sealed P3 promotion bundle remains
+  `test/vm_lab/runs/20260805T211740Z/` at 26/26. Current focused P4 suites are
+  green, including real exec-guard processes, journal/replay, QMP transport and
+  identity, daemon/runtime composition, and selected-QEMU sandbox doctor
+  interrogation. The current-HEAD aggregate
+  `test/vm_lab/runs/20260807T123747Z/` is 40 pass, 0 fail, 0 skip across 40
+  checks: the exact fixture-dependent P3/P4 storage lanes now pass. The pinned
+  source is restored at `/tmp/vm-lab-p3-fixture-20260801.qcow2` with verified
+  size 264,306,688, mode 0600, uid 1000, nlink 1, and SHA-256
+  `b3064efb500d71d6ccbe619b1716062b803e285116e040627b430aaee14cced6`.
+  QMP direct proof is 14/14 and coordinator full-matrix preflight/denial is 8/8.
+  A real non-launch matrix is now prepared and preflighted at
+  `/tmp/vm-lab-gate-p4-matrix-20260807T124705Z`: matrix ID
+  `b9aca76a-a016-4d0c-9002-f0a90f383b21`, spec SHA-256
+  `9567494af6899c1d2ce5353845950b78a087f4fcf4deb22d67db54950542a104`,
+  exact 17 scenarios, no registry/socket/PID/result/QEMU process. Conservative
+  exclusions protect the observed operator roots `/home/daeron` and
+  `/media/daeron/usb-128gb`; host discovery found no deployed qcow2 or active
+  VM authority to name more narrowly.
 
 Public host lifecycle mutation remains absent by design. P1 defines its strict
 evidence grammar; P2 durably owns local control and registry state; P3 creates
 and reconciles only the verified base/overlay storage declared by that owner.
-No current public command starts or stops a VM, and no closed gate launches
-QEMU, mounts an image, queries QMP, deploys a resident runtime, or claims guest
-readiness.
+No current public command starts or stops a VM. P4 implementation contains the
+internal launch/QMP path, but no closed gate yet establishes a disposable-QEMU
+machine run, mount, guest readiness, resident-runtime deployment, or public
+lifecycle capability.
 
 ```mermaid
 flowchart TD
@@ -58,6 +105,8 @@ flowchart TD
     TRANSPORT --> DAEMON["daemon shell + daemon_runtime"]
     DAEMON --> REG["SQLite registry + mutation service"]
     DAEMON --> STORE["qemu-img provenance + persistent storage"]
+    DAEMON --> RUNTIME["P4 QemuRuntimeOwner + recovery"]
+    RUNTIME -. "GATE-P4 machine truth open" .-> QMP["QEMU + QMP"]
     PLAN --> COMPAT["contracts compatibility re-exports"]
     REG --> COMPAT
     STORE --> REG
@@ -73,7 +122,7 @@ flowchart TD
 | --- | --- | --- |
 | Shared protocol | versioned pure data/validation membrane | used by host, guest, Kerminal, and parity clients |
 | Public host | read-only doctor/topology and non-mutating plan | lifecycle actions only after their physical gates |
-| Internal host | one AF_UNIX daemon, schema-v3 registry/service, durable leases, and verified base/overlay storage | P4 QEMU process ownership and QMP observation |
+| Internal host | one AF_UNIX daemon, schema-v3 registry/service, durable leases, verified base/overlay storage, and daemon-wired P4 runtime owner/recovery modules | physical `GATE-P4` QEMU/QMP machine truth |
 | Guest | verified payload bootstrap | authenticated agent plus separately promoted runtime |
 | Operator | internal control client plus preserved candidate advanced shell | Kerminal consumer; never QEMU owner |
 | Artifact processing | cold external code | disposable worker plus recorded ingress manifest |
@@ -151,7 +200,7 @@ physical VM lifecycle gate; those gates remain in [`PLAN.md`](PLAN.md).
 
 ---
 
-## P2/P3 host composition, current truth
+## P2/P3 host composition and internal P4 runtime, current truth
 
 The public host facade still exports only the non-mutating planner. The live
 internal owner graph is:
@@ -167,6 +216,13 @@ internal owner graph is:
 | [`images.py`](src/somnus_vm/host/images.py) | strict manifests and shell-free `qemu-img` provenance/inspection primitives |
 | [`storage.py`](src/somnus_vm/host/storage.py) | immutable-base and sparse-overlay publication, ownership markers, adoption rejection, and reconciliation |
 | [`exec_guard.py`](src/somnus_vm/host/exec_guard.py) | Linux parent-death containment for daemon-owned native image subprocesses |
+| [`launch_authority.py`](src/somnus_vm/host/launch_authority.py) | one-shot non-production fixture permit and canonical consumed receipt; no launch or mutation of its own |
+| [`qemu_runtime.py`](src/somnus_vm/host/qemu_runtime.py) | one internal QEMU runtime authority: permit consumption, launch intent, process/QMP/disk observation, completion, and restart recovery |
+| [`qemu_runtime_journal.py`](src/somnus_vm/host/qemu_runtime_journal.py) | frozen launch facts, disposable-authority receipt, and durable checkpoint prefix |
+| [`p4_gate.py`](src/somnus_vm/host/p4_gate.py) | non-public exact preflight, launch activation, checkpoint/recovery, raw-QMP capture, and sealed physical-gate result contract |
+| [`qmp.py`](src/somnus_vm/host/qmp.py) / [`qmp_identity.py`](src/somnus_vm/host/qmp_identity.py) | QMP client/framing and QMP machine-identity interpretation |
+| [`qemu_process.py`](src/somnus_vm/host/qemu_process.py) / [`qemu_logs.py`](src/somnus_vm/host/qemu_logs.py) | observed process identity and guarded log capture |
+| [`qemu_exec_guard.py`](src/somnus_vm/host/qemu_exec_guard.py) / [`qemu_log_guard.py`](src/somnus_vm/host/qemu_log_guard.py) | native child containment for target and log guardian |
 
 ### Current P2/P3 direct proof owners
 
@@ -192,8 +248,36 @@ internal owner graph is:
 
 The focused P3 total is 15 tests: six core, eight adversarial, and one
 real-daemon case. These prove internal local-control, registry, image, storage,
-and recovery authority. They explicitly do not prove a QEMU launch, mount, QMP
-identity, guest readiness, deployment, or public lifecycle.
+and recovery authority.
+
+### Current P4 direct implementation proof owners
+
+- [`test_p4_gate_coordinator.py`](test/vm_lab/test_p4_gate_coordinator.py) — 8/8 real-file matrix-spec/preflight, private authorization, missing-source denial, result-validation, cleanup-scope, and pre-daemon fail-closed proofs; it does not launch QEMU.
+- [`scripts/run_gate_p4.py`](scripts/run_gate_p4.py) — non-public operator driver for prepare/preflight/execute/recovery/result sealing; not an installed lifecycle command.
+- [`test_disposable_launch_authority_p4.py`](test/vm_lab/test_disposable_launch_authority_p4.py) — real-file private-fixture, production-exclusion, hostile-replacement, one-shot consumption, and canonical-receipt proof without QEMU launch.
+- [`test_qemu_runtime_p4.py`](test/vm_lab/test_qemu_runtime_p4.py),
+  [`test_daemon_runtime_p4.py`](test/vm_lab/test_daemon_runtime_p4.py), and
+  [`test_qemu_runtime_journal_p4.py`](test/vm_lab/test_qemu_runtime_journal_p4.py)
+  — runtime-owner, daemon composition, durable journal, and recovery behavior.
+- [`test_qmp_p4.py`](test/vm_lab/test_qmp_p4.py) and
+  [`test_qmp_identity_p4.py`](test/vm_lab/test_qmp_identity_p4.py) — bounded QMP
+  protocol and identity evidence behavior.
+- [`test_qemu_process_p4.py`](test/vm_lab/test_qemu_process_p4.py),
+  [`test_qemu_logs_p4.py`](test/vm_lab/test_qemu_logs_p4.py),
+  [`test_qemu_exec_guard_p4.py`](test/vm_lab/test_qemu_exec_guard_p4.py), and
+  [`test_storage_runtime_p4.py`](test/vm_lab/test_storage_runtime_p4.py) —
+  process, logs, target containment, and runtime-storage boundaries.
+- [`test_doctor_p4.py`](test/vm_lab/test_doctor_p4.py) — selected-QEMU
+  TCG/KVM sandbox option consumption plus fail-loud unavailable, rejecting,
+  silent, and output-flood behavior without launching a VM.
+
+These P4 suites are direct non-launch implementation evidence. They do not prove
+a disposable QEMU launch, external QMP machine truth, mount, guest readiness,
+deployment, or public lifecycle. The explicit physical-gate coordinator now exists and its non-launch matrix
+proof is 8/8. It must still consume the exact source, valid full-matrix
+execute authority, explicit production exclusions, and actual qemu-system
+execution to drive the daemon-owned success/checkpoint matrix, raw QMP capture,
+and sealed bundle; `GATE-P4` remains open.
 
 ---
 
@@ -259,14 +343,20 @@ resolved decision into its named contract/plan/ADR owner.
 The repository must not expose lifecycle merely because QEMU argv or protocol
 types exist. P2 and P3 now establish one long-lived mutation owner, a
 transactional registry with durable leases, and owned qcow2 base/overlay
-storage with verified backing lineage. P4 and later still require:
+storage with verified backing lineage. All bounded P4 phase items exist, and
+the launch boundary now requires a typed disposable permit, but `GATE-P4` still
+requires its explicit coordinator plus a disposable machine run whose external
+truth includes:
 
 - actual QEMU launch and process identity;
-- QMP greeting, capabilities, UUID, and status;
-- authenticated guest readiness tied to VM/boot/generation identity;
-- graceful shutdown, crash adoption, and restart reconciliation;
-- safe snapshot/rollback with measured hashes;
-- only then, externally observed lifecycle commands through the control API.
+- QMP greeting, capabilities, UUID, status, root disk, fdsets, named nodes, and
+  recursive block-graph edges as actually emitted by QEMU 8.2.2;
+- retained serial and QEMU output;
+- daemon termination at each launch checkpoint with exact child adoption or
+  cleanup and no foreign-process signal.
+
+Authenticated guest readiness, durable networking, snapshot/rollback, and
+public lifecycle commands remain later named phases and gates.
 
 The exact phase/gate order is [`PLAN.md`](PLAN.md). Closed P2/P3 authority must
 not be inflated into satisfaction of P4 QEMU/QMP, later guest, snapshot, or

@@ -52,6 +52,10 @@ from .qemu_process import (
     QemuProcessError,
     command_sha256,
 )
+from .launch_authority import (
+    DisposableLaunchReceipt,
+    LaunchAuthorityError,
+)
 from .qmp_identity import (
     MIN_QMP_STABILIZATION_NS,
     QMP_IDENTITY_EVIDENCE_SCHEMA,
@@ -68,10 +72,10 @@ from .registry import (
 
 RUNTIME_LAUNCH_KIND: Final[str] = "runtime.launch"
 RUNTIME_LAUNCH_INTENT_SCHEMA: Final[str] = (
-    "somnus.runtime.launch.intent.v1"
+    "somnus.runtime.launch.intent.v2"
 )
 RUNTIME_LAUNCH_RESOURCES_SCHEMA: Final[str] = (
-    "somnus.runtime.launch.resources.v1"
+    "somnus.runtime.launch.resources.v2"
 )
 RUNTIME_LAUNCH_CHECKPOINT_SCHEMA: Final[str] = (
     "somnus.runtime.launch.checkpoint.v1"
@@ -174,6 +178,11 @@ class RecoveryDisposition(str, Enum):
     ADOPT_IF_STABLE_OR_CLEAN = "adopt_if_stable_or_clean"
     RECONCILE_DURABLE_RUNTIME = "reconcile_durable_runtime"
     FINALIZE_COMPLETION = "finalize_completion"
+    # This is deliberately distinct from the ordinary revalidate/cleanup
+    # dispositions.  It is durable authority that the recorded child could
+    # not be proven absent or safely terminated; recovery must therefore keep
+    # the exact process identity and checkpoint prefix for a later operator.
+    ORPHAN_EMERGENCY = "orphan_emergency"
 
 
 def _contains_forbidden_text(value: str) -> bool:
@@ -633,6 +642,7 @@ class RuntimeLaunchIntent:
     """All identities and cleanup resources fixed before external mutation."""
 
     operation_id: UUID
+    launch_authority: DisposableLaunchReceipt
     vm_id: UUID
     generation: int
     vm_name: str
@@ -662,6 +672,10 @@ class RuntimeLaunchIntent:
     qemu_log_path: str
 
     def __post_init__(self) -> None:
+        if not isinstance(self.launch_authority, DisposableLaunchReceipt):
+            raise TypeError(
+                "launch_authority must be a DisposableLaunchReceipt"
+            )
         for field_name in (
             "operation_id",
             "vm_id",
@@ -679,6 +693,8 @@ class RuntimeLaunchIntent:
             )
         identities = (
             self.operation_id,
+            self.launch_authority.permit_id,
+            self.launch_authority.run_id,
             self.vm_id,
             self.boot_id,
             self.disk_id,
@@ -724,6 +740,15 @@ class RuntimeLaunchIntent:
             minimum=1,
         )
         _strict_hash(self.disk_chain_sha256, "disk chain_sha256")
+        if (
+            self.launch_authority.vm_id != self.vm_id
+            or self.launch_authority.generation != self.generation
+            or self.launch_authority.disk_id != self.disk_id
+            or self.launch_authority.disk_path != self.disk_path
+        ):
+            raise RuntimeLaunchJournalError(
+                "disposable launch authority disagrees with VM or disk identity"
+            )
         if (
             not isinstance(self.idempotency_key, str)
             or not _IDEMPOTENCY_KEY.fullmatch(self.idempotency_key)
@@ -880,6 +905,7 @@ class RuntimeLaunchIntent:
         executable: ExecutableIdentity,
         *,
         executed_argv: tuple[str, ...],
+        launch_authority: DisposableLaunchReceipt,
         operation_id: UUID | None = None,
         boot_id: UUID | None = None,
         process_record_id: UUID | None = None,
@@ -915,6 +941,10 @@ class RuntimeLaunchIntent:
             )
         if not isinstance(plan, QemuLaunchPlan):
             raise TypeError("plan must be a QemuLaunchPlan")
+        if not isinstance(launch_authority, DisposableLaunchReceipt):
+            raise TypeError(
+                "launch_authority must be a DisposableLaunchReceipt"
+            )
         journal_executable = JournalExecutableIdentity.from_runtime(
             executable
         )
@@ -940,6 +970,7 @@ class RuntimeLaunchIntent:
         )
         return cls(
             operation_id=selected_operation,
+            launch_authority=launch_authority,
             vm_id=record.vm_id,
             generation=record.generation,
             vm_name=record.definition.name,
@@ -999,6 +1030,7 @@ class RuntimeLaunchIntent:
             "kind": RUNTIME_LAUNCH_KIND,
             "operation_id": str(self.operation_id),
             "idempotency_key": self.idempotency_key,
+            "launch_authority": self.launch_authority.to_dict(),
             "vm": {
                 "vm_id": str(self.vm_id),
                 "generation": self.generation,
@@ -1046,6 +1078,7 @@ class RuntimeLaunchIntent:
             "schema": RUNTIME_LAUNCH_RESOURCES_SCHEMA,
             "kind": RUNTIME_LAUNCH_KIND,
             "operation_id": str(self.operation_id),
+            "launch_authority": self.launch_authority.to_dict(),
             "vm_id": str(self.vm_id),
             "generation": self.generation,
             "boot_id": str(self.boot_id),
@@ -1110,6 +1143,7 @@ class RuntimeLaunchIntent:
                     "kind",
                     "operation_id",
                     "idempotency_key",
+                    "launch_authority",
                     "vm",
                     "disk",
                     "ids",
@@ -1190,11 +1224,20 @@ class RuntimeLaunchIntent:
             ),
             "runtime launch paths",
         )
+        try:
+            launch_authority = DisposableLaunchReceipt.from_dict(
+                table["launch_authority"]
+            )
+        except LaunchAuthorityError as exc:
+            raise RuntimeLaunchJournalError(
+                "persisted disposable launch authority is invalid"
+            ) from exc
         candidate = cls(
             operation_id=_strict_uuid(
                 table["operation_id"],
                 "operation_id",
             ),
+            launch_authority=launch_authority,
             vm_id=_strict_uuid(vm["vm_id"], "vm_id"),
             generation=_strict_int(vm["generation"], "generation"),
             vm_name=_strict_name(vm["name"], "VM name"),
@@ -2191,7 +2234,7 @@ def _checkpoint_facts(
     if name == "executable_pinned":
         table = _strict_object(
             raw,
-            frozenset({"executable"}),
+            frozenset({"executable", "storage"}),
             name,
         )
         executable = JournalExecutableIdentity.from_dict(
@@ -2201,7 +2244,148 @@ def _checkpoint_facts(
             raise RuntimeLaunchJournalError(
                 "pinned executable checkpoint disagrees with launch intent"
             )
-        return {"executable": executable.to_dict()}
+        storage_table = _strict_object(
+            table["storage"],
+            frozenset({"overlay", "base", "owner_marker"}),
+            "pinned storage",
+        )
+        normalized_storage: dict[str, dict[str, object]] = {}
+        descriptors: set[int] = set()
+        identities: set[tuple[int, int]] = set()
+        specifications = (
+            ("overlay", "overlay", "rw", 0o600, False),
+            ("base", "base", "r", 0o444, True),
+            ("owner_marker", "owner-marker", "r", 0o600, True),
+        )
+        for key, role, access_mode, mode, immutable in specifications:
+            descriptor = _strict_object(
+                storage_table[key],
+                frozenset(
+                    {
+                        "role",
+                        "descriptor",
+                        "device_id",
+                        "inode",
+                        "owner_uid",
+                        "owner_gid",
+                        "mode",
+                        "link_count",
+                        "size_bytes",
+                        "allocated_size_bytes",
+                        "mtime_ns",
+                        "ctime_ns",
+                        "access_mode",
+                        "content_sha256",
+                    }
+                ),
+                f"pinned {role}",
+            )
+            if (
+                descriptor["role"] != role
+                or descriptor["access_mode"] != access_mode
+            ):
+                raise RuntimeLaunchJournalError(
+                    f"pinned {role} role or access mode is invalid"
+                )
+            descriptor_number = _strict_int(
+                descriptor["descriptor"],
+                f"pinned {role} descriptor",
+                minimum=3,
+                maximum=2**31 - 1,
+            )
+            device_id = _strict_int(
+                descriptor["device_id"],
+                f"pinned {role} device_id",
+                minimum=1,
+            )
+            inode = _strict_int(
+                descriptor["inode"],
+                f"pinned {role} inode",
+                minimum=1,
+            )
+            content_sha256: str | None
+            if immutable:
+                content_sha256 = _strict_hash(
+                    descriptor["content_sha256"],
+                    f"pinned {role} content_sha256",
+                )
+            elif descriptor["content_sha256"] is not None:
+                raise RuntimeLaunchJournalError(
+                    "pinned overlay cannot claim immutable content"
+                )
+            else:
+                content_sha256 = None
+            normalized = {
+                "role": role,
+                "descriptor": descriptor_number,
+                "device_id": device_id,
+                "inode": inode,
+                "owner_uid": _strict_int(
+                    descriptor["owner_uid"],
+                    f"pinned {role} owner_uid",
+                    maximum=2**32 - 1,
+                ),
+                "owner_gid": _strict_int(
+                    descriptor["owner_gid"],
+                    f"pinned {role} owner_gid",
+                    maximum=2**32 - 1,
+                ),
+                "mode": _strict_int(
+                    descriptor["mode"],
+                    f"pinned {role} mode",
+                    minimum=mode,
+                    maximum=mode,
+                ),
+                "link_count": _strict_int(
+                    descriptor["link_count"],
+                    f"pinned {role} link_count",
+                    minimum=1,
+                    maximum=1,
+                ),
+                "size_bytes": _strict_int(
+                    descriptor["size_bytes"],
+                    f"pinned {role} size_bytes",
+                    minimum=1,
+                ),
+                "allocated_size_bytes": _strict_int(
+                    descriptor["allocated_size_bytes"],
+                    f"pinned {role} allocated_size_bytes",
+                ),
+                "mtime_ns": _strict_int(
+                    descriptor["mtime_ns"],
+                    f"pinned {role} mtime_ns",
+                ),
+                "ctime_ns": _strict_int(
+                    descriptor["ctime_ns"],
+                    f"pinned {role} ctime_ns",
+                ),
+                "access_mode": access_mode,
+                "content_sha256": content_sha256,
+            }
+            if descriptor_number in descriptors:
+                raise RuntimeLaunchJournalError(
+                    "pinned storage descriptors cannot alias"
+                )
+            identity = (device_id, inode)
+            if identity in identities:
+                raise RuntimeLaunchJournalError(
+                    "pinned storage physical identities cannot alias"
+                )
+            descriptors.add(descriptor_number)
+            identities.add(identity)
+            normalized_storage[key] = normalized
+        if (
+            normalized_storage["overlay"]["device_id"]
+            != intent.disk_device_id
+            or normalized_storage["overlay"]["inode"] != intent.disk_inode
+        ):
+            raise RuntimeLaunchJournalError(
+                "pinned overlay disagrees with launch intent"
+            )
+        return {
+            "executable": executable.to_dict(),
+            "storage": normalized_storage,
+        }
     if name == "log_guard_spawned":
         table = _strict_object(
             raw,
@@ -2519,7 +2703,14 @@ def _checkpoint_facts(
     if name == "qmp_identity_verified":
         table = _strict_object(
             raw,
-            frozenset({"evidence", "evidence_sha256"}),
+            frozenset(
+                {
+                    "evidence",
+                    "evidence_sha256",
+                    "storage_graph",
+                    "storage_graph_sha256",
+                }
+            ),
             name,
         )
         evidence, evidence_sha256 = _normalize_qmp_identity_evidence(
@@ -2528,9 +2719,172 @@ def _checkpoint_facts(
             intent,
             prior,
         )
+        storage_graph = _decode_json_object(
+            _encode_json(table["storage_graph"], "QMP storage graph"),
+            "QMP storage graph",
+        )
+        graph_table = _strict_object(
+            storage_graph,
+            frozenset(
+                {
+                    "schema",
+                    "peer_pid",
+                    "fdsets",
+                    "named_nodes",
+                    "blockstats",
+                    "peer_descriptors",
+                }
+            ),
+            "QMP storage graph",
+        )
+        process = prior["process_observed"]["process"]
+        assert isinstance(process, dict)
+        if (
+            graph_table["schema"]
+            != "somnus.qmp-storage-graph-evidence.v1"
+            or graph_table["peer_pid"] != process["pid"]
+            or not isinstance(graph_table["fdsets"], list)
+            or len(graph_table["fdsets"]) != 2
+            or not isinstance(graph_table["named_nodes"], list)
+            or len(graph_table["named_nodes"]) != 4
+            or not isinstance(graph_table["blockstats"], list)
+            or len(graph_table["blockstats"]) != 4
+            or not isinstance(graph_table["peer_descriptors"], list)
+            or len(graph_table["peer_descriptors"]) != 2
+        ):
+            raise RuntimeLaunchJournalError(
+                "QMP storage graph aggregate is not canonical"
+            )
+        expected_fdsets = (
+            (1, "somnus-overlay-rw"),
+            (2, "somnus-base-ro"),
+        )
+        qmp_fds: list[int] = []
+        for index, expected in enumerate(expected_fdsets):
+            fdset = _strict_object(
+                graph_table["fdsets"][index],
+                frozenset({"fd", "fdset_id", "opaque"}),
+                f"QMP storage fdset[{index}]",
+            )
+            if (fdset["fdset_id"], fdset["opaque"]) != expected:
+                raise RuntimeLaunchJournalError(
+                    "QMP storage fdset roles are not canonical"
+                )
+            qmp_fds.append(
+                _strict_int(
+                    fdset["fd"],
+                    f"QMP storage fdset[{index}] fd",
+                    maximum=2**31 - 1,
+                )
+            )
+        if len(set(qmp_fds)) != 2:
+            raise RuntimeLaunchJournalError(
+                "QMP storage fdset descriptors cannot alias"
+            )
+        expected_nodes = {
+            "somnus-overlay-file": ("file", False, "/dev/fdset/1"),
+            "somnus-base-file": ("file", True, "/dev/fdset/2"),
+            "somnus-base-qcow2": ("qcow2", True, None),
+            "somnus-disk": ("qcow2", False, None),
+        }
+        observed_nodes: dict[str, tuple[object, object, str]] = {}
+        for index, value in enumerate(graph_table["named_nodes"]):
+            node = _strict_object(
+                value,
+                frozenset(
+                    {
+                        "driver",
+                        "node_name",
+                        "reported_file",
+                        "read_only",
+                    }
+                ),
+                f"QMP storage node[{index}]",
+            )
+            name = str(node["node_name"])
+            reported_file = str(node["reported_file"])
+            expected = expected_nodes.get(name)
+            if (
+                expected is None
+                or not reported_file
+                or (expected[2] is not None and reported_file != expected[2])
+            ):
+                raise RuntimeLaunchJournalError(
+                    "QMP storage named-node file role is invalid"
+                )
+            observed_nodes[name] = (
+                node["driver"],
+                node["read_only"],
+                expected[2],
+            )
+        if observed_nodes != expected_nodes:
+            raise RuntimeLaunchJournalError(
+                "QMP storage named-node graph is not canonical"
+            )
+        expected_edges = {
+            "somnus-overlay-file": (None, None),
+            "somnus-base-file": (None, None),
+            "somnus-base-qcow2": ("somnus-base-file", None),
+            "somnus-disk": (
+                "somnus-overlay-file",
+                "somnus-base-qcow2",
+            ),
+        }
+        observed_edges: dict[str, tuple[object, object]] = {}
+        for index, value in enumerate(graph_table["blockstats"]):
+            node = _strict_object(
+                value,
+                frozenset({"backing_node", "node_name", "parent_node"}),
+                f"QMP storage edge[{index}]",
+            )
+            observed_edges[str(node["node_name"])] = (
+                node["parent_node"],
+                node["backing_node"],
+            )
+        if observed_edges != expected_edges:
+            raise RuntimeLaunchJournalError(
+                "QMP storage blockstats graph is not canonical"
+            )
+        pinned = prior["executable_pinned"]["storage"]
+        assert isinstance(pinned, dict)
+        for index, (role, key, access) in enumerate(
+            (
+                ("overlay", "overlay", "rw"),
+                ("base", "base", "r"),
+            )
+        ):
+            descriptor = _strict_object(
+                graph_table["peer_descriptors"][index],
+                frozenset(
+                    {"access_mode", "device_id", "fd", "inode", "role"}
+                ),
+                f"QMP peer descriptor[{index}]",
+            )
+            authority = pinned[key]
+            assert isinstance(authority, dict)
+            if (
+                descriptor["role"] != role
+                or descriptor["access_mode"] != access
+                or descriptor["fd"] != qmp_fds[index]
+                or descriptor["device_id"] != authority["device_id"]
+                or descriptor["inode"] != authority["inode"]
+            ):
+                raise RuntimeLaunchJournalError(
+                    "QMP peer descriptor is not the pinned storage authority"
+                )
+        storage_graph_sha256 = _strict_hash(
+            table["storage_graph_sha256"],
+            "QMP storage graph SHA256",
+        )
+        if canonical_evidence_sha256(storage_graph) != storage_graph_sha256:
+            raise RuntimeLaunchJournalError(
+                "QMP storage graph hash is invalid"
+            )
         return {
             "evidence": evidence,
             "evidence_sha256": evidence_sha256,
+            "storage_graph": storage_graph,
+            "storage_graph_sha256": storage_graph_sha256,
         }
     if name == "process_identity_recorded":
         table = _strict_object(
@@ -2722,6 +3076,7 @@ class RuntimeLaunchJournal:
     intent: RuntimeLaunchIntent
     checkpoints: tuple[CheckpointWrite, ...] = ()
     durable_status: str | None = None
+    durable_cleanup_state: str | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.intent, RuntimeLaunchIntent):
@@ -2758,6 +3113,20 @@ class RuntimeLaunchJournal:
             raise RuntimeLaunchJournalError(
                 "durable operation status is unsupported"
             )
+        if (
+            self.durable_cleanup_state is not None
+            and self.durable_cleanup_state
+            not in {
+                "none",
+                "not_spawned",
+                "exit_observed",
+                "unknown",
+                "orphaned",
+            }
+        ):
+            raise RuntimeLaunchJournalError(
+                "durable cleanup state is unsupported"
+            )
 
     @property
     def latest_checkpoint(self) -> str | None:
@@ -2777,6 +3146,11 @@ class RuntimeLaunchJournal:
     def recovery_disposition(self) -> RecoveryDisposition:
         if self.durable_status in {"completed", "failed", "canceled"}:
             return RecoveryDisposition.NONE
+        if (
+            self.durable_status == "recovery_required"
+            and self.durable_cleanup_state == "orphaned"
+        ):
+            return RecoveryDisposition.ORPHAN_EMERGENCY
         return _RECOVERY_BY_COUNT[len(self.checkpoints)]
 
     def begin_operation_kwargs(self) -> dict[str, object]:
@@ -2788,6 +3162,37 @@ class RuntimeLaunchJournal:
             facts = self._validate_payload(checkpoint, prior)
             prior[checkpoint.name] = facts
         return prior
+
+    def pinned_storage_authority(
+        self,
+    ) -> tuple[dict[str, object], dict[str, object], dict[str, object]]:
+        """Return the canonical overlay/base/marker guard authority.
+
+        Descriptor numbers are meaningful only for the exact unreleased guard
+        process recorded by this journal.  The complete metadata and immutable
+        hashes remain durable so restart recovery can reject a guard whose
+        inherited authority differs from the launch checkpoint.
+        """
+
+        facts = self._prior_facts().get("executable_pinned")
+        if facts is None:
+            raise RuntimeLaunchJournalError(
+                "pinned storage authority is not yet durable"
+            )
+        storage = facts.get("storage")
+        if not isinstance(storage, dict):
+            raise RuntimeLaunchJournalError(
+                "pinned storage authority is absent"
+            )
+        values: list[dict[str, object]] = []
+        for key in ("overlay", "base", "owner_marker"):
+            item = storage.get(key)
+            if not isinstance(item, dict):
+                raise RuntimeLaunchJournalError(
+                    "pinned storage authority is incomplete"
+                )
+            values.append(dict(item))
+        return values[0], values[1], values[2]
 
     def private_directory_identities(
         self,
@@ -3202,6 +3607,11 @@ class RuntimeLaunchJournal:
         )
         crash_class = _CRASH_BY_COUNT[crash_count]
         disposition = _RECOVERY_BY_COUNT[crash_count]
+        if (
+            selected_status == "recovery_required"
+            and selected_cleanup == "orphaned"
+        ):
+            disposition = RecoveryDisposition.ORPHAN_EMERGENCY
         if selected_status in {"completed", "failed", "canceled"}:
             disposition = RecoveryDisposition.NONE
         return {
@@ -3369,10 +3779,46 @@ class RuntimeLaunchJournal:
             raise RuntimeLaunchJournalError(
                 "persisted runtime launch has no intent checkpoint"
             )
+        durable_cleanup_state: str | None = None
+        if operation.status == "recovery_required":
+            result_table = _strict_object(
+                _decode_json_object(
+                    operation.result,
+                    "runtime launch operation result",
+                ),
+                frozenset(
+                    {
+                        "schema",
+                        "kind",
+                        "status",
+                        "operation_id",
+                        "vm_id",
+                        "generation",
+                        "boot_id",
+                        "disk_id",
+                        "process_record_id",
+                        "qmp_evidence_id",
+                        "lifecycle_evidence_id",
+                        "disk_observation_id",
+                        "latest_checkpoint",
+                        "crash_class",
+                        "recovery_disposition",
+                        "reason",
+                        "cleanup_state",
+                        "qmp_status",
+                    }
+                ),
+                "runtime launch operation result",
+            )
+            durable_cleanup_state = _strict_token(
+                result_table["cleanup_state"],
+                "cleanup state",
+            )
         state = cls(
             intent,
             tuple(writes),
             operation.status,
+            durable_cleanup_state,
         )
         if operation.latest_checkpoint != len(writes) - 1:
             raise RuntimeLaunchJournalError(
@@ -3426,6 +3872,16 @@ class RuntimeLaunchJournal:
             ),
             "runtime launch operation result",
         )
+        cleanup = _strict_token(
+            table["cleanup_state"],
+            "cleanup state",
+        )
+        expected_disposition = self.recovery_disposition
+        if (
+            operation.status == "recovery_required"
+            and cleanup == "orphaned"
+        ):
+            expected_disposition = RecoveryDisposition.ORPHAN_EMERGENCY
         if (
             table["schema"] != RUNTIME_LAUNCH_RESULT_SCHEMA
             or table["kind"] != RUNTIME_LAUNCH_KIND
@@ -3447,16 +3903,12 @@ class RuntimeLaunchJournal:
             != (self.latest_checkpoint or "none")
             or table["crash_class"] != self.crash_class.value
             or table["recovery_disposition"]
-            != self.recovery_disposition.value
+            != expected_disposition.value
         ):
             raise RuntimeLaunchJournalError(
                 "operation result disagrees with replayed launch state"
             )
         _strict_token(table["reason"], "result reason")
-        cleanup = _strict_token(
-            table["cleanup_state"],
-            "cleanup state",
-        )
         if (
             operation.status in {"failed", "canceled"}
             and cleanup not in {"not_spawned", "exit_observed"}

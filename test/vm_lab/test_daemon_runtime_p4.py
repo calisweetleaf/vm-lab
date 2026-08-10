@@ -10,6 +10,7 @@ binary and makes no process, QMP, or running-VM claim.
 
 from __future__ import annotations
 
+import fcntl
 import hashlib
 import json
 import os
@@ -44,7 +45,26 @@ from somnus_protocol import (  # noqa: E402
 )
 from somnus_vm.client import UnixControlClient  # noqa: E402
 from somnus_vm.config import load_configuration  # noqa: E402
+from somnus_vm.daemon_runtime import (  # noqa: E402
+    DaemonRuntimeContext,
+    DaemonRuntimeHooks,
+    run as run_daemon_runtime,
+)
 from somnus_vm.host.images import ImageManifest, ToolVersion  # noqa: E402
+from somnus_vm.host.launch_authority import (  # noqa: E402
+    DisposableLaunchReceipt,
+    ProductionExclusion,
+)
+from somnus_vm.host.qemu import bind_block_fds, validate_fd_bound_execution  # noqa: E402
+from somnus_vm.host.qemu_process import inspect_executable  # noqa: E402
+from somnus_vm.host.qemu_runtime import (  # noqa: E402
+    QemuRuntimeError,
+    QemuRuntimeOwner,
+)
+from somnus_vm.host.qemu_runtime_journal import (  # noqa: E402
+    RuntimeLaunchIntent,
+    RuntimeLaunchJournal,
+)
 from somnus_vm.host.registry import RegistryMode, SQLiteRegistry  # noqa: E402
 from somnus_vm.host.service import RegistryMutationService  # noqa: E402
 from somnus_vm.transport import PeerCredentials, TransportError  # noqa: E402
@@ -53,10 +73,49 @@ from somnus_vm.transport import PeerCredentials, TransportError  # noqa: E402
 _TIMEOUT_SECONDS = 20.0
 
 
+def _runtime_hook_worker(config_path: Path, evidence_path: Path) -> int:
+    """Run the real daemon composition with one Python-only activation."""
+
+    def activation(context: DaemonRuntimeContext) -> None:
+        evidence_path.write_text(
+            json.dumps(
+                {
+                    "active_vm_ids": sorted(
+                        str(item) for item in context.runtime.live_vm_ids
+                    ),
+                    "completed_reconciliation": [
+                        item.disposition
+                        for item in context.completed_reconciliation
+                    ],
+                    "incomplete_recovery": [
+                        item.disposition
+                        for item in context.incomplete_recovery
+                    ],
+                    "registry_mode": context.registry.status.mode.value,
+                    "same_configuration": (
+                        context.configuration
+                        == load_configuration(config_path)
+                    ),
+                    "service_type": type(context.service).__name__,
+                },
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
+    return run_daemon_runtime(
+        config_path,
+        hooks=DaemonRuntimeHooks(activation=activation),
+    )
+
+
 def _configuration_file(
     root: Path,
     *,
     qemu_img_binary: Path | None = None,
+    qemu_system_binary: Path | None = None,
 ) -> Path:
     selected_qemu_img = qemu_img_binary or (
         root / "qemu-img-does-not-exist"
@@ -69,7 +128,7 @@ def _configuration_file(
                 'profile = "p4-daemon-runtime"',
                 "",
                 "[host]",
-                f'qemu_binary = "{root / "qemu-does-not-exist"}"',
+                f'qemu_binary = "{qemu_system_binary or (root / "qemu-does-not-exist")}"',
                 f'qemu_img_binary = "{selected_qemu_img}"',
                 "enable_kvm = false",
                 "",
@@ -191,6 +250,29 @@ def _booting_intent(record: VMRecord, image_sha256: str) -> VMRecord:
             boot_id=boot_id,
         ),
         boot_id=boot_id,
+    )
+
+
+def _provisioned_intent(record: VMRecord, image_sha256: str) -> VMRecord:
+    """Advance through the two storage-intent states without starting QEMU."""
+
+    selected = record.transition(
+        VMState.PROVISIONING,
+        _transition_evidence(
+            record,
+            {"operation_id": str(uuid4())},
+        ),
+    )
+    return selected.transition(
+        VMState.PROVISIONED,
+        _transition_evidence(
+            selected,
+            {
+                "image_sha256": image_sha256,
+                "operation_id": str(uuid4()),
+                "storage_id": str(uuid4()),
+            },
+        ),
     )
 
 
@@ -393,6 +475,349 @@ class DaemonRuntimeP4Gate(unittest.TestCase):
                     (),
                 )
                 self.assertEqual(registry.list_disks(active_only=False), ())
+
+    def test_python_only_activation_runs_inside_the_real_daemon_owner(
+        self,
+    ) -> None:
+        """The physical-gate seam is composed but absent from public control."""
+
+        with tempfile.TemporaryDirectory(
+            prefix="vm-lab-p4-daemon-hook-"
+        ) as raw:
+            root = Path(raw).resolve()
+            config_path = _configuration_file(root)
+            configuration = load_configuration(config_path)
+            evidence_path = root / "activation.json"
+            environment = os.environ.copy()
+            environment["PYTHONPATH"] = str(SOURCE_ROOT)
+            process = subprocess.Popen(
+                [
+                    sys.executable,
+                    os.fspath(Path(__file__).resolve()),
+                    "--runtime-hook-worker",
+                    os.fspath(config_path),
+                    os.fspath(evidence_path),
+                ],
+                cwd=PROJECT_ROOT,
+                env=environment,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            client = UnixControlClient(
+                configuration.daemon.control_socket,
+                timeout_seconds=2.0,
+                allowed_server_uids={os.geteuid()},
+            )
+            try:
+                deadline = time.monotonic() + _TIMEOUT_SECONDS
+                status: ControlResponse | None = None
+                while time.monotonic() < deadline:
+                    if process.poll() is not None:
+                        break
+                    if not evidence_path.is_file():
+                        time.sleep(0.02)
+                        continue
+                    try:
+                        candidate = client.request(
+                            _request("registry.status")
+                        )
+                    except TransportError:
+                        time.sleep(0.02)
+                        continue
+                    self.assertIsInstance(candidate, ControlResponse)
+                    assert isinstance(candidate, ControlResponse)
+                    status = candidate
+                    break
+                if status is None:
+                    stdout, stderr = process.communicate(timeout=5.0)
+                    self.fail(
+                        "hooked daemon did not reach the authenticated listener"
+                        f"\nstdout:\n{stdout}\nstderr:\n{stderr}"
+                    )
+                self.assertEqual(status.result["mode"], "read_write")
+                evidence = json.loads(
+                    evidence_path.read_text(encoding="utf-8")
+                )
+                self.assertEqual(
+                    evidence,
+                    {
+                        "active_vm_ids": [],
+                        "completed_reconciliation": [],
+                        "incomplete_recovery": [],
+                        "registry_mode": "read_write",
+                        "same_configuration": True,
+                        "service_type": "RegistryMutationService",
+                    },
+                )
+                # The installed daemon parser has no hook or launch option.
+                rejected = subprocess.run(
+                    [
+                        sys.executable,
+                        "-m",
+                        "somnus_vm.daemon_runtime",
+                        "--config",
+                        os.fspath(config_path),
+                        "--launch-vm",
+                        str(uuid4()),
+                    ],
+                    cwd=PROJECT_ROOT,
+                    env=environment,
+                    capture_output=True,
+                    text=True,
+                    timeout=5.0,
+                )
+                self.assertNotEqual(rejected.returncode, 0)
+                self.assertIn("unrecognized arguments", rejected.stderr)
+            finally:
+                if process.poll() is None:
+                    process.send_signal(signal.SIGTERM)
+                try:
+                    stdout, stderr = process.communicate(
+                        timeout=_TIMEOUT_SECONDS
+                    )
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    stdout, stderr = process.communicate(timeout=5.0)
+                    self.fail(
+                        "hooked daemon did not stop"
+                        f"\nstdout:\n{stdout}\nstderr:\n{stderr}"
+                    )
+            self.assertEqual(process.returncode, 0, stderr)
+            self.assertNotIn("Traceback", stderr)
+
+    def test_runtime_owner_consumes_exact_p3_descriptors_before_spawn(
+        self,
+    ) -> None:
+        qemu_img_value = shutil.which("qemu-img")
+        qemu_system_value = shutil.which("qemu-system-x86_64")
+        self.assertIsNotNone(
+            qemu_img_value,
+            "descriptor-bound P4 proof requires the real qemu-img owner",
+        )
+        self.assertIsNotNone(
+            qemu_system_value,
+            "descriptor-bound P4 proof requires the selected QEMU executable",
+        )
+        assert qemu_img_value is not None
+        assert qemu_system_value is not None
+        qemu_img = Path(qemu_img_value).resolve(strict=True)
+        qemu_system = Path(qemu_system_value).resolve(strict=True)
+
+        with tempfile.TemporaryDirectory(
+            prefix="vm-lab-p4-storage-bind-"
+        ) as raw:
+            root = Path(raw).resolve()
+            configuration = load_configuration(
+                _configuration_file(
+                    root,
+                    qemu_img_binary=qemu_img,
+                    qemu_system_binary=qemu_system,
+                )
+            )
+            source, manifest = _create_base_manifest(root, qemu_img)
+            peer = PeerCredentials(
+                pid=os.getpid(),
+                uid=os.geteuid(),
+                gid=os.getegid(),
+            )
+            registry_path = (
+                configuration.storage.state_root / "registry.sqlite3"
+            )
+            with SQLiteRegistry.open(registry_path) as registry:
+                service = RegistryMutationService(registry, configuration.host)
+                imported = service(
+                    _request(
+                        "storage.import_base",
+                        {
+                            "manifest": manifest.to_dict(),
+                            "source_path": os.fspath(source),
+                        },
+                    ),
+                    peer,
+                )
+                self.assertIsInstance(imported, ControlResponse)
+                assert isinstance(imported, ControlResponse)
+                declared = service(
+                    _request(
+                        "registry.declare",
+                        {
+                            "memory_mib": 4_096,
+                            "name": "descriptor-bound-aipc",
+                            "vcpus": 2,
+                        },
+                    ),
+                    peer,
+                )
+                self.assertIsInstance(declared, ControlResponse)
+                assert isinstance(declared, ControlResponse)
+                vm_id = UUID(str(declared.result["vm_id"]))
+                generation = int(declared.result["generation"])
+                revision = int(declared.result["revision"])
+                leased = service(
+                    _request(
+                        "registry.lease",
+                        {"expected_revision": revision},
+                        vm_id=vm_id,
+                        generation=generation,
+                    ),
+                    peer,
+                )
+                self.assertIsInstance(leased, ControlResponse)
+                materialized = service(
+                    _request(
+                        "storage.create_overlay",
+                        {
+                            "base_image_id": str(
+                                imported.result["registry_image_id"]
+                            ),
+                            "expected_revision": revision,
+                            "virtual_size_bytes": 100 * 1024**3,
+                        },
+                        vm_id=vm_id,
+                        generation=generation,
+                    ),
+                    peer,
+                )
+                self.assertIsInstance(materialized, ControlResponse)
+
+                declared_owner = registry.get_vm(vm_id)
+                self.assertIsNotNone(declared_owner)
+                assert declared_owner is not None
+                provisioned = _provisioned_intent(
+                    declared_owner.record,
+                    manifest.sha256,
+                )
+                with registry.write_transaction() as transaction:
+                    transaction.compare_and_swap_vm(
+                        vm_id,
+                        declared_owner.revision,
+                        provisioned,
+                    )
+
+                owner = QemuRuntimeOwner(registry, configuration.host)
+                before = registry.get_vm(vm_id)
+                with self.assertRaises(QemuRuntimeError):
+                    owner.launch(vm_id, permit=None)  # type: ignore[arg-type]
+                self.assertEqual(registry.get_vm(vm_id), before)
+                record, _revision, disk, plan = owner._select_authority(vm_id)
+                storage = owner._pin_runtime_storage(disk)
+                try:
+                    self.assertEqual(
+                        fcntl.fcntl(
+                            storage.overlay.descriptor,
+                            fcntl.F_GETFL,
+                        )
+                        & os.O_ACCMODE,
+                        os.O_RDWR,
+                    )
+                    self.assertEqual(
+                        fcntl.fcntl(storage.base.descriptor, fcntl.F_GETFL)
+                        & os.O_ACCMODE,
+                        os.O_RDONLY,
+                    )
+                    self.assertEqual(
+                        fcntl.fcntl(storage.marker.descriptor, fcntl.F_GETFL)
+                        & os.O_ACCMODE,
+                        os.O_RDONLY,
+                    )
+                    executed_argv = bind_block_fds(
+                        plan,
+                        overlay_fd=storage.overlay.descriptor,
+                        base_fd=storage.base.descriptor,
+                    )
+                    validate_fd_bound_execution(plan.argv, executed_argv)
+                    intent = RuntimeLaunchIntent.from_runtime(
+                        record,
+                        disk,
+                        plan,
+                        inspect_executable(os.fspath(qemu_system)),
+                        executed_argv=executed_argv,
+                        launch_authority=DisposableLaunchReceipt(
+                            permit_id=uuid4(),
+                            run_id=uuid4(),
+                            vm_id=record.vm_id,
+                            generation=record.generation,
+                            disk_id=disk.disk_id,
+                            disk_path=disk.path,
+                            base_sha256=disk.base_image_sha256,
+                            fixture_root=os.fspath(root),
+                            fixture_device_id=root.stat().st_dev,
+                            fixture_inode=root.stat().st_ino,
+                            marker_sha256="5" * 64,
+                            production_exclusions=(
+                                ProductionExclusion(
+                                    label="daemon-production-exclusion",
+                                    path=root / "production-aipc.qcow2",
+                                    device_id=root.stat().st_dev,
+                                    inode=root.stat().st_ino + 1,
+                                ),
+                            ),
+                        ),
+                    )
+                    journal = RuntimeLaunchJournal(intent)
+                    journal, _ = journal.advance("intent_persisted")
+                    runtime_details = (
+                        configuration.daemon.runtime_root.parent
+                    )
+                    runtime_details.mkdir(
+                        mode=0o700,
+                        parents=True,
+                        exist_ok=True,
+                    )
+                    configuration.daemon.runtime_root.mkdir(
+                        mode=0o700,
+                        parents=True,
+                    )
+                    configuration.storage.log_root.mkdir(
+                        mode=0o700,
+                        parents=True,
+                    )
+                    runtime_stat = configuration.daemon.runtime_root.stat(
+                        follow_symlinks=False
+                    )
+                    log_stat = configuration.storage.log_root.stat(
+                        follow_symlinks=False
+                    )
+                    journal, _ = journal.advance(
+                        "private_paths_prepared",
+                        {
+                            "owner_uid": os.geteuid(),
+                            "runtime_root_device_id": runtime_stat.st_dev,
+                            "runtime_root_inode": runtime_stat.st_ino,
+                            "runtime_root_mode": 0o700,
+                            "log_root_device_id": log_stat.st_dev,
+                            "log_root_inode": log_stat.st_ino,
+                            "log_root_mode": 0o700,
+                        },
+                    )
+                    journal, _ = journal.advance(
+                        "executable_pinned",
+                        {
+                            "executable": intent.executable.to_dict(),
+                            "storage": {
+                                "overlay": storage.overlay.to_checkpoint_dict(),
+                                "base": storage.base.to_checkpoint_dict(),
+                                "owner_marker": (
+                                    storage.marker.to_checkpoint_dict()
+                                ),
+                            },
+                        },
+                    )
+                    pinned = journal.pinned_storage_authority()
+                    self.assertEqual(
+                        tuple(int(item["descriptor"]) for item in pinned),
+                        storage.descriptors,
+                    )
+                    self.assertEqual(
+                        tuple(
+                            str(item["role"])
+                            for item in pinned
+                        ),
+                        ("overlay", "base", "owner-marker"),
+                    )
+                finally:
+                    storage.close()
 
     def test_booting_runtime_owner_rejects_public_cancel_atomically(
         self,
@@ -611,4 +1036,11 @@ class DaemonRuntimeP4Gate(unittest.TestCase):
 
 
 if __name__ == "__main__":
+    if len(sys.argv) == 4 and sys.argv[1] == "--runtime-hook-worker":
+        raise SystemExit(
+            _runtime_hook_worker(
+                Path(sys.argv[2]).resolve(),
+                Path(sys.argv[3]).resolve(),
+            )
+        )
     unittest.main()

@@ -10,22 +10,73 @@ from __future__ import annotations
 import argparse
 import os
 import signal
+from dataclasses import dataclass
 from pathlib import Path
 from types import FrameType
-from typing import Final
+from typing import Callable, Final
+from uuid import UUID
 
-from .config import ConfigurationError, load_configuration
+from .config import ConfigurationError, LabConfiguration, load_configuration
 from .daemon import UnixControlDaemon
 from .host.registry import (
     RegistryError,
     RegistryMode,
     SQLiteRegistry,
 )
-from .host.qemu_runtime import QemuRuntimeError, QemuRuntimeOwner
+from .host.qemu_runtime import (
+    QemuRuntimeError,
+    QemuRuntimeOwner,
+    RuntimeRecoveryResult,
+)
 from .host.service import RegistryMutationService, RegistryServiceError
 from .transport import DaemonOwnershipError
 
 _REGISTRY_NAME: Final[str] = "registry.sqlite3"
+
+RuntimeCheckpointObserver = Callable[[UUID, str], None]
+
+
+@dataclass(frozen=True, slots=True)
+class DaemonRuntimeContext:
+    """The live single-owner composition offered to one internal activator.
+
+    The context exists only while :func:`run` owns the open writer registry.
+    It is not serializable, is not a public control operation, and must never
+    escape into a second process or a longer-lived lifecycle owner.
+    """
+
+    configuration: LabConfiguration
+    registry: SQLiteRegistry
+    service: RegistryMutationService
+    runtime: QemuRuntimeOwner
+    incomplete_recovery: tuple[RuntimeRecoveryResult, ...]
+    completed_reconciliation: tuple[RuntimeRecoveryResult, ...]
+
+
+RuntimeActivation = Callable[[DaemonRuntimeContext], None]
+
+
+@dataclass(frozen=True, slots=True)
+class DaemonRuntimeHooks:
+    """Explicit Python-only composition ports for physical integration gates.
+
+    Normal ``somnus-vm-daemon`` execution supplies no hooks.  In particular,
+    neither the command-line parser nor the AF_UNIX service vocabulary can
+    construct an activation.  A trusted embedding owner may inject one
+    checkpoint observer and one after-recovery activation while retaining this
+    process as the sole registry, QEMU, and recovery authority.
+    """
+
+    checkpoint_observer: RuntimeCheckpointObserver | None = None
+    activation: RuntimeActivation | None = None
+
+    def __post_init__(self) -> None:
+        if self.checkpoint_observer is not None and not callable(
+            self.checkpoint_observer
+        ):
+            raise TypeError("checkpoint_observer must be callable")
+        if self.activation is not None and not callable(self.activation):
+            raise TypeError("activation must be callable")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -46,28 +97,61 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def run(config_path: Path) -> int:
-    """Compose and serve one unprivileged registry authority."""
+def run(
+    config_path: Path,
+    *,
+    hooks: DaemonRuntimeHooks | None = None,
+) -> int:
+    """Compose and serve one unprivileged registry and runtime authority.
+
+    ``hooks`` is a direct Python embedding seam, not a CLI or transport
+    capability.  It exists so a physical gate or later operator-owned
+    controller can exercise the already-composed runtime without creating a
+    second mutation owner.
+    """
 
     if os.geteuid() == 0:
         raise DaemonOwnershipError(
             "somnus-vm-daemon must run as an unprivileged service account"
         )
+    if hooks is not None and not isinstance(hooks, DaemonRuntimeHooks):
+        raise TypeError("hooks must be DaemonRuntimeHooks")
     configuration = load_configuration(config_path)
     registry_path = configuration.storage.state_root / _REGISTRY_NAME
     with SQLiteRegistry.open(registry_path, writer=True) as registry:
         service = RegistryMutationService(registry, configuration.host)
-        runtime = QemuRuntimeOwner(registry, configuration.host)
+        runtime = QemuRuntimeOwner(
+            registry,
+            configuration.host,
+            checkpoint_observer=(
+                None if hooks is None else hooks.checkpoint_observer
+            ),
+        )
         daemon: UnixControlDaemon | None = None
         previous_term: signal.Handlers | None = None
         previous_int: signal.Handlers | None = None
         try:
+            incomplete_recovery: tuple[RuntimeRecoveryResult, ...] = ()
+            completed_reconciliation: tuple[RuntimeRecoveryResult, ...] = ()
             if registry.status.mode is RegistryMode.READ_WRITE:
-                runtime.recover_incomplete_launches()
-                runtime.reconcile_completed_launches()
+                incomplete_recovery = runtime.recover_incomplete_launches()
+                completed_reconciliation = (
+                    runtime.reconcile_completed_launches()
+                )
                 service.recover_incomplete_operations()
                 service.reconcile_storage_authority(
                     exclude_live_vm_ids=runtime.live_vm_ids
+                )
+            if hooks is not None and hooks.activation is not None:
+                hooks.activation(
+                    DaemonRuntimeContext(
+                        configuration=configuration,
+                        registry=registry,
+                        service=service,
+                        runtime=runtime,
+                        incomplete_recovery=incomplete_recovery,
+                        completed_reconciliation=completed_reconciliation,
+                    )
                 )
             daemon = UnixControlDaemon(
                 configuration.daemon,
@@ -116,7 +200,15 @@ def main(argv: list[str] | None = None) -> int:
         parser.exit(1, f"somnus-vm-daemon: {exc}\n")
 
 
-__all__ = ["build_parser", "main", "run"]
+__all__ = [
+    "DaemonRuntimeContext",
+    "DaemonRuntimeHooks",
+    "RuntimeActivation",
+    "RuntimeCheckpointObserver",
+    "build_parser",
+    "main",
+    "run",
+]
 
 
 if __name__ == "__main__":

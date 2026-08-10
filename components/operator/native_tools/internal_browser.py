@@ -5,7 +5,7 @@ AI Browser Research System with Full Browser Automation
 =========================================================
 
 Production-grade browser automation system that gives AI complete
-web research capabilities with real browsers, not scraping. This is the second layer enabling web access for a Somnus Sovereign Agent. It lives directly within the virtual machine as an always on, persistent, "quick" browser, enabled for extended deep-researching capabilities but is purposed as the main Web Data fetcher for a Somnus OS Chat Virtual Machine. This layer sits above the user togglable which is for direct queries where extended search is needed, or deep research, But does not require enough of a task load, to vm hotswap to the Web Research Subsystem layer. This is layer 2/3 and is in the "middle" of the other 2 web layers.
+web research capabilities with real browsers, not scraping. This is the second layer enabling web access for a Somnus Sovereign Agent. It lives directly within the virtual machine as an always on, persistent, "quick" browser, enabled for extended deep-researching capabilities but is purposed as the main Web Data fetcher for a Somnus OS Chat Virtual Machine. This layer sits above the user toggle which is for direct queries where extended search is needed, or deep research, But does not require enough of a task load, to vm hotswap to the Web Research Subsystem layer. This is layer 2/3 and is in the "middle" of the other 2 web layers.
 
 Features:
 - Full Firefox/Chrome browser automation with Selenium

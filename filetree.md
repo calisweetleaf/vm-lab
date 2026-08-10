@@ -2,7 +2,10 @@
 
 **Root:** `vm-lab/`
 **Baseline:** snapshot `v0.1` plus closed P1 protocol, P2 daemon/registry, and
-P3 image/storage authority; P4 QEMU/QMP ownership next
+P3 image/storage authority; internal P4 runtime implementation and its
+fail-closed disposable launch-authority seam plus physical-gate coordinator are
+live, all 18 bounded items are complete, and `GATE-P4` remains open pending the
+exact authorized disposable-machine proof
 **Entry:** [`AGENTS.md`](AGENTS.md) → [`TASK.md`](TASK.md) → one route below
 
 This is a semantic navigation/dependency map, not an automatically generated
@@ -46,9 +49,14 @@ flowchart TD
     TRANSPORT --> OWNER["daemon_runtime: one mutation owner"]
     OWNER --> REG["SQLite registry + mutation/recovery service"]
     OWNER --> STORE["qemu-img provenance + persistent storage"]
+    OWNER --> RUNTIME["internal P4 QemuRuntimeOwner + journal/recovery"]
+    RUNTIME --> AUTH["launch_authority: one-shot disposable permit"]
+    AUTH --> GATE["p4_gate.py + run_gate_p4.py: exact preflight/activation/sealing"]
+    GATE -. "authority/exclusions/physical 17-scenario matrix still missing" .-> QMP["qemu-system + external QMP truth"]
     PUBLIC --> TEST["test/vm_lab: current proof"]
     REG --> TEST
     STORE --> TEST
+    RUNTIME --> TEST
     TEST --> RUN["SOTA_RUN.md + run bundle"]
     TOPO["TOPOLOGY.md: invariants"] --> PROTO
     FAIL["FAILURE_GRAMMAR.md: wrong smells"] --> PUBLIC
@@ -75,6 +83,16 @@ somnus-vm-daemon internal entrypoint
      -> host/registry.py <-> host/service.py
      -> host/images.py -> host/exec_guard.py -> real qemu-img
      -> host/storage.py -> immutable base + owned sparse overlays
+     -> host/qemu_runtime.py -> QMP/process/log/journal/recovery owners
+        -> daemon Python-only activation seam (no public launch command)
+        -> launch_authority.py -> one-shot fixture/production-bound permit
+        -> p4_gate.py -> exact 17-scenario preflight/activation/checkpoint/recovery/sealing
+        -> scripts/run_gate_p4.py (non-public operator driver)
+        -> pin P3 overlay/base/marker descriptors
+        -> host/qemu_exec_guard.py -> release-time metadata/hash fence
+        -> two QEMU fdsets + four explicit block nodes
+        -> QMP fdset/named-node/blockstats + peer /proc descriptor truth
+        -> exact-child adoption/cleanup or durable orphan emergency
 
 somnus-guest-bootstrap entrypoint
   -> src/somnus_vm/guest/bootstrap.py
@@ -85,12 +103,14 @@ test/vm_lab/smoke.py
      -> direct protocol + CLI/package/config/planner/bootstrap/manifest evidence
      -> P2 transport/registry/daemon physical modules
      -> P3 core/adversarial/real-daemon storage modules
+     -> P4 direct component modules + coordinator preflight (non-launch; gate remains open)
 ```
 
 No candidate, lineage, cold, or quarantine path enters host boot. The canonical
 protocol performs no boot or I/O at import. The public `vm-lab` CLI remains
 non-mutating even though the separately composed internal daemon/registry/
-storage owner is live.
+storage owner and internal P4 runtime owner are live. No public command reaches
+that launch path, and no current proof closes the disposable-machine gate.
 
 ---
 
@@ -159,7 +179,9 @@ log-safe projections. P1 errors accept no caller prose or nonempty `details`.
   - [`daemon.py`](src/somnus_vm/daemon.py) → private authenticated AF_UNIX
     listener and bounded dispatch shell
   - [`daemon_runtime.py`](src/somnus_vm/daemon_runtime.py) → executable
-    single-owner composition of daemon, registry, service, and storage
+    single-owner composition of daemon, registry, service, storage, and the
+    internal P4 runtime/recovery owner; Python-only activation hooks exercise
+    the owner without widening the public CLI
   - [`doctor.py`](src/somnus_vm/doctor.py) → read-only host observations
   - [`topology.py`](src/somnus_vm/topology.py) → disposition registry
   - [`transport.py`](src/somnus_vm/transport.py) → bounded framing and Linux
@@ -176,6 +198,30 @@ log-safe projections. P1 errors accept no caller prose or nonempty `details`.
       record/QEMU-plan composition
     - [`ports.py`](src/somnus_vm/host/ports.py) → temporary bind-check only
     - [`qemu.py`](src/somnus_vm/host/qemu.py) → deterministic shell-free argv
+      plus the existing two-fdset/four-node block-plan binder
+    - [`qemu_runtime.py`](src/somnus_vm/host/qemu_runtime.py) → internal launch,
+      QMP/process/disk observation, completion, and restart recovery owner
+    - [`qemu_runtime_journal.py`](src/somnus_vm/host/qemu_runtime_journal.py) →
+      frozen launch facts and durable checkpoint prefix
+    - [`qmp.py`](src/somnus_vm/host/qmp.py) /
+      [`qmp_identity.py`](src/somnus_vm/host/qmp_identity.py) → bounded QMP
+      transport and machine-identity interpretation
+    - [`qemu_process.py`](src/somnus_vm/host/qemu_process.py) /
+      [`qemu_logs.py`](src/somnus_vm/host/qemu_logs.py) → exact process identity
+      and bounded redacted log ownership
+    - [`qemu_exec_guard.py`](src/somnus_vm/host/qemu_exec_guard.py) /
+      [`qemu_log_guard.py`](src/somnus_vm/host/qemu_log_guard.py) → native target
+      and log-guardian containment
+    - [`launch_authority.py`](src/somnus_vm/host/launch_authority.py) → fail-closed,
+      one-shot disposable-fixture permit and production-root exclusion fence;
+      this is pre-launch safety, not physical gate closure
+    - [`p4_gate.py`](src/somnus_vm/host/p4_gate.py) → non-public canonical
+      17-scenario matrix specification/preflight, authorization, daemon
+      activation, strict serial execution/resume, checkpoint/recovery,
+      canonical QMP-history capture, and sealed-result validation; it is not
+      public lifecycle authority
+    - [`scripts/run_gate_p4.py`](scripts/run_gate_p4.py) → explicit operator
+      `prepare-matrix`/`preflight-matrix`/`execute-matrix` driver; not installed
     - [`registry.py`](src/somnus_vm/host/registry.py) → schema-v3 single-writer
       SQLite records/resources/journal/migration authority
     - [`service.py`](src/somnus_vm/host/service.py) → serialized authenticated
@@ -226,6 +272,17 @@ log-safe projections. P1 errors accept no caller prose or nonempty `details`.
     → eight foreign-adoption, alias/tamper, and parent-death cases
   - [`test_daemon_storage_p3.py`](test/vm_lab/test_daemon_storage_p3.py) → one
     real daemon/client storage and startup-reconciliation case
+  - [`test_disposable_launch_authority_p4.py`](test/vm_lab/test_disposable_launch_authority_p4.py)
+    → real-file fixture topology, marker, path-identity, production-exclusion,
+    and one-shot permit denial proofs; it never launches QEMU
+  - [`test_qemu_planning_p4.py`](test/vm_lab/test_qemu_planning_p4.py),
+    [`test_qemu_runtime_p4.py`](test/vm_lab/test_qemu_runtime_p4.py),
+    [`test_daemon_runtime_p4.py`](test/vm_lab/test_daemon_runtime_p4.py), and
+    the other `test_*_p4.py` owners → direct P4 component proof; these modules
+    do not launch a disposable QEMU machine or close `GATE-P4`
+  - [`test_doctor_p4.py`](test/vm_lab/test_doctor_p4.py) → bounded no-launch
+    interrogation of the selected QEMU's exact TCG/KVM option projection and
+    fail-loud unavailable/rejecting/silent/output-flood behavior
   - [`fixtures/protocol/v0_vm_record.json`](test/vm_lab/fixtures/protocol/v0_vm_record.json)
     → exact legacy migration input
   - [`fixtures/images/ubuntu-minimal-noble-amd64-20260801.json`](test/vm_lab/fixtures/images/ubuntu-minimal-noble-amd64-20260801.json)
@@ -233,6 +290,11 @@ log-safe projections. P1 errors accept no caller prose or nonempty `details`.
     `b3064efb500d71d6ccbe619b1716062b803e285116e040627b430aaee14cced6`
   - [`runs/20260805T211740Z/`](test/vm_lab/runs/20260805T211740Z/) → sealed 26/26
     aggregate JSON/Markdown/log proof with zero failures and zero skips
+  - [`runs/20260807T123747Z/`](test/vm_lab/runs/20260807T123747Z/) → current-HEAD
+    aggregate: 40 pass, 0 fail, 0 skip after exact fixture restoration; see
+    [`SOTA_RUN.md`](SOTA_RUN.md)
+  - [`runs/20260807T121437Z/`](test/vm_lab/runs/20260807T121437Z/) → historical
+    36/4 missing-fixture setup evidence retained for provenance
 - [`scripts/verify_repository.py`](scripts/verify_repository.py) → linked
   packet, anchors, fingerprint, JSON, and source-preservation integrity
 - [`docs/decisions/0005-errors-and-exit-codes.md`](docs/decisions/0005-errors-and-exit-codes.md)
@@ -306,7 +368,9 @@ No candidate becomes live by copy/import convenience.
 | P3 real daemon/client storage composition | `test_daemon_storage_p3.py` |
 | Closed aggregate boundary | `test/vm_lab/runs/20260805T211740Z/` — 26/26 |
 | Host has usable QEMU/KVM/image | `python -m somnus_vm doctor --json` |
-| QEMU launch/QMP/guest readiness/public lifecycle works | P4 and later named physical `GATE-*`; unresolved now |
+| Disposable launch permit rejects production/symlink/hardlink/mount escapes | `test_disposable_launch_authority_p4.py` |
+| P4 coordinator matrix preflight/validation/denial | `test_p4_gate_coordinator.py` — 8/8; no QEMU launch |
+| QEMU launch/QMP/guest readiness/public lifecycle works | P4 and later named physical `GATE-*`; unresolved now; coordinator and exact source exist, but authority/exclusions/17-scenario physical matrix are unconsumed |
 
 ## Maintenance contract
 

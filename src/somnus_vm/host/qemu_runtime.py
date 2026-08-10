@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import ctypes
 import errno
+import fcntl
 import os
 import select
 import socket
@@ -46,13 +47,23 @@ from somnus_protocol.vm import (
 
 from somnus_vm.config import HostConfiguration
 
-from .qemu import QemuCommandBuilder, QemuLaunchPlan
+from .qemu import (
+    QEMU_BASE_FDSET_PATH,
+    QEMU_OVERLAY_FDSET_PATH,
+    QemuCommandBuilder,
+    QemuLaunchPlan,
+    bind_block_fds,
+)
 from .qemu_exec_guard import READY as QEMU_GUARD_READY
 from .qemu_exec_guard import RELEASE as QEMU_GUARD_RELEASE
 from .qemu_log_guard import READY as LOG_GUARD_READY
 from .qemu_log_guard import RELEASE as LOG_GUARD_RELEASE
 from .qemu_log_guard import RELEASED as LOG_GUARD_RELEASED
 from .qemu_logs import prepare_private_directory
+from .launch_authority import (
+    DisposableLaunchPermit,
+    LaunchAuthorityError,
+)
 from .qemu_process import (
     ExecutableIdentity,
     ObservedProcessIdentity,
@@ -90,14 +101,20 @@ from .qmp import (
 from .qmp_identity import (
     QMPBlockContract,
     QMPBlockLayer,
+    QMPBlockstatsNodeIdentity,
     QMPDiskRuntimeEvidence,
+    QMPFdsetIdentity,
     QMPIdentityEvidence,
     QMPIdentityExpectation,
     QMPIdentitySample,
+    QMPNamedBlockNodeIdentity,
     compose_qmp_identity_evidence,
     extract_qmp_disk_runtime_evidence,
     greeting_sha256,
+    normalize_qmp_blockstats,
+    normalize_qmp_fdsets,
     normalize_qmp_identity_sample,
+    normalize_qmp_named_block_nodes,
     normalize_qmp_status,
 )
 from .registry import (
@@ -230,10 +247,42 @@ class RuntimeLaunchResult:
     process: ObservedProcessIdentity
     log_guard: ObservedProcessIdentity
     qmp_evidence: QMPIdentityEvidence
+    storage_graph_evidence: "_QMPStorageGraphEvidence"
     disk_evidence: QMPDiskRuntimeEvidence
+    qmp_greeting: QMPGreeting
+    qmp_responses: tuple[QMPResponse, ...]
     serial_log_path: Path
     qemu_log_path: Path
     events: tuple[QMPEvent, ...]
+
+    def to_dict(self) -> dict[str, object]:
+        """Return one complete canonicalizable launch-result projection.
+
+        Normalized QMP evidence proves the semantic contract, while the
+        greeting and ordered successful-response history retain the actual
+        patch-level response shapes needed by the physical gate.  Paths remain
+        evidence locations; their bytes and identities are sealed separately
+        by the gate coordinator after the owning daemon releases them.
+        """
+
+        return {
+            "operation_id": str(self.operation_id),
+            "vm_id": str(self.vm_id),
+            "generation": self.generation,
+            "boot_id": str(self.boot_id),
+            "process": self.process.to_dict(),
+            "log_guard": self.log_guard.to_dict(),
+            "qmp_evidence": self.qmp_evidence.to_dict(),
+            "storage_graph_evidence": self.storage_graph_evidence.to_dict(),
+            "disk_evidence": self.disk_evidence.to_dict(),
+            "qmp_greeting": self.qmp_greeting.to_dict(),
+            "qmp_responses": [
+                response.to_dict() for response in self.qmp_responses
+            ],
+            "serial_log_path": os.fspath(self.serial_log_path),
+            "qemu_log_path": os.fspath(self.qemu_log_path),
+            "events": [event.to_dict() for event in self.events],
+        }
 
 
 @dataclass(frozen=True, slots=True)
@@ -245,6 +294,16 @@ class RuntimeRecoveryResult:
     latest_checkpoint: str | None
     disposition: str
 
+    def to_dict(self) -> dict[str, object]:
+        """Return the exact durable restart decision for gate evidence."""
+
+        return {
+            "operation_id": str(self.operation_id),
+            "vm_id": str(self.vm_id),
+            "latest_checkpoint": self.latest_checkpoint,
+            "disposition": self.disposition,
+        }
+
 
 @dataclass(slots=True)
 class _LiveRuntime:
@@ -253,6 +312,7 @@ class _LiveRuntime:
     log_guard: ObservedProcessIdentity
     qmp: QMPClient
     qmp_evidence: QMPIdentityEvidence
+    storage_graph_evidence: "_QMPStorageGraphEvidence"
     disk_evidence: QMPDiskRuntimeEvidence
     events: tuple[QMPEvent, ...]
 
@@ -265,6 +325,7 @@ class _RuntimeProbe:
     socket_identity: QMPSocketIdentity
     qmp: QMPClient
     qmp_evidence: QMPIdentityEvidence
+    storage_graph_evidence: "_QMPStorageGraphEvidence"
     disk_evidence: QMPDiskRuntimeEvidence
     events: tuple[QMPEvent, ...]
 
@@ -305,6 +366,188 @@ class _LiveDiskFileEvidence:
 
 
 @dataclass(frozen=True, slots=True)
+class _QMPPeerStorageDescriptor:
+    """One QEMU-internal fdset descriptor bound back to a P3 inode."""
+
+    role: str
+    fd: int
+    device_id: int
+    inode: int
+    access_mode: str
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "access_mode": self.access_mode,
+            "device_id": self.device_id,
+            "fd": self.fd,
+            "inode": self.inode,
+            "role": self.role,
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class _QMPStorageGraphEvidence:
+    """Normalized fdset, block-node, edge, and peer-/proc machine truth."""
+
+    peer_pid: int
+    fdsets: tuple[QMPFdsetIdentity, ...]
+    named_nodes: tuple[QMPNamedBlockNodeIdentity, ...]
+    blockstats: tuple[QMPBlockstatsNodeIdentity, ...]
+    peer_descriptors: tuple[_QMPPeerStorageDescriptor, ...]
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "schema": "somnus.qmp-storage-graph-evidence.v1",
+            "peer_pid": self.peer_pid,
+            "fdsets": [
+                {
+                    "fd": item.fd,
+                    "fdset_id": item.fdset_id,
+                    "opaque": item.opaque,
+                }
+                for item in self.fdsets
+            ],
+            "named_nodes": [
+                {
+                    "driver": item.driver,
+                    "node_name": item.node_name,
+                    "reported_file": item.reported_file,
+                    "read_only": item.read_only,
+                }
+                for item in self.named_nodes
+            ],
+            "blockstats": [
+                {
+                    "backing_node": item.backing_node,
+                    "node_name": item.node_name,
+                    "parent_node": item.parent_node,
+                }
+                for item in self.blockstats
+            ],
+            "peer_descriptors": [
+                item.to_dict() for item in self.peer_descriptors
+            ],
+        }
+
+    @property
+    def evidence_sha256(self) -> str:
+        return canonical_evidence_sha256(self.to_dict())
+
+
+@dataclass(frozen=True, slots=True)
+class _PinnedStorageFile:
+    """One open storage authority carried unchanged into the exec guard."""
+
+    role: str
+    descriptor: int
+    stat_result: os.stat_result
+    access_mode: str
+    content_sha256: str | None
+
+    def __post_init__(self) -> None:
+        if self.role not in {"overlay", "base", "owner-marker"}:
+            raise QemuRuntimeError("pinned storage role is invalid")
+        if (
+            not isinstance(self.descriptor, int)
+            or isinstance(self.descriptor, bool)
+            or self.descriptor < 3
+        ):
+            raise QemuRuntimeError("pinned storage descriptor is invalid")
+        if self.access_mode not in {"r", "rw"}:
+            raise QemuRuntimeError("pinned storage access mode is invalid")
+        if self.role == "overlay":
+            if self.access_mode != "rw" or self.content_sha256 is not None:
+                raise QemuRuntimeError("pinned overlay authority is incoherent")
+        elif (
+            self.access_mode != "r"
+            or not isinstance(self.content_sha256, str)
+            or len(self.content_sha256) != 64
+        ):
+            raise QemuRuntimeError(
+                "pinned immutable storage authority lacks a digest"
+            )
+
+    def guard_argv(self) -> tuple[str, ...]:
+        """Serialize the exact descriptor authority for the exec guard."""
+
+        details = self.stat_result
+        blocks = getattr(details, "st_blocks", None)
+        if not isinstance(blocks, int) or blocks < 0:
+            raise QemuRuntimeRecoveryRequired(
+                f"{self.role} allocation cannot be serialized"
+            )
+        return (
+            self.role,
+            str(self.descriptor),
+            str(details.st_dev),
+            str(details.st_ino),
+            str(details.st_uid),
+            str(details.st_gid),
+            format(stat.S_IMODE(details.st_mode), "04o"),
+            str(details.st_nlink),
+            str(details.st_size),
+            str(blocks),
+            str(details.st_mtime_ns),
+            str(details.st_ctime_ns),
+            self.access_mode,
+            "-" if self.content_sha256 is None else self.content_sha256,
+        )
+
+    def to_checkpoint_dict(self) -> dict[str, object]:
+        """Return durable non-secret authority facts for launch replay."""
+
+        details = self.stat_result
+        return {
+            "role": self.role,
+            "descriptor": self.descriptor,
+            "device_id": details.st_dev,
+            "inode": details.st_ino,
+            "owner_uid": details.st_uid,
+            "owner_gid": details.st_gid,
+            "mode": stat.S_IMODE(details.st_mode),
+            "link_count": details.st_nlink,
+            "size_bytes": details.st_size,
+            "allocated_size_bytes": int(details.st_blocks) * 512,
+            "mtime_ns": details.st_mtime_ns,
+            "ctime_ns": details.st_ctime_ns,
+            "access_mode": self.access_mode,
+            "content_sha256": self.content_sha256,
+        }
+
+
+@dataclass(slots=True)
+class _PinnedRuntimeStorage:
+    """Overlay, immutable base, and owner marker pinned as one launch unit."""
+
+    overlay: _PinnedStorageFile
+    base: _PinnedStorageFile
+    marker: _PinnedStorageFile
+    _closed: bool = False
+
+    @property
+    def descriptors(self) -> tuple[int, int, int]:
+        """Return overlay, base, and marker descriptors in guard role order."""
+
+        return (
+            self.overlay.descriptor,
+            self.base.descriptor,
+            self.marker.descriptor,
+        )
+
+    def close(self) -> None:
+        """Close every parent-held descriptor exactly once."""
+
+        if self._closed:
+            return
+        for item in (self.overlay, self.base, self.marker):
+            try:
+                os.close(item.descriptor)
+            except OSError:
+                pass
+        self._closed = True
+
+
+@dataclass(frozen=True, slots=True)
 class _ExitProof:
     """Exact process identity plus the first durable absence observation."""
 
@@ -336,6 +579,118 @@ def _strict_uuid(value: UUID | str, label: str) -> UUID:
     if selected.int == 0:
         raise QemuRuntimeError(f"{label} cannot be nil")
     return selected
+
+
+def _stable_storage_metadata(details: os.stat_result) -> tuple[int, ...]:
+    """Return the complete metadata fence used around descriptor hashing."""
+
+    blocks = getattr(details, "st_blocks", None)
+    if not isinstance(blocks, int) or blocks < 0:
+        raise QemuRuntimeRecoveryRequired(
+            "pinned storage allocation metadata is unavailable"
+        )
+    return (
+        details.st_dev,
+        details.st_ino,
+        details.st_uid,
+        details.st_gid,
+        details.st_mode,
+        details.st_nlink,
+        details.st_size,
+        blocks,
+        details.st_mtime_ns,
+        details.st_ctime_ns,
+    )
+
+
+def _sha256_pinned_descriptor(
+    descriptor: int,
+    *,
+    label: str,
+    maximum_bytes: int,
+) -> tuple[os.stat_result, str]:
+    """Hash one pinned regular file without changing its shared file offset."""
+
+    before = os.fstat(descriptor)
+    if (
+        not stat.S_ISREG(before.st_mode)
+        or before.st_size < 1
+        or before.st_size > maximum_bytes
+    ):
+        raise QemuRuntimeRecoveryRequired(
+            f"{label} size or file type is outside the launch authority"
+        )
+    digest = sha256()
+    offset = 0
+    while offset < before.st_size:
+        try:
+            block = os.pread(
+                descriptor,
+                min(1024 * 1024, before.st_size - offset),
+                offset,
+            )
+        except OSError as exc:
+            raise QemuRuntimeRecoveryRequired(
+                f"{label} cannot be hashed from its pinned descriptor"
+            ) from exc
+        if not block:
+            raise QemuRuntimeRecoveryRequired(
+                f"{label} ended before its observed size"
+            )
+        digest.update(block)
+        offset += len(block)
+    after = os.fstat(descriptor)
+    if (
+        offset != before.st_size
+        or _stable_storage_metadata(before)
+        != _stable_storage_metadata(after)
+    ):
+        raise QemuRuntimeRecoveryRequired(
+            f"{label} changed while its pinned descriptor was hashed"
+        )
+    return after, digest.hexdigest()
+
+
+def _open_pinned_storage_path(
+    path: Path,
+    *,
+    label: str,
+    writable: bool,
+) -> tuple[int, os.stat_result]:
+    """Open one canonical storage path and bind its directory entry to the FD."""
+
+    flags = (
+        (os.O_RDWR if writable else os.O_RDONLY)
+        | os.O_CLOEXEC
+        | getattr(os, "O_NOFOLLOW", 0)
+    )
+    try:
+        descriptor = os.open(path, flags)
+    except OSError as exc:
+        raise QemuRuntimeRecoveryRequired(
+            f"{label} cannot be opened as a pinned descriptor"
+        ) from exc
+    try:
+        details = os.fstat(descriptor)
+        named = path.lstat()
+        access = fcntl.fcntl(descriptor, fcntl.F_GETFL) & os.O_ACCMODE
+        expected_access = os.O_RDWR if writable else os.O_RDONLY
+        if (
+            descriptor < 3
+            or not stat.S_ISREG(details.st_mode)
+            or not stat.S_ISREG(named.st_mode)
+            or details.st_dev != named.st_dev
+            or details.st_ino != named.st_ino
+            or access != expected_access
+        ):
+            raise QemuRuntimeRecoveryRequired(
+                f"{label} pathname, file type, or access mode is unsafe"
+            )
+        _stable_storage_metadata(details)
+        return descriptor, details
+    except BaseException:
+        os.close(descriptor)
+        raise
 
 
 def _guard_environment(runtime_home: Path) -> dict[str, str]:
@@ -596,11 +951,80 @@ def _open_qmp(
     raise QemuRuntimeError("QMP endpoint did not become available") from last_error
 
 
+def _observe_qmp_storage_graph(
+    client: QMPClient,
+    process: ObservedProcessIdentity,
+    contract: QMPBlockContract,
+) -> _QMPStorageGraphEvidence:
+    """Bind QEMU's fdsets and four-node graph to the P3-owned inodes."""
+
+    revalidate_process(process)
+    if (
+        client.peer_credentials.pid != process.pid
+        or len(contract.layers) != 2
+    ):
+        raise QemuRuntimeRecoveryRequired(
+            "QMP storage graph is not bound to the expected QEMU and chain"
+        )
+    fdsets = normalize_qmp_fdsets(client.query_fdsets())
+    named_nodes = normalize_qmp_named_block_nodes(
+        client.query_named_block_nodes()
+    )
+    blockstats = normalize_qmp_blockstats(client.query_blockstats())
+    peer_descriptors: list[_QMPPeerStorageDescriptor] = []
+    for fdset, layer, role, expected_access in (
+        (fdsets[0], contract.layers[0], "overlay", os.O_RDWR),
+        (fdsets[1], contract.layers[1], "base", os.O_RDONLY),
+    ):
+        fd_path = Path("/proc") / str(process.pid) / "fd" / str(fdset.fd)
+        try:
+            details = fd_path.stat()
+        except OSError as exc:
+            raise QemuRuntimeRecoveryRequired(
+                "QMP fdset descriptor cannot be bound through the peer process"
+            ) from exc
+        flags = _parse_fd_flags(
+            Path("/proc")
+            / str(process.pid)
+            / "fdinfo"
+            / str(fdset.fd)
+        )
+        if (
+            not stat.S_ISREG(details.st_mode)
+            or details.st_dev != layer.device_id
+            or details.st_ino != layer.inode
+            or flags & os.O_ACCMODE != expected_access
+        ):
+            raise QemuRuntimeRecoveryRequired(
+                "QMP fdset descriptor is not the P3-owned storage authority"
+            )
+        peer_descriptors.append(
+            _QMPPeerStorageDescriptor(
+                role=role,
+                fd=fdset.fd,
+                device_id=details.st_dev,
+                inode=details.st_ino,
+                access_mode="rw" if expected_access == os.O_RDWR else "r",
+            )
+        )
+    revalidate_process(process)
+    return _QMPStorageGraphEvidence(
+        peer_pid=process.pid,
+        fdsets=fdsets,
+        named_nodes=named_nodes,
+        blockstats=blockstats,
+        peer_descriptors=tuple(peer_descriptors),
+    )
+
+
 def _collect_identity_sample(
     client: QMPClient,
     greeting: QMPGreeting,
     expectation: QMPIdentityExpectation,
-) -> tuple[QMPIdentitySample, QMPResponse]:
+) -> tuple[
+    QMPIdentitySample,
+    QMPResponse,
+]:
     status = client.query_status()
     name = client.query_name()
     uuid_response = client.query_uuid()
@@ -641,6 +1065,7 @@ def _stabilize_identity(
 ) -> tuple[
     QMPIdentityEvidence,
     QMPDiskRuntimeEvidence,
+    _QMPStorageGraphEvidence,
     tuple[QMPEvent, ...],
 ]:
     events: list[QMPEvent] = list(client.drain_events())
@@ -648,6 +1073,11 @@ def _stabilize_identity(
         raise QemuRuntimeError(
             "QMP emitted an event before identity stabilization"
         )
+    first_graph = _observe_qmp_storage_graph(
+        client,
+        process,
+        expectation.block,
+    )
     first, _ = _collect_identity_sample(client, greeting, expectation)
     deadline = time.monotonic() + policy.stabilization_seconds
     while time.monotonic() < deadline:
@@ -666,6 +1096,15 @@ def _stabilize_identity(
         greeting,
         expectation,
     )
+    second_graph = _observe_qmp_storage_graph(
+        client,
+        process,
+        expectation.block,
+    )
+    if first_graph != second_graph:
+        raise QemuRuntimeRecoveryRequired(
+            "QMP fdset or block graph changed during identity stabilization"
+        )
     evidence = compose_qmp_identity_evidence(
         observation_id=observation_id,
         vm_id=expectation.vm_id,
@@ -685,7 +1124,7 @@ def _stabilize_identity(
             "QMP emitted an event before lifecycle commit"
         )
     revalidate_process(process)
-    return evidence, disk_evidence, tuple(events)
+    return evidence, disk_evidence, second_graph, tuple(events)
 
 
 def _parse_fd_flags(path: Path) -> int:
@@ -864,16 +1303,54 @@ def _verify_qemu_guard_topology(
     journal: RuntimeLaunchJournal,
     guard: ObservedProcessIdentity,
 ) -> None:
-    """Prove the unreleased exec guard, target FD, and output pipe wiring."""
+    """Prove the unreleased guard, descriptor authority, and pipe wiring."""
 
     intent = journal.intent
     argv = guard.argv
     python = os.fspath(resolve_executable(argv[0]))
+    try:
+        storage = journal.pinned_storage_authority()
+    except RuntimeLaunchJournalError as exc:
+        raise QemuRuntimeRecoveryRequired(
+            "QEMU guard has no durable storage authority"
+        ) from exc
+    storage_tokens: list[str] = []
+    storage_fds: list[int] = []
+    for item in storage:
+        allocated_size = int(item["allocated_size_bytes"])
+        if allocated_size % 512:
+            raise QemuRuntimeRecoveryRequired(
+                "durable storage allocation is not block aligned"
+            )
+        descriptor = int(item["descriptor"])
+        storage_fds.append(descriptor)
+        digest = item["content_sha256"]
+        storage_tokens.extend(
+            (
+                str(item["role"]),
+                str(descriptor),
+                str(item["device_id"]),
+                str(item["inode"]),
+                str(item["owner_uid"]),
+                str(item["owner_gid"]),
+                format(int(item["mode"]), "04o"),
+                str(item["link_count"]),
+                str(item["size_bytes"]),
+                str(allocated_size // 512),
+                str(item["mtime_ns"]),
+                str(item["ctime_ns"]),
+                str(item["access_mode"]),
+                "-" if digest is None else str(digest),
+            )
+        )
+    target_offset = 8 + len(storage_tokens) + 1
     if (
-        len(argv) != 8 + len(intent.executed_argv)
+        len(argv) != target_offset + len(intent.executed_argv)
         or argv[:4] != (python, "-I", "-m", _MODULE_QEMU_GUARD)
         or argv[6] != str(Path(intent.qmp_socket).parent)
-        or tuple(argv[8:]) != intent.executed_argv
+        or tuple(argv[8 : 8 + len(storage_tokens)]) != tuple(storage_tokens)
+        or argv[target_offset - 1] != "--"
+        or tuple(argv[target_offset:]) != intent.executed_argv
     ):
         raise QemuRuntimeRecoveryRequired(
             "QEMU exec guard argv is not the journaled invocation"
@@ -885,11 +1362,10 @@ def _verify_qemu_guard_topology(
         raise QemuRuntimeRecoveryRequired(
             "QEMU exec guard descriptors are malformed"
         ) from exc
-    if (
-        control_fd < 3
-        or executable_fd < 3
-        or control_fd == executable_fd
-    ):
+    descriptors = (control_fd, executable_fd, *storage_fds)
+    if any(descriptor < 3 for descriptor in descriptors) or len(
+        set(descriptors)
+    ) != len(descriptors):
         raise QemuRuntimeRecoveryRequired(
             "QEMU exec guard descriptors are ambiguous"
         )
@@ -939,6 +1415,44 @@ def _verify_qemu_guard_topology(
         raise QemuRuntimeRecoveryRequired(
             "QEMU exec guard target descriptor is not the pinned executable"
         )
+
+    for item in storage:
+        descriptor = int(item["descriptor"])
+        descriptor_path = Path("/proc") / str(guard.pid) / "fd" / str(descriptor)
+        try:
+            details = descriptor_path.stat()
+        except OSError as exc:
+            raise QemuRuntimeRecoveryRequired(
+                "QEMU exec guard storage descriptor cannot be observed"
+            ) from exc
+        expected_access = (
+            os.O_RDWR if item["access_mode"] == "rw" else os.O_RDONLY
+        )
+        if (
+            not stat.S_ISREG(details.st_mode)
+            or details.st_dev != int(item["device_id"])
+            or details.st_ino != int(item["inode"])
+            or details.st_uid != int(item["owner_uid"])
+            or details.st_gid != int(item["owner_gid"])
+            or stat.S_IMODE(details.st_mode) != int(item["mode"])
+            or details.st_nlink != int(item["link_count"])
+            or details.st_size != int(item["size_bytes"])
+            or int(details.st_blocks) * 512
+            != int(item["allocated_size_bytes"])
+            or details.st_mtime_ns != int(item["mtime_ns"])
+            or details.st_ctime_ns != int(item["ctime_ns"])
+            or _parse_fd_flags(
+                Path("/proc")
+                / str(guard.pid)
+                / "fdinfo"
+                / str(descriptor)
+            )
+            & os.O_ACCMODE
+            != expected_access
+        ):
+            raise QemuRuntimeRecoveryRequired(
+                "QEMU exec guard storage authority changed after checkpoint"
+            )
     revalidate_process(guard)
 
 
@@ -1097,6 +1611,181 @@ class QemuRuntimeOwner:
         plan = QemuCommandBuilder(self._configuration).build(stored.record)
         return stored.record, stored.revision, disk, plan
 
+    def _pin_runtime_storage(
+        self,
+        disk: DiskRecord,
+    ) -> _PinnedRuntimeStorage:
+        """Pin the exact P3 overlay, immutable base, and owner marker."""
+
+        current = self._registry.get_disk(disk.disk_id)
+        if current != disk:
+            raise QemuRuntimeRecoveryRequired(
+                "runtime disk authority changed before descriptor pinning"
+            )
+        if (
+            disk.base_image_id is None
+            or disk.base_image_sha256 is None
+            or disk.marker_sha256 is None
+            or disk.device_id is None
+            or disk.inode is None
+            or disk.file_size_bytes is None
+            or disk.allocated_size_bytes is None
+        ):
+            raise QemuRuntimeRecoveryRequired(
+                "runtime disk lacks complete P3 descriptor authority"
+            )
+        base = self._registry.get_base_image(disk.base_image_id)
+        if (
+            base is None
+            or not base.active
+            or base.content_sha256 != disk.base_image_sha256
+            or base.format != "qcow2"
+            or base.mode != 0o444
+        ):
+            raise QemuRuntimeRecoveryRequired(
+                "runtime base authority is unavailable or mutable"
+            )
+
+        overlay_path = Path(disk.path)
+        base_path = Path(base.path)
+        marker_path = Path(f"{disk.path}.owner.json")
+        overlay_fd = base_fd = marker_fd = -1
+        try:
+            overlay_fd, overlay_details = _open_pinned_storage_path(
+                overlay_path,
+                label="runtime overlay",
+                writable=True,
+            )
+            base_fd, base_details = _open_pinned_storage_path(
+                base_path,
+                label="immutable runtime base",
+                writable=False,
+            )
+            marker_fd, marker_details = _open_pinned_storage_path(
+                marker_path,
+                label="runtime owner marker",
+                writable=False,
+            )
+            identities = {
+                (overlay_details.st_dev, overlay_details.st_ino),
+                (base_details.st_dev, base_details.st_ino),
+                (marker_details.st_dev, marker_details.st_ino),
+            }
+            if len(identities) != 3:
+                raise QemuRuntimeRecoveryRequired(
+                    "runtime storage descriptors alias across authority roles"
+                )
+            if (
+                overlay_details.st_dev != disk.device_id
+                or overlay_details.st_ino != disk.inode
+                or overlay_details.st_uid != os.geteuid()
+                or stat.S_IMODE(overlay_details.st_mode) != 0o600
+                or overlay_details.st_nlink != 1
+                or overlay_details.st_size != disk.file_size_bytes
+                or int(overlay_details.st_blocks) * 512
+                != disk.allocated_size_bytes
+            ):
+                raise QemuRuntimeRecoveryRequired(
+                    "runtime overlay descriptor disagrees with P3 ownership"
+                )
+            if (
+                base_details.st_dev != base.device_id
+                or base_details.st_ino != base.inode
+                or base_details.st_uid != os.geteuid()
+                or stat.S_IMODE(base_details.st_mode) != base.mode
+                or base_details.st_nlink != 1
+                or base_details.st_size != base.file_size_bytes
+                or int(base_details.st_blocks) * 512
+                != base.allocated_size_bytes
+            ):
+                raise QemuRuntimeRecoveryRequired(
+                    "immutable base descriptor disagrees with registry authority"
+                )
+            if (
+                marker_details.st_uid != os.geteuid()
+                or stat.S_IMODE(marker_details.st_mode) != 0o600
+                or marker_details.st_nlink != 1
+            ):
+                raise QemuRuntimeRecoveryRequired(
+                    "runtime owner marker descriptor is unsafe"
+                )
+
+            base_details, base_digest = _sha256_pinned_descriptor(
+                base_fd,
+                label="immutable runtime base",
+                maximum_bytes=base.byte_size,
+            )
+            if base_digest != base.content_sha256:
+                raise QemuRuntimeRecoveryRequired(
+                    "immutable base descriptor hash disagrees with registry authority"
+                )
+            marker_details, marker_digest = _sha256_pinned_descriptor(
+                marker_fd,
+                label="runtime owner marker",
+                maximum_bytes=65_536,
+            )
+            if marker_digest != disk.marker_sha256:
+                raise QemuRuntimeRecoveryRequired(
+                    "runtime owner marker hash disagrees with registry authority"
+                )
+
+            for path, details, label in (
+                (overlay_path, overlay_details, "runtime overlay"),
+                (base_path, base_details, "immutable runtime base"),
+                (marker_path, marker_details, "runtime owner marker"),
+            ):
+                try:
+                    named = path.lstat()
+                except OSError as exc:
+                    raise QemuRuntimeRecoveryRequired(
+                        f"{label} pathname disappeared after descriptor pinning"
+                    ) from exc
+                if _stable_storage_metadata(named) != _stable_storage_metadata(
+                    details
+                ):
+                    raise QemuRuntimeRecoveryRequired(
+                        f"{label} pathname changed around descriptor pinning"
+                    )
+            if (
+                self._registry.get_disk(disk.disk_id) != disk
+                or self._registry.get_base_image(base.image_id) != base
+            ):
+                raise QemuRuntimeRecoveryRequired(
+                    "runtime storage rows changed around descriptor pinning"
+                )
+
+            return _PinnedRuntimeStorage(
+                overlay=_PinnedStorageFile(
+                    role="overlay",
+                    descriptor=overlay_fd,
+                    stat_result=overlay_details,
+                    access_mode="rw",
+                    content_sha256=None,
+                ),
+                base=_PinnedStorageFile(
+                    role="base",
+                    descriptor=base_fd,
+                    stat_result=base_details,
+                    access_mode="r",
+                    content_sha256=base_digest,
+                ),
+                marker=_PinnedStorageFile(
+                    role="owner-marker",
+                    descriptor=marker_fd,
+                    stat_result=marker_details,
+                    access_mode="r",
+                    content_sha256=marker_digest,
+                ),
+            )
+        except BaseException:
+            for descriptor in (overlay_fd, base_fd, marker_fd):
+                if descriptor >= 0:
+                    try:
+                        os.close(descriptor)
+                    except OSError:
+                        pass
+            raise
+
     def _block_contract(
         self,
         intent: RuntimeLaunchIntent,
@@ -1120,6 +1809,7 @@ class QemuRuntimeOwner:
                     virtual_size_bytes=int(intent.disk_virtual_size_bytes),
                     device_id=int(intent.disk_device_id),
                     inode=int(intent.disk_inode),
+                    qmp_filename=QEMU_OVERLAY_FDSET_PATH,
                 ),
                 QMPBlockLayer(
                     path=Path(base.path),
@@ -1127,6 +1817,7 @@ class QemuRuntimeOwner:
                     virtual_size_bytes=base.virtual_size_bytes,
                     device_id=base.device_id,
                     inode=base.inode,
+                    qmp_filename=QEMU_BASE_FDSET_PATH,
                 ),
             ),
             storage_chain_sha256=intent.disk_chain_sha256,
@@ -1596,6 +2287,7 @@ class QemuRuntimeOwner:
         python: Path,
         python_identity: ExecutableIdentity,
         executable_fd: int,
+        storage: _PinnedRuntimeStorage,
         serial_write: int,
         qemu_write: int,
     ) -> tuple[
@@ -1616,6 +2308,10 @@ class QemuRuntimeOwner:
             str(child_control.fileno()),
             os.fspath(runtime_root),
             str(executable_fd),
+            *storage.overlay.guard_argv(),
+            *storage.base.guard_argv(),
+            *storage.marker.guard_argv(),
+            "--",
             *intent.executed_argv,
         )
         try:
@@ -1627,7 +2323,11 @@ class QemuRuntimeOwner:
                 cwd=runtime_root,
                 env=_guard_environment(runtime_root),
                 close_fds=True,
-                pass_fds=(child_control.fileno(), executable_fd),
+                pass_fds=(
+                    child_control.fileno(),
+                    executable_fd,
+                    *storage.descriptors,
+                ),
                 start_new_session=True,
                 restore_signals=True,
                 umask=0o077,
@@ -1681,14 +2381,24 @@ class QemuRuntimeOwner:
                 process.kill()
                 process.wait(self._policy.terminate_kill_seconds)
 
-    def launch(self, vm_id: UUID | str) -> RuntimeLaunchResult:
+    def launch(
+        self,
+        vm_id: UUID | str,
+        *,
+        permit: DisposableLaunchPermit,
+    ) -> RuntimeLaunchResult:
         """Launch one validated disposable/runtime VM through the P4 boundary.
 
         No public CLI or control operation calls this method.  The caller owns
-        the external authority decision for physical QEMU execution.
+        the external authority decision for physical QEMU execution and must
+        present one explicit, one-shot, non-production fixture permit.
         """
 
         identity = _strict_uuid(vm_id, "vm_id")
+        if not isinstance(permit, DisposableLaunchPermit):
+            raise QemuRuntimeError(
+                "runtime launch requires a disposable launch permit"
+            )
         with self._lock:
             if self._registry.status.mode is not RegistryMode.READ_WRITE:
                 raise QemuRuntimeRecoveryRequired(
@@ -1700,14 +2410,38 @@ class QemuRuntimeOwner:
                 )
 
             record, revision, disk, plan = self._select_authority(identity)
+            if disk.base_image_sha256 is None:
+                raise QemuRuntimeError(
+                    "runtime launch disk lacks immutable base-image identity"
+                )
+            try:
+                launch_authority = permit.revalidate_and_consume(
+                    self._configuration,
+                    vm_id=record.vm_id,
+                    generation=record.generation,
+                    disk_id=disk.disk_id,
+                    disk_path=disk.path,
+                    base_sha256=disk.base_image_sha256,
+                )
+            except LaunchAuthorityError as exc:
+                raise QemuRuntimeError(
+                    "disposable launch authority was rejected"
+                ) from exc
             executable_fd = -1
+            storage: _PinnedRuntimeStorage | None = None
             try:
                 executable, executable_fd = open_pinned_executable(
                     self._configuration.qemu_binary
                 )
+                storage = self._pin_runtime_storage(disk)
+                bound_argv = bind_block_fds(
+                    plan,
+                    overlay_fd=storage.overlay.descriptor,
+                    base_fd=storage.base.descriptor,
+                )
                 executed_argv = normalize_argv(
                     executable.path,
-                    tuple(plan.argv[1:]),
+                    tuple(bound_argv[1:]),
                 )
                 intent = RuntimeLaunchIntent.from_runtime(
                     record,
@@ -1715,10 +2449,13 @@ class QemuRuntimeOwner:
                     plan,
                     executable,
                     executed_argv=executed_argv,
+                    launch_authority=launch_authority,
                 )
             except BaseException:
                 if executable_fd >= 0:
                     os.close(executable_fd)
+                if storage is not None:
+                    storage.close()
                 raise
             journal: RuntimeLaunchJournal | None = None
             log_process: subprocess.Popen[bytes] | None = None
@@ -1754,7 +2491,14 @@ class QemuRuntimeOwner:
                 journal = self._append_checkpoint(
                     journal,
                     "executable_pinned",
-                    {"executable": intent.executable.to_dict()},
+                    {
+                        "executable": intent.executable.to_dict(),
+                        "storage": {
+                            "overlay": storage.overlay.to_checkpoint_dict(),
+                            "base": storage.base.to_checkpoint_dict(),
+                            "owner_marker": storage.marker.to_checkpoint_dict(),
+                        },
+                    },
                 )
 
                 python = resolve_executable(sys.executable)
@@ -1819,9 +2563,12 @@ class QemuRuntimeOwner:
                     python,
                     python_identity,
                     executable_fd,
+                    storage,
                     serial_write,
                     qemu_write,
                 )
+                storage.close()
+                storage = None
                 os.close(executable_fd)
                 executable_fd = -1
                 os.close(serial_write)
@@ -1920,7 +2667,12 @@ class QemuRuntimeOwner:
                     vcpus=intent.vcpus,
                     block=block_contract,
                 )
-                qmp_evidence, disk_evidence, events = _stabilize_identity(
+                (
+                    qmp_evidence,
+                    disk_evidence,
+                    storage_graph_evidence,
+                    events,
+                ) = _stabilize_identity(
                     qmp,
                     greeting,
                     expectation,
@@ -1940,6 +2692,10 @@ class QemuRuntimeOwner:
                     {
                         "evidence": qmp_evidence,
                         "evidence_sha256": qmp_evidence.evidence_sha256,
+                        "storage_graph": storage_graph_evidence.to_dict(),
+                        "storage_graph_sha256": (
+                            storage_graph_evidence.evidence_sha256
+                        ),
                     },
                 )
                 (
@@ -1965,6 +2721,7 @@ class QemuRuntimeOwner:
                     log_guard=log_observed,
                     qmp=qmp,
                     qmp_evidence=qmp_evidence,
+                    storage_graph_evidence=storage_graph_evidence,
                     disk_evidence=disk_evidence,
                     events=events,
                 )
@@ -1978,7 +2735,10 @@ class QemuRuntimeOwner:
                     process=qemu_observed,
                     log_guard=log_observed,
                     qmp_evidence=qmp_evidence,
+                    storage_graph_evidence=storage_graph_evidence,
                     disk_evidence=disk_evidence,
+                    qmp_greeting=greeting,
+                    qmp_responses=qmp.response_history,
                     serial_log_path=Path(intent.serial_log_path),
                     qemu_log_path=Path(intent.qemu_log_path),
                     events=events,
@@ -2031,6 +2791,8 @@ class QemuRuntimeOwner:
                             os.close(descriptor)
                         except OSError:
                             pass
+                if storage is not None:
+                    storage.close()
 
     def _publish_runtime(
         self,
@@ -2232,10 +2994,12 @@ class QemuRuntimeOwner:
         self,
         journal: RuntimeLaunchJournal,
         reason: str,
+        *,
+        cleanup_state: str = "unknown",
     ) -> None:
         write = journal.recovery_status_write(
             reason,
-            cleanup_state="unknown",
+            cleanup_state=cleanup_state,
         )
         with self._registry.write_transaction() as transaction:
             transaction.set_operation_status(
@@ -2549,7 +3313,12 @@ class QemuRuntimeOwner:
                 vcpus=intent.vcpus,
                 block=self._block_contract(intent, disk),
             )
-            evidence, disk_evidence, events = _stabilize_identity(
+            (
+                evidence,
+                disk_evidence,
+                storage_graph_evidence,
+                events,
+            ) = _stabilize_identity(
                 qmp,
                 greeting,
                 expectation,
@@ -2585,6 +3354,7 @@ class QemuRuntimeOwner:
                 socket_identity=socket_identity,
                 qmp=qmp,
                 qmp_evidence=evidence,
+                storage_graph_evidence=storage_graph_evidence,
                 disk_evidence=disk_evidence,
                 events=(*events, *disk_events, *final_events),
             )
@@ -2959,6 +3729,7 @@ class QemuRuntimeOwner:
             self._mark_recovery_required(
                 journal,
                 "exact_child_cleanup_unproved",
+                cleanup_state="orphaned",
             )
             raise QemuRuntimeRecoveryRequired(
                 "runtime child cleanup remains ambiguous"
@@ -3042,6 +3813,7 @@ class QemuRuntimeOwner:
                 log_guard=probe.log_guard,
                 qmp=probe.qmp,
                 qmp_evidence=probe.qmp_evidence,
+                storage_graph_evidence=probe.storage_graph_evidence,
                 disk_evidence=probe.disk_evidence,
                 events=probe.events,
             )

@@ -56,12 +56,14 @@ DEFAULT_QMP_MAX_DEPTH: Final[int] = 16
 DEFAULT_QMP_MAX_ITEMS: Final[int] = 8_192
 DEFAULT_QMP_MAX_STRING: Final[int] = 262_144
 DEFAULT_QMP_MAX_EVENTS: Final[int] = 1_024
+DEFAULT_QMP_MAX_RESPONSES: Final[int] = 4_096
 
 _MAX_QMP_MESSAGE_BYTES: Final[int] = 16_777_216
 _MAX_QMP_DEPTH: Final[int] = 64
 _MAX_QMP_ITEMS: Final[int] = 65_536
 _MAX_QMP_STRING: Final[int] = 1_048_576
 _MAX_QMP_EVENTS: Final[int] = 65_536
+_MAX_QMP_RESPONSES: Final[int] = 65_536
 _MAX_COMMAND_ID: Final[int] = 2**63 - 1
 _READ_CHUNK_BYTES: Final[int] = 65_536
 _READER_POLL_SECONDS: Final[float] = 0.1
@@ -101,6 +103,8 @@ CORE_QMP_COMMANDS: Final[frozenset[str]] = frozenset(
 # outside this client.
 BLOCK_GRAPH_QMP_COMMANDS: Final[frozenset[str]] = frozenset(
     {
+        "query-blockstats",
+        "query-fdsets",
         "query-named-block-nodes",
         "query-block-jobs",
         "blockdev-add",
@@ -123,6 +127,8 @@ ALLOWED_QMP_COMMANDS: Final[frozenset[str]] = (
 
 _NO_ARGUMENT_COMMANDS: Final[frozenset[str]] = frozenset(
     {
+        "query-blockstats",
+        "query-fdsets",
         "query-status",
         "query-name",
         "query-uuid",
@@ -195,6 +201,21 @@ class QMPVersion:
     micro: int
     package: str
 
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "major": self.major,
+            "micro": self.micro,
+            "minor": self.minor,
+            "package": self.package,
+        }
+
+    def to_json(self) -> str:
+        return canonical_json(self.to_dict(), "QMP version")
+
+    @property
+    def canonical_bytes(self) -> bytes:
+        return self.to_json().encode("utf-8")
+
 
 @dataclass(frozen=True, slots=True)
 class QMPGreeting:
@@ -202,6 +223,19 @@ class QMPGreeting:
 
     version: QMPVersion
     capabilities: tuple[str, ...]
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "capabilities": list(self.capabilities),
+            "version": self.version.to_dict(),
+        }
+
+    def to_json(self) -> str:
+        return canonical_json(self.to_dict(), "QMP greeting")
+
+    @property
+    def canonical_bytes(self) -> bytes:
+        return self.to_json().encode("utf-8")
 
 
 @dataclass(frozen=True, slots=True)
@@ -211,6 +245,20 @@ class QMPResponse:
     command: str
     command_id: int
     value: object
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "command": self.command,
+            "command_id": self.command_id,
+            "value": thaw_json(self.value),
+        }
+
+    def to_json(self) -> str:
+        return canonical_json(self.to_dict(), "QMP response")
+
+    @property
+    def canonical_bytes(self) -> bytes:
+        return self.to_json().encode("utf-8")
 
 
 @dataclass(frozen=True, slots=True)
@@ -222,6 +270,21 @@ class QMPEvent:
     timestamp_seconds: int
     timestamp_microseconds: int
 
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "data": thaw_json(self.data),
+            "name": self.name,
+            "timestamp_microseconds": self.timestamp_microseconds,
+            "timestamp_seconds": self.timestamp_seconds,
+        }
+
+    def to_json(self) -> str:
+        return canonical_json(self.to_dict(), "QMP event")
+
+    @property
+    def canonical_bytes(self) -> bytes:
+        return self.to_json().encode("utf-8")
+
 
 @dataclass(frozen=True, slots=True)
 class QMPSocketIdentity:
@@ -231,6 +294,21 @@ class QMPSocketIdentity:
     inode: int
     uid: int
     mode: int
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "device_id": self.device_id,
+            "inode": self.inode,
+            "mode": self.mode,
+            "uid": self.uid,
+        }
+
+    def to_json(self) -> str:
+        return canonical_json(self.to_dict(), "QMP socket identity")
+
+    @property
+    def canonical_bytes(self) -> bytes:
+        return self.to_json().encode("utf-8")
 
 
 @dataclass(slots=True)
@@ -411,6 +489,8 @@ class QMPClient:
         max_items: int = DEFAULT_QMP_MAX_ITEMS,
         max_string: int = DEFAULT_QMP_MAX_STRING,
         max_events: int = DEFAULT_QMP_MAX_EVENTS,
+        max_responses: int = DEFAULT_QMP_MAX_RESPONSES,
+        max_response_history: int | None = None,
         allowed_server_uids: Iterable[int] | None = None,
     ) -> None:
         try:
@@ -451,6 +531,18 @@ class QMPClient:
             minimum=1,
             maximum=_MAX_QMP_EVENTS,
         )
+        if max_response_history is not None:
+            if max_responses != DEFAULT_QMP_MAX_RESPONSES:
+                raise QMPValidationError(
+                    "max_responses and max_response_history cannot both be set"
+                )
+            max_responses = max_response_history
+        self._max_responses = _bounded_int(
+            max_responses,
+            "max_responses",
+            minimum=1,
+            maximum=_MAX_QMP_RESPONSES,
+        )
 
         self._state_lock = threading.RLock()
         self._event_ready = threading.Condition(self._state_lock)
@@ -465,6 +557,7 @@ class QMPClient:
         self._next_command_id = 1
         self._pending: dict[int, _PendingResponse] = {}
         self._events: deque[QMPEvent] = deque()
+        self._responses: deque[QMPResponse] = deque(maxlen=self._max_responses)
         self._buffer = bytearray()
         self._reader: threading.Thread | None = None
 
@@ -504,6 +597,36 @@ class QMPClient:
     def pending_event_count(self) -> int:
         with self._state_lock:
             return len(self._events)
+
+    @property
+    def response_history(self) -> tuple[QMPResponse, ...]:
+        """Return a bounded, arrival-ordered copy of successful responses.
+
+        The reader owns insertion order.  The returned tuple and every nested
+        response value are immutable, so callers can seal the result without
+        retaining a mutable alias to the live client.
+        """
+
+        with self._state_lock:
+            return tuple(self._responses)
+
+    def _record_response(
+        self,
+        command: str,
+        response: _IncomingResponse,
+    ) -> QMPResponse:
+        if response.error_class is not None:
+            raise QMPProtocolError(
+                "only successful QMP responses can enter response history"
+            )
+        recorded = QMPResponse(
+            command=command,
+            command_id=response.command_id,
+            value=response.value,
+        )
+        with self._state_lock:
+            self._responses.append(recorded)
+        return recorded
 
     def _allocate_command_id(self) -> int:
         with self._state_lock:
@@ -944,6 +1067,8 @@ class QMPClient:
             raise QMPProtocolError(
                 "QMP response ID does not match an outstanding command"
             )
+        if message.error_class is None:
+            self._record_response(pending.command, message)
         pending.response = message
         pending.ready.set()
 
@@ -957,6 +1082,12 @@ class QMPClient:
         except QMPError as exc:
             self._fail_session(exc)
         except Exception as exc:
+            # This is an intentional total thread-boundary fence.  The reader
+            # has no caller stack in which an unexpected stdlib/runtime error
+            # can surface; allowing it to die would leave pending commands
+            # waiting forever and could make a dead QMP peer look live.  Keep
+            # the failure terminal and convert it to protocol evidence.  The
+            # original exception remains attached as ``__cause__``.
             error = QMPProtocolError("unexpected QMP reader failure")
             error.__cause__ = exc
             self._fail_session(error)
@@ -1048,6 +1179,7 @@ class QMPClient:
                     raise QMPHandshakeError(
                         "QMP capability response must return an empty object"
                     )
+                self._record_response("qmp_capabilities", incoming)
                 break
             with self._state_lock:
                 self._peer_credentials = peer
@@ -1066,6 +1198,11 @@ class QMPClient:
             self._close_socket()
             raise
         except Exception as exc:
+            # Connection setup owns the socket and handshake state.  This
+            # total cleanup fence is required for an unexpected thread,
+            # decoder, or runtime failure: close the authenticated endpoint,
+            # publish terminal failure to the client, and never return a
+            # partially negotiated session as machine truth.
             error = QMPProtocolError("QMP connection setup failed")
             self._fail_session(error)
             self._close_socket()
@@ -1128,6 +1265,11 @@ class QMPClient:
                 self._fail_session(exc)
                 raise
             except Exception as exc:
+                # ``_send_bytes`` normally translates transport failures into
+                # QMPError.  Retain this total cleanup fence for an
+                # unexpected send/runtime failure so the pending command is
+                # removed and the session cannot be mistaken for a live QMP
+                # authority.  The original exception is retained as cause.
                 with self._state_lock:
                     self._pending.pop(command_id, None)
                 error = QMPProtocolError("QMP command send failed")
@@ -1204,6 +1346,32 @@ class QMPClient:
 
     def query_block(self, *, timeout_seconds: float | None = None) -> QMPResponse:
         return self.execute("query-block", timeout_seconds=timeout_seconds)
+
+    def query_fdsets(self, *, timeout_seconds: float | None = None) -> QMPResponse:
+        """Return QEMU's exact inherited storage fdset inventory."""
+
+        return self.execute("query-fdsets", timeout_seconds=timeout_seconds)
+
+    def query_named_block_nodes(
+        self,
+        *,
+        timeout_seconds: float | None = None,
+    ) -> QMPResponse:
+        """Return the named block graph without caller-supplied arguments."""
+
+        return self.execute(
+            "query-named-block-nodes",
+            timeout_seconds=timeout_seconds,
+        )
+
+    def query_blockstats(
+        self,
+        *,
+        timeout_seconds: float | None = None,
+    ) -> QMPResponse:
+        """Return recursive blockstats graph edges without arguments."""
+
+        return self.execute("query-blockstats", timeout_seconds=timeout_seconds)
 
     def query_cpus_fast(
         self,
@@ -1288,6 +1456,7 @@ __all__ = [
     "CORE_QMP_COMMANDS",
     "DEFAULT_QMP_MAX_DEPTH",
     "DEFAULT_QMP_MAX_EVENTS",
+    "DEFAULT_QMP_MAX_RESPONSES",
     "DEFAULT_QMP_MAX_ITEMS",
     "DEFAULT_QMP_MAX_MESSAGE_BYTES",
     "DEFAULT_QMP_MAX_STRING",

@@ -4,8 +4,15 @@
 > **Latest sealed snapshot:** [`v0.1`](SNAPSHOT.md)
 > **Working runtime status:** P1/P2/P3 closed: canonical protocol, private
 > single-owner daemon/registry, verified qcow2 base/overlay storage, read-only
-> public host planning, and separate guest bootstrap; P4 QEMU/QMP ownership next,
-> with no public VM lifecycle
+> public host planning, and separate guest bootstrap. P4 now has a daemon-wired
+> internal QEMU/QMP runtime owner, one-shot disposable launch authority, a
+> fail-closed non-public physical-gate coordinator, and direct non-launch proof
+> modules. All eighteen bounded phase items are implemented. The exact fixture is
+> restored; frozen matrix `b9aca76a-a016-4d0c-9002-f0a90f383b21` is prepared
+> and preflighted across all 17 scenarios with conservative operator-root
+> exclusions. Daeron-authorized execution, the physical checkpoint matrix, and
+> actual machine-truth `GATE-P4` remain open.
+> The public host boundary remains non-mutating.
 > **Canonical active work:** [`TASK.md`](TASK.md)
 > **Long-range execution authority:** [`PLAN.md`](PLAN.md)
 
@@ -75,9 +82,11 @@ VM Lab is the experimental Python reference boundary for a persistent Somnus
 AIPC: a full virtual computer whose disk, identity, guest services, state, and
 recovery history must survive the host process controlling it.
 
-The repository currently promotes the following bounded capabilities:
+The repository currently contains the following bounded live surfaces.
+Promotion is closed through P3; the P4 row is internal implementation whose
+physical gate remains open:
 
-| Boundary | Promoted capability | Direct owner |
+| Boundary | Live capability or implementation | Direct owner |
 | --- | --- | --- |
 | Shared protocol | versioned VM, agent, control, and event schemas | [`src/somnus_protocol/`](src/somnus_protocol/) |
 | Host CLI | `doctor` | [`src/somnus_vm/doctor.py`](src/somnus_vm/doctor.py) |
@@ -86,6 +95,7 @@ The repository currently promotes the following bounded capabilities:
 | Internal local control | bounded AF_UNIX framing/client/listener with Linux peer credentials | [`src/somnus_vm/transport.py`](src/somnus_vm/transport.py) → [`src/somnus_vm/daemon.py`](src/somnus_vm/daemon.py) |
 | Internal mutation authority | schema-v3 SQLite registry, serialized metadata/storage operations, idempotency, checkpoints, and recovery | [`src/somnus_vm/daemon_runtime.py`](src/somnus_vm/daemon_runtime.py) → [`src/somnus_vm/host/registry.py`](src/somnus_vm/host/registry.py) → [`src/somnus_vm/host/service.py`](src/somnus_vm/host/service.py) |
 | Internal image/storage | pinned qcow2 provenance, immutable base import, sparse overlay publication, and parent-death containment | [`src/somnus_vm/host/images.py`](src/somnus_vm/host/images.py) → [`src/somnus_vm/host/storage.py`](src/somnus_vm/host/storage.py) |
+| Internal P4 runtime | daemon-wired QEMU process/QMP ownership, one-shot non-production launch permit and receipt, frozen launch journal, logs, and restart recovery | [`src/somnus_vm/daemon_runtime.py`](src/somnus_vm/daemon_runtime.py) → [`src/somnus_vm/host/launch_authority.py`](src/somnus_vm/host/launch_authority.py) → [`src/somnus_vm/host/qemu_runtime.py`](src/somnus_vm/host/qemu_runtime.py) → [`src/somnus_vm/host/qemu_runtime_journal.py`](src/somnus_vm/host/qemu_runtime_journal.py) |
 | Guest CLI | local verified bootstrap | [`src/somnus_vm/guest/bootstrap.py`](src/somnus_vm/guest/bootstrap.py) |
 
 P2 promotes a real, unprivileged, single-writer **metadata authority**, not a VM
@@ -105,6 +115,29 @@ inode, marker, journal, and recovery evidence. The native exec guard contains
 image subprocesses if their owner dies. P3 does not launch or mount a VM disk,
 query QMP, establish guest readiness, or make storage/lifecycle operations
 public through the `vm-lab` CLI.
+
+P4 now supplies the bounded internal runtime-owner implementation: the daemon
+composition constructs `QemuRuntimeOwner`, settles incomplete/completed runtime
+launch records before generic storage reconciliation and listener binding, pins
+the P3 overlay/base/owner-marker authority across the exec guard, and validates
+the two-fdset/four-node block graph through authenticated QMP and peer-process
+descriptor evidence. The same owner retains logs, exact process identity,
+durable orphan-emergency state, and restart recovery. Doctor interrogates the
+selected QEMU's closed sandbox option set without launching a VM.
+`launch_authority.py` requires a private exact fixture topology, explicit
+production exclusions, and a one-shot permit whose canonical receipt is
+embedded in the launch journal before child release. `daemon_runtime` exposes
+that owner only through a Python callback hook unavailable to its normal CLI or
+AF_UNIX request vocabulary. `p4_gate.py` now provides the explicit preflight, authorization, activation,
+full 17-scenario matrix preparation, strict serial execution/resume policy,
+checkpoint/recovery validation, and sealed-result contract; `scripts/run_gate_p4.py` exposes `prepare-matrix`, `preflight-matrix`, and
+`execute-matrix` as the non-public operator driver. The deterministic execution
+phrase is only an accidental-execution fence, never authentication or proof of
+Daeron authority. These suites are implementation/non-launch proof; they do
+**not** close `GATE-P4`: the exact source is restored, but no valid execute
+authority/Daeron-authorized `qemu-system-*` run, explicit production exclusions,
+or checkpoint matrix has established external machine truth, and no public
+lifecycle command exists.
 
 P1 supplies the strict lifecycle **contract**: 16 observed states, 48 legal
 edges, edge-specific evidence, immutable transition history, and exact identity
@@ -207,7 +240,8 @@ the affected topology lane.
 | Change contracts/state | [`TOPOLOGY.md`](TOPOLOGY.md) → `src/somnus_protocol/` → affected compatibility consumer | Root export identity, round-trip, negotiation, migration, replay, and illegal-transition evidence |
 | Change daemon/registry | [`docs/decisions/0001-single-mutation-owner.md`](docs/decisions/0001-single-mutation-owner.md) → [`docs/decisions/0002-sqlite-registry.md`](docs/decisions/0002-sqlite-registry.md) → [`transport.py`](src/somnus_vm/transport.py) / [`daemon.py`](src/somnus_vm/daemon.py) / [`daemon_runtime.py`](src/somnus_vm/daemon_runtime.py) / [`registry.py`](src/somnus_vm/host/registry.py) / [`service.py`](src/somnus_vm/host/service.py) | [`test_daemon_transport_p2.py`](test/vm_lab/test_daemon_transport_p2.py), [`test_registry_p2.py`](test/vm_lab/test_registry_p2.py), [`test_registry_service_p2.py`](test/vm_lab/test_registry_service_p2.py), and [`test_daemon_registry_p2.py`](test/vm_lab/test_daemon_registry_p2.py) with real peers/processes/SQLite/checkpoint kills |
 | Change image/storage | [`PLAN.md`](PLAN.md) Phase P3 → [`images.py`](src/somnus_vm/host/images.py) / [`storage.py`](src/somnus_vm/host/storage.py) / [`exec_guard.py`](src/somnus_vm/host/exec_guard.py) → [fixture manifest](test/vm_lab/fixtures/images/ubuntu-minimal-noble-amd64-20260801.json) | [`test_storage_p3.py`](test/vm_lab/test_storage_p3.py), [`test_storage_p3_adversarial.py`](test/vm_lab/test_storage_p3_adversarial.py), and [`test_daemon_storage_p3.py`](test/vm_lab/test_daemon_storage_p3.py); real `qemu-img`, all 14 kill checkpoints, foreign-adoption rejection, and daemon reconciliation |
-| Change QEMU planning | [`FAILURE_GRAMMAR.md`](FAILURE_GRAMMAR.md) → `src/somnus_vm/host/` | Exact argv, unsafe-input, and no-mutation evidence |
+| Change P4 QEMU/QMP runtime | [`PLAN.md`](PLAN.md) Phase P4 → [`daemon_runtime.py`](src/somnus_vm/daemon_runtime.py) → [`launch_authority.py`](src/somnus_vm/host/launch_authority.py), [`qemu_runtime.py`](src/somnus_vm/host/qemu_runtime.py), [`qemu_runtime_journal.py`](src/somnus_vm/host/qemu_runtime_journal.py), [`p4_gate.py`](src/somnus_vm/host/p4_gate.py), [`qmp.py`](src/somnus_vm/host/qmp.py), [`qmp_identity.py`](src/somnus_vm/host/qmp_identity.py), [`qemu_process.py`](src/somnus_vm/host/qemu_process.py), [`qemu_logs.py`](src/somnus_vm/host/qemu_logs.py), and guards | `test_disposable_launch_authority_p4.py`, `test_p4_gate_coordinator.py` (8/8), `test_qemu_runtime_p4.py`, `test_daemon_runtime_p4.py`, `test_qemu_runtime_journal_p4.py`, `test_qmp_p4.py`, `test_qmp_identity_p4.py`, `test_qemu_process_p4.py`, `test_qemu_logs_p4.py`, `test_qemu_exec_guard_p4.py`, and `test_storage_runtime_p4.py`; `test_p4_gate_coordinator.py` proves exact preflight and denial; these non-launch proofs do not close `GATE-P4` |
+| Change QEMU planning | [`FAILURE_GRAMMAR.md`](FAILURE_GRAMMAR.md) → [`qemu.py`](src/somnus_vm/host/qemu.py) | Exact argv, unsafe-input, and no-mutation evidence |
 | Change guest bootstrap | [`FAILURE_GRAMMAR.md`](FAILURE_GRAMMAR.md) → `src/somnus_vm/guest/bootstrap.py` | Hostile archive, TOCTOU, hash, atomic placement, idempotency |
 | Promote candidate code | [`docs/MIGRATION_MAP.md`](docs/MIGRATION_MAP.md) → [`PROVENANCE.md`](PROVENANCE.md) → relevant gate | New integration proof; never import-by-convenience |
 | Diagnose a suspicious success | [`FAILURE_GRAMMAR.md`](FAILURE_GRAMMAR.md) first | Smallest discriminating physical check |
@@ -225,7 +259,7 @@ because they exist.
 | Tree | Disposition | Rule |
 | --- | --- | --- |
 | [`src/somnus_protocol/`](src/somnus_protocol/) | **LIVE P1** | Canonical pure shared protocol authority |
-| [`src/somnus_vm/`](src/somnus_vm/) | **LIVE v0.1 + P1/P2/P3 consumer** | Public read-only CLI/planning, authenticated internal daemon/client, transactional registry/service, verified qcow2 storage, bootstrap, and compatibility re-exports |
+| [`src/somnus_vm/`](src/somnus_vm/) | **LIVE v0.1 + P1/P2/P3 + internal P4 implementation/coordinator** | Public read-only CLI/planning, authenticated internal daemon/client, transactional registry/service, verified qcow2 storage, daemon-wired QEMU/QMP runtime ownership and recovery modules, bootstrap, and compatibility re-exports; `GATE-P4` remains open |
 | [`test/vm_lab/`](test/vm_lab/) | **CURRENT PROOF** | Direct integration harness and sealed run bundles |
 | [`configs/`](configs/) | **CURRENT INPUT** | Validated profiles; no secrets |
 | [`components/`](components/) | **CANDIDATE** | Donor code; never boot-imported until a gate promotes it |
@@ -250,10 +284,14 @@ These are current architectural walls, not suggestions:
 - **One active AIPC policy, multi-VM correctness:** normal policy allows one
   active AIPC, while identifiers, ports, storage, and state must still never
   collide.
-- **One mutation owner:** the P2/P3 daemon composition root already owns registry
-  writes, leases, base import, overlay publication, and storage recovery; that
-  same root—and no CLI, guest, Kerminal, donor, or fallback—will own later
-  QEMU-process and lifecycle mutation.
+- **One mutation owner:** the daemon composition root owns registry writes,
+  leases, base import, overlay publication, storage recovery, and the internal
+  P4 QEMU runtime owner/recovery path. No CLI, guest, Kerminal, donor, or
+  fallback becomes a second lifecycle authority. This implementation does not
+  itself promote a public lifecycle or close `GATE-P4`. Physical-gate code must
+  enter through the Python-only daemon activation hook and present a consumed
+  `DisposableLaunchPermit`; no profile name, path convention, environment
+  variable, or test location is launch authority.
 - **Non-daemonized child:** QEMU remains a directly owned child; no
   `-daemonize`, no shell interpolation.
 - **QMP before truth:** socket existence and PID liveness never establish VM
@@ -321,6 +359,112 @@ A candidate becomes live only when:
   blocked gate—not a reason to fabricate a pass.
 - Physical tests may never point at a production AIPC disk.
 
+### Exhausted-owner SOTA++ doctrine
+
+Production-grade means **exhausted, not exhaustive**. Judge a file or module by
+whether the ownership boundary it represents has been driven as far as that
+layer can truthfully take it—not by line count, conventional decomposition
+instinct, the existence of tests, or the happy path working.
+
+- Exhaust the local design space: capabilities, failure semantics, state
+  interaction, recovery, persistence, performance, instrumentation, extension
+  seams, runtime consumption, and consequences belong in the real owner until
+  responsibility genuinely crosses an ontological boundary.
+- Exhaust existing structure before adding managers, helpers, databases, or
+  modules merely because the current owner became difficult.
+- Integrate causally. Imports, registrations, telemetry, schemas, and adjacent
+  tests are not integration unless one subsystem's state changes the other's
+  behavior through the actual runtime path.
+- Close loops: input → state mutation → consequence → feedback → changed future
+  behavior. Unconsumed telemetry and unattached evidence are unfinished.
+- Preserve causal locality when the component is intentionally the single
+  computational or ownership surface. Size alone never requires a split.
+- When rediscovering an older mechanism, identify the architectural dimension
+  it exhausted, then prove whether the current organism exhausts that dimension
+  better, lost it, or must reconcile both.
+- Stop only when the remaining work truthfully belongs to another owner.
+
+SOTA++ here means the strongest plausible implementation of the idea after
+assuming the obvious version has already been tried. Intelligence and system
+quality scale through **causal density, not component count or storage
+density**. Never simplify behavior, narrow the destination, or manufacture an
+easier test boundary to obtain green output.
+
+### Operator agency and thoroughness
+
+Do not optimize substantive work for short replies, few tool calls, or
+token/compute conservation.
+
+- Execute the work: inspect, edit, run, diagnose, repair, and re-run. Hand
+  Daeron a checklist only when credentials, a consequential physical action, or
+  an external product surface genuinely requires him.
+- Read the newest [`NOTEPAD.md`](NOTEPAD.md) entry before production edits.
+- Use CodeGraph before grep/read loops for source flow, owner, caller, and
+  impact questions; use parallel agents for disjoint bounded lanes when
+  Daeron's task or the active packet authorizes them.
+- Finish the whole active packet in the session while safe in-scope work
+  remains. A plan, partial implementation, or “what I would do next” is not a
+  done condition.
+- Tests pass only because the behavior is fully implemented at their consumed
+  boundary. Never weaken behavior, fixtures, assertions, validation, or
+  failure semantics to make a test green.
+
+### Fail-loud / no-fallback engineering doctrine
+
+Production posture is **fail loud, log evidence, preserve the proof wall**.
+Silent recovery is a boundary defect.
+
+- No silent fallbacks, cached substitutions, regex shortcuts, default-value
+  repairs, best-effort continuation, or implicit downgrade lanes may replace a
+  failed contract, authority, lease, manifest, process, QMP observation, guest
+  result, or gate.
+- Catch only domain-specific failures to add boundary context, then raise a
+  typed error or return a failing process status. Unexpected failures remain
+  visible; broad catches must re-raise with evidence.
+- Deferred, harness-only, lineage, candidate, and unpromoted surfaces must be
+  named as such and cannot masquerade as runtime capability.
+- Record proof-relevant failure at the owner: command output, QMP evidence,
+  operation/checkpoint state, manifest drift, exact denial reason, or run
+  artifact.
+- Negative tests assert the failure mode and unchanged authority, not merely
+  the absence of success.
+- Every editor, generator, or agent change is either accepted into the
+  documented/validated working state or deliberately reverted. Do not leave
+  unexplained drift for the next operator.
+
+### Runtime workflow, continuity, and clean handoff
+
+At the start of a substantive or resumed execution session, read
+[`workflows-new.md`](workflows-new.md) once and use its canonical
+sync → context → execute → verify → persist → reflect loop when SovereignMCP is
+mounted. Do not repeat bootstrap mechanically after the session is hydrated.
+When BB7 is not callable, preserve the same semantics through the repository's
+own `NOTEPAD.md`, `TASK.md`, `CONTEXT.md`, `MEMORY.md`, CodeGraph, native
+execution, and verification surfaces; report the exact unavailable BB7 surface
+rather than simulating it.
+
+After a turn changes runtime state, routing, implementation, or gate status:
+
+| Surface | Required action |
+| --- | --- |
+| [`NOTEPAD.md`](NOTEPAD.md) | Append one factual peer-log entry; never rewrite earlier entries |
+| [`TASK.md`](TASK.md) | Mark landed work and publish one imperative next packet when priority changes |
+| [`STATE.md`](STATE.md) | Record exact phase, command, result, blocker, and next consumed action |
+| [`CONTEXT.md`](CONTEXT.md) | Update the current implementation/proof snapshot |
+| [`MEMORY.md`](MEMORY.md) | Append durable decisions, corrections, and reusable failure lessons |
+| [`PROVENANCE.md`](PROVENANCE.md) | Record material implementation lineage and verification |
+| [`filetree.md`](filetree.md) / [`tree-codebase.md`](tree-codebase.md) | Refresh after structural add/move/delete; use `filetree.md` as the anti-tunnelvision topology reset |
+| [`SOTA_RUN.md`](SOTA_RUN.md) | Keep the latest aggregate result and its exact interpretation synchronized |
+| snapshot/source manifests | Change only when their owned promoted boundary actually changes |
+
+Continuity documents are orders to the next operator, not brainstorming notes.
+State what **is landed**, what **failed**, and what **is next**. Do not use
+“optional,” “suggested,” “consider,” “if you want,” or “when possible” in the
+active handoff. Pin the commit, proof counts, exact commands, artifacts, and
+real blockers. End the newest `NOTEPAD.md` entry with one imperative next
+packet, its owner files, verification commands, and hard bans so Daeron never
+has to retranslate between agents.
+
 ---
 
 ## 9. Commands and acceptance surfaces
@@ -343,9 +487,10 @@ ecosystem files.
 PYTHONPATH=src python test/vm_lab/smoke.py
 ```
 
-This is the consumed-boundary regression harness. It aggregates the canonical
-P1 protocol checks, v0.1 CLI/config/planner/bootstrap, installed-wheel boundary,
-P2 physical daemon/registry proofs, and P3 image/storage proofs. The sealed
+This is the consumed-boundary regression harness. Its sealed P1/P2/P3 bundle
+aggregates canonical protocol checks, v0.1 CLI/config/planner/bootstrap, the
+installed-wheel boundary, P2 daemon/registry proofs, and P3 image/storage
+proofs. The sealed
 closure bundle
 [`20260805T211740Z`](test/vm_lab/runs/20260805T211740Z/) records 26/26 aggregate
 checks with zero failures and zero skips. Its P3 lane uses real `qemu-img`
@@ -353,8 +498,41 @@ checks with zero failures and zero skips. Its P3 lane uses real `qemu-img`
 `b3064efb500d71d6ccbe619b1716062b803e285116e040627b430aaee14cced6`,
 two independent sparse 100 GiB overlays, all seven base and seven overlay
 checkpoint kills, adversarial ownership/tamper checks, and one real
-daemon/client storage composition. Passing it does not establish QEMU launch,
-mounting, QMP identity, guest readiness, deployment, or public VM lifecycle.
+daemon/client storage composition. That sealed bundle predates P4
+implementation work and does not establish QEMU launch, mounting, QMP identity,
+guest readiness, deployment, or public VM lifecycle.
+
+The current-HEAD aggregate
+[`20260807T123747Z`](test/vm_lab/runs/20260807T123747Z/) records 40 pass,
+0 fail, and 0 skip across 40 checks. The exact pinned source is restored at
+`/tmp/vm-lab-p3-fixture-20260801.qcow2` and verified size 264,306,688, mode
+0600, uid 1000, nlink 1, and SHA-256
+`b3064efb500d71d6ccbe619b1716062b803e285116e040627b430aaee14cced6`. Every
+fixture-dependent lane, coordinator preflight/denial, all bounded P4 owners,
+QMP response-history capture, doctor, and plan/index contract passed. This is
+neither a P4 gate pass nor a retroactive invalidation of sealed P3 evidence:
+valid execute authority, explicit production exclusions, actual qemu-system
+execution, and the checkpoint/adoption matrix remain unconsumed.
+
+### P4 direct implementation modules (gate remains open)
+
+```bash
+PYTHONPATH=src python test/vm_lab/test_qemu_runtime_p4.py
+PYTHONPATH=src python test/vm_lab/test_daemon_runtime_p4.py
+PYTHONPATH=src python test/vm_lab/test_qemu_runtime_journal_p4.py
+PYTHONPATH=src python test/vm_lab/test_qmp_p4.py
+PYTHONPATH=src python test/vm_lab/test_qmp_identity_p4.py
+PYTHONPATH=src python test/vm_lab/test_qemu_process_p4.py
+PYTHONPATH=src python test/vm_lab/test_qemu_logs_p4.py
+PYTHONPATH=src python test/vm_lab/test_qemu_exec_guard_p4.py
+PYTHONPATH=src python test/vm_lab/test_storage_runtime_p4.py
+PYTHONPATH=src python test/vm_lab/test_doctor_p4.py
+PYTHONPATH=src python test/vm_lab/test_p4_gate_coordinator.py
+```
+
+These are direct non-launch owner/journal/QMP/process/log/recovery and
+selected-QEMU parser-consumption checks. They are not evidence of a disposable
+QEMU machine run and must not be described as `GATE-P4` closure.
 
 ### Focused direct test modules
 
@@ -388,9 +566,9 @@ candidate ports only long enough to prove availability and then releases them;
 `ports_reserved` must remain false.
 
 The installed `somnus-vm-daemon` entrypoint is a live internal composition
-boundary for authenticated registry and storage requests. It is not a public
-VM lifecycle CLI: it exposes no QEMU start/stop, QMP, guest-readiness,
-deployment, snapshot, or destroy claim.
+boundary for authenticated registry/storage requests and the daemon-wired P4
+runtime recovery owner. It is not a public VM lifecycle CLI: it exposes no
+QEMU start/stop, QMP, guest-readiness, deployment, snapshot, or destroy claim.
 
 ### Packaging boundary
 
@@ -461,6 +639,8 @@ Read [`FAILURE_GRAMMAR.md`](FAILURE_GRAMMAR.md) immediately if any of these
 appear:
 
 - a command says a VM is running because a PID exists;
+- a P4 journal, QMP fixture, process observation, or direct test is described as
+  an actual disposable QEMU machine run;
 - readiness is inferred from an open TCP port;
 - user networking is paired with a fabricated `192.168.122.x` guest address;
 - a plan-time port is described as reserved;
@@ -481,6 +661,7 @@ nearest physical owner.
 
 - [Repository overview](README.md)
 - [Foundational Somnus system intent](Somnus-Core-Ideals.md)
+- [Repository runtime workflow driver](workflows-new.md)
 - [Living file tree](filetree.md)
 - [Generated point-in-time file inventory](tree-codebase.md)
 - [Architecture traversal map](ARCHITECTURE_MAP.md)

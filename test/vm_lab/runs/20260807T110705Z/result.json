@@ -1,0 +1,247 @@
+{
+  "checks": [
+    {
+      "detail": "round-tripped strict VM definition/ports, rejected coercion and unknown fields, preserved aliases, and proved cold import isolation",
+      "duration_ms": 57.46,
+      "name": "protocol_vm_primitives",
+      "status": "pass"
+    },
+    {
+      "detail": "round-tripped and adversarially validated 8 agent protocol surfaces",
+      "duration_ms": 195.638,
+      "name": "protocol_agent",
+      "status": "pass"
+    },
+    {
+      "detail": "round-tripped and adversarially bounded 24 version/control/event protocol cases with a cold-import proof",
+      "duration_ms": 106.58,
+      "name": "protocol_control",
+      "status": "pass"
+    },
+    {
+      "detail": "validated 9 strict typed-settings cases across legacy, split, generated-profile, root-ownership, and secret-reference paths",
+      "duration_ms": 43.591,
+      "name": "protocol_settings",
+      "status": "pass"
+    },
+    {
+      "detail": "proved canonical VMRecord identity through compatibility imports and the real non-mutating planner/CLI; public plan output is versioned, secret-free, and leaves no host state or port reservation",
+      "duration_ms": 90.003,
+      "name": "protocol_host_consumption",
+      "status": "pass"
+    },
+    {
+      "detail": "round-tripped every canonical VM schema; exhaustively enforced all lifecycle edges and typed evidence; rejected contradictory runtime observations, intent/history drift, process-identity substitution, nonconsecutive boot/process/observation replay, unsafe QMP paths, duplicate error causes, migration-provenance tampering, and unverified v0 states; proved immutable records, exact DECLARED migration, terminal destruction/new generation, idempotent operations, and cold import isolation",
+      "duration_ms": 108.101,
+      "name": "protocol_vm_lifecycle",
+      "status": "pass"
+    },
+    {
+      "detail": "round-tripped one canonical secret-free record, rejected an illegal state jump, and fixed guest endpoint names",
+      "duration_ms": 0.696,
+      "name": "contract_roundtrip",
+      "status": "pass"
+    },
+    {
+      "detail": "loaded resolved configs and rejected truthy booleans plus ambiguous QMP paths",
+      "duration_ms": 5.293,
+      "name": "configuration",
+      "status": "pass"
+    },
+    {
+      "detail": "bind-checked 24 distinct ephemeral ports across eight threads",
+      "duration_ms": 3.481,
+      "name": "port_allocation",
+      "status": "pass"
+    },
+    {
+      "detail": "encoded a comma-bearing disk with JSON blockdev, closed sandbox, headless/no-network argv, separate logs, and exact command identity",
+      "duration_ms": 3.197,
+      "name": "qemu_plan",
+      "status": "pass"
+    },
+    {
+      "detail": "extracted bounded data and rejected traversal, links, duplicates, and size drift",
+      "duration_ms": 3.947,
+      "name": "bootstrap_extraction",
+      "status": "pass"
+    },
+    {
+      "detail": "installed/recovered bounded payloads and rejected stale, ambiguous, mislabeled, or colliding intent",
+      "duration_ms": 3.182,
+      "name": "bootstrap_idempotency",
+      "status": "pass"
+    },
+    {
+      "detail": "reported 10 source-aware checks with healthy=False",
+      "duration_ms": 15.461,
+      "name": "doctor_truthfulness",
+      "status": "pass"
+    },
+    {
+      "detail": "ran checkout-independent topology, redacted planning, and clean port-exhaustion errors",
+      "duration_ms": 261.006,
+      "name": "cli_entrypoint",
+      "status": "pass"
+    },
+    {
+      "detail": "installed a wheel with canonical/compatibility protocol identity, checkout-free CLI, the registry/storage daemon entry point, and clean malformed-payload exit behavior",
+      "duration_ms": 2277.374,
+      "name": "wheel_runtime",
+      "status": "pass"
+    },
+    {
+      "detail": "proved bounded SO_PEERCRED Unix transport and exclusive daemon ownership",
+      "duration_ms": 2095.351,
+      "name": "daemon_transport_p2",
+      "status": "pass"
+    },
+    {
+      "detail": "proved normalized SQLite ownership, integrity, migration, and writer locking",
+      "duration_ms": 585.89,
+      "name": "registry_p2",
+      "status": "pass"
+    },
+    {
+      "detail": "proved strict metadata operations and abrupt writer-exit recovery",
+      "duration_ms": 1993.405,
+      "name": "registry_service_p2",
+      "status": "pass"
+    },
+    {
+      "detail": "proved 24-process operation races and real SIGKILL recovery at every checkpoint",
+      "duration_ms": 5393.925,
+      "name": "daemon_registry_p2",
+      "status": "pass"
+    },
+    {
+      "detail": "AssertionError: test_storage_p3.py failed\nstdout:\n\nstderr:\ntest_base_import_recovers_after_every_persisted_checkpoint (__main__.StorageP3Tests.test_base_import_recovers_after_every_persisted_checkpoint) ... FAIL\ntest_manifest_and_real_backend_reject_ambiguous_authority (__main__.StorageP3Tests.test_manifest_and_real_backend_reject_ambiguous_authority) ... FAIL\ntest_overlay_recovers_after_every_persisted_checkpoint (__main__.StorageP3Tests.test_overlay_recovers_after_every_persisted_checkpoint) ... FAIL\ntest_service_imports_one_base_and_materializes_two_sparse_overlays (__main__.StorageP3Tests.test_service_imports_one_base_and_materializes_two_sparse_overlays) ... FAIL\ntest_symlink_and_hardlink_aliases_never_gain_storage_authority (__main__.StorageP3Tests.test_symlink_and_hardlink_aliases_never_gain_storage_authority) ... FAIL\ntest_v2_registry_migrates_to_current_with_storage_constraints (__main__.StorageP3Tests.test_v2_registry_migrates_to_current_with_storage_constraints) ... FAIL\n\n======================================================================\nFAIL: test_base_import_recovers_after_every_persisted_checkpoint (__main__.StorageP3Tests.test_base_import_recovers_after_every_persisted_checkpoint)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/home/daeron/Repositories/vm-lab/test/vm_lab/test_storage_p3.py\", line 750, in setUp\n    raise AssertionError(\"the required P3 fixture or manifest is absent\")\nAssertionError: the required P3 fixture or manifest is absent\n\n======================================================================\nFAIL: test_manifest_and_real_backend_reject_ambiguous_authority (__main__.StorageP3Tests.test_manifest_and_real_backend_reject_ambiguous_authority)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/home/daeron/Repositories/vm-lab/test/vm_lab/test_storage_p3.py\", line 750, in setUp\n    raise AssertionError(\"the required P3 fixture or manifest is absent\")\nAssertionError: the required P3 fixture or manifest is absent\n\n======================================================================\nFAIL: test_overlay_recovers_after_every_persisted_checkpoint (__main__.StorageP3Tests.test_overlay_recovers_after_every_persisted_checkpoint)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/home/daeron/Repositories/vm-lab/test/vm_lab/test_storage_p3.py\", line 750, in setUp\n    raise AssertionError(\"the required P3 fixture or manifest is absent\")\nAssertionError: the required P3 fixture or manifest is absent\n\n======================================================================\nFAIL: test_service_imports_one_base_and_materializes_two_sparse_overlays (__main__.StorageP3Tests.test_service_imports_one_base_and_materializes_two_sparse_overlays)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/home/daeron/Repositories/vm-lab/test/vm_lab/test_storage_p3.py\", line 750, in setUp\n    raise AssertionError(\"the required P3 fixture or manifest is absent\")\nAssertionError: the required P3 fixture or manifest is absent\n\n======================================================================\nFAIL: test_symlink_and_hardlink_aliases_never_gain_storage_authority (__main__.StorageP3Tests.test_symlink_and_hardlink_aliases_never_gain_storage_authority)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/home/daeron/Repositories/vm-lab/test/vm_lab/test_storage_p3.py\", line 750, in setUp\n    raise AssertionError(\"the required P3 fixture or manifest is absent\")\nAssertionError: the required P3 fixture or manifest is absent\n\n======================================================================\nFAIL: test_v2_registry_migrates_to_current_with_storage_constraints (__main__.StorageP3Tests.test_v2_registry_migrates_to_current_with_storage_constraints)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/home/daeron/Repositories/vm-lab/test/vm_lab/test_storage_p3.py\", line 750, in setUp\n    raise AssertionError(\"the required P3 fixture or manifest is absent\")\nAssertionError: the required P3 fixture or manifest is absent\n\n----------------------------------------------------------------------\nRan 6 tests in 0.001s\n\nFAILED (failures=6)\n",
+      "duration_ms": 119.841,
+      "name": "storage_p3",
+      "status": "fail"
+    },
+    {
+      "detail": "AssertionError: test_storage_p3_adversarial.py failed\nstdout:\n\nstderr:\ntest_foreign_final_base_without_manifest_is_not_adopted (__main__.StorageP3AdversarialTests.test_foreign_final_base_without_manifest_is_not_adopted) ... FAIL\ntest_foreign_final_overlay_without_marker_is_not_adopted (__main__.StorageP3AdversarialTests.test_foreign_final_overlay_without_marker_is_not_adopted) ... FAIL\ntest_missing_checkpointed_base_candidate_is_not_recreated (__main__.StorageP3AdversarialTests.test_missing_checkpointed_base_candidate_is_not_recreated) ... FAIL\ntest_parent_death_guard_kills_live_native_child (__main__.StorageP3AdversarialTests.test_parent_death_guard_kills_live_native_child) ... FAIL\ntest_post_publication_sqlite_conflict_is_never_terminal_failure (__main__.StorageP3AdversarialTests.test_post_publication_sqlite_conflict_is_never_terminal_failure) ... FAIL\ntest_replaced_checkpointed_overlay_candidate_is_not_adopted (__main__.StorageP3AdversarialTests.test_replaced_checkpointed_overlay_candidate_is_not_adopted) ... FAIL\ntest_same_bytes_new_inode_registered_base_blocks_use_and_startup (__main__.StorageP3AdversarialTests.test_same_bytes_new_inode_registered_base_blocks_use_and_startup) ... FAIL\ntest_stage_symlink_rejection_does_not_chmod_victim (__main__.StorageP3AdversarialTests.test_stage_symlink_rejection_does_not_chmod_victim) ... FAIL\n\n======================================================================\nFAIL: test_foreign_final_base_without_manifest_is_not_adopted (__main__.StorageP3AdversarialTests.test_foreign_final_base_without_manifest_is_not_adopted)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/home/daeron/Repositories/vm-lab/test/vm_lab/test_storage_p3_adversarial.py\", line 173, in setUp\n    raise AssertionError(\"the required P3 fixture or manifest is absent\")\nAssertionError: the required P3 fixture or manifest is absent\n\n======================================================================\nFAIL: test_foreign_final_overlay_without_marker_is_not_adopted (__main__.StorageP3AdversarialTests.test_foreign_final_overlay_without_marker_is_not_adopted)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/home/daeron/Repositories/vm-lab/test/vm_lab/test_storage_p3_adversarial.py\", line 173, in setUp\n    raise AssertionError(\"the required P3 fixture or manifest is absent\")\nAssertionError: the required P3 fixture or manifest is absent\n\n======================================================================\nFAIL: test_missing_checkpointed_base_candidate_is_not_recreated (__main__.StorageP3AdversarialTests.test_missing_checkpointed_base_candidate_is_not_recreated)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/home/daeron/Repositories/vm-lab/test/vm_lab/test_storage_p3_adversarial.py\", line 173, in setUp\n    raise AssertionError(\"the required P3 fixture or manifest is absent\")\nAssertionError: the required P3 fixture or manifest is absent\n\n======================================================================\nFAIL: test_parent_death_guard_kills_live_native_child (__main__.StorageP3AdversarialTests.test_parent_death_guard_kills_live_native_child)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/home/daeron/Repositories/vm-lab/test/vm_lab/test_storage_p3_adversarial.py\", line 173, in setUp\n    raise AssertionError(\"the required P3 fixture or manifest is absent\")\nAssertionError: the required P3 fixture or manifest is absent\n\n======================================================================\nFAIL: test_post_publication_sqlite_conflict_is_never_terminal_failure (__main__.StorageP3AdversarialTests.test_post_publication_sqlite_conflict_is_never_terminal_failure)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/home/daeron/Repositories/vm-lab/test/vm_lab/test_storage_p3_adversarial.py\", line 173, in setUp\n    raise AssertionError(\"the required P3 fixture or manifest is absent\")\nAssertionError: the required P3 fixture or manifest is absent\n\n======================================================================\nFAIL: test_replaced_checkpointed_overlay_candidate_is_not_adopted (__main__.StorageP3AdversarialTests.test_replaced_checkpointed_overlay_candidate_is_not_adopted)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/home/daeron/Repositories/vm-lab/test/vm_lab/test_storage_p3_adversarial.py\", line 173, in setUp\n    raise AssertionError(\"the required P3 fixture or manifest is absent\")\nAssertionError: the required P3 fixture or manifest is absent\n\n======================================================================\nFAIL: test_same_bytes_new_inode_registered_base_blocks_use_and_startup (__main__.StorageP3AdversarialTests.test_same_bytes_new_inode_registered_base_blocks_use_and_startup)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/home/daeron/Repositories/vm-lab/test/vm_lab/test_storage_p3_adversarial.py\", line 173, in setUp\n    raise AssertionError(\"the required P3 fixture or manifest is absent\")\nAssertionError: the required P3 fixture or manifest is absent\n\n======================================================================\nFAIL: test_stage_symlink_rejection_does_not_chmod_victim (__main__.StorageP3AdversarialTests.test_stage_symlink_rejection_does_not_chmod_victim)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/home/daeron/Repositories/vm-lab/test/vm_lab/test_storage_p3_adversarial.py\", line 173, in setUp\n    raise AssertionError(\"the required P3 fixture or manifest is absent\")\nAssertionError: the required P3 fixture or manifest is absent\n\n----------------------------------------------------------------------\nRan 8 tests in 0.001s\n\nFAILED (failures=8)\n",
+      "duration_ms": 119.772,
+      "name": "storage_p3_adversarial",
+      "status": "fail"
+    },
+    {
+      "detail": "AssertionError: test_daemon_storage_p3.py failed\nstdout:\n\nstderr:\ntest_real_daemon_materializes_and_reconciles_two_overlays (__main__.DaemonStorageP3Gate.test_real_daemon_materializes_and_reconciles_two_overlays) ... FAIL\n\n======================================================================\nFAIL: test_real_daemon_materializes_and_reconciles_two_overlays (__main__.DaemonStorageP3Gate.test_real_daemon_materializes_and_reconciles_two_overlays)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/home/daeron/Repositories/vm-lab/test/vm_lab/test_daemon_storage_p3.py\", line 195, in test_real_daemon_materializes_and_reconciles_two_overlays\n    self.assertTrue(FIXTURE_SOURCE.is_file())\nAssertionError: False is not true\n\n----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nFAILED (failures=1)\n",
+      "duration_ms": 119.67,
+      "name": "daemon_storage_p3",
+      "status": "fail"
+    },
+    {
+      "detail": "proved hardened QEMU planning through builder, planner, and public CLI",
+      "duration_ms": 185.217,
+      "name": "qemu_planning_p4",
+      "status": "pass"
+    },
+    {
+      "detail": "proved read-only QEMU sandbox option consumption and structured incompatibility evidence",
+      "duration_ms": 266.722,
+      "name": "doctor_p4",
+      "status": "pass"
+    },
+    {
+      "detail": "proved exact Linux process identity, pidfiles, and signal revalidation",
+      "duration_ms": 204.73,
+      "name": "qemu_process_p4",
+      "status": "pass"
+    },
+    {
+      "detail": "proved journal-before-exec handoff, parent-death containment, and exact adoption",
+      "duration_ms": 1038.363,
+      "name": "qemu_exec_guard_p4",
+      "status": "pass"
+    },
+    {
+      "detail": "proved private redaction, bounded rotation, dual-pipe drain, and durable guardian release",
+      "duration_ms": 3170.929,
+      "name": "qemu_logs_p4",
+      "status": "pass"
+    },
+    {
+      "detail": "proved bounded QMP framing, negotiation, response/event separation, and identity",
+      "duration_ms": 1508.734,
+      "name": "qmp_p4",
+      "status": "pass"
+    },
+    {
+      "detail": "proved strict stabilized QMP identity composition and foreign-process rejection",
+      "duration_ms": 139.736,
+      "name": "qmp_identity_p4",
+      "status": "pass"
+    },
+    {
+      "detail": "proved registry-owned P4 process and disk-runtime observation authority",
+      "duration_ms": 410.93,
+      "name": "registry_p4",
+      "status": "pass"
+    },
+    {
+      "detail": "AssertionError: test_storage_runtime_p4.py failed\nstdout:\n\nstderr:\ntest_runtime_growth_is_append_only_but_structure_stays_exact (__main__.StorageRuntimeP4Tests.test_runtime_growth_is_append_only_but_structure_stays_exact) ... FAIL\n\n======================================================================\nFAIL: test_runtime_growth_is_append_only_but_structure_stays_exact (__main__.StorageRuntimeP4Tests.test_runtime_growth_is_append_only_but_structure_stays_exact)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/home/daeron/Repositories/vm-lab/test/vm_lab/test_storage_runtime_p4.py\", line 63, in setUp\n    raise AssertionError(\"the pinned P3 fixture authority is absent\")\nAssertionError: the pinned P3 fixture authority is absent\n\n----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nFAILED (failures=1)\n",
+      "duration_ms": 116.478,
+      "name": "storage_runtime_p4",
+      "status": "fail"
+    },
+    {
+      "detail": "proved the internal runtime.launch journal, exact identity binding, and crash-safe adoption",
+      "duration_ms": 848.169,
+      "name": "qemu_runtime_journal_p4",
+      "status": "pass"
+    },
+    {
+      "detail": "proved pidfd liveness, bounded pidfile readiness, and no-replace runtime-path retirement",
+      "duration_ms": 393.547,
+      "name": "qemu_runtime_p4",
+      "status": "pass"
+    },
+    {
+      "detail": "proved internal runtime reconciliation precedes serving while public lifecycle remains absent",
+      "duration_ms": 1617.284,
+      "name": "daemon_runtime_p4",
+      "status": "pass"
+    },
+    {
+      "detail": "AssertionError: Completed plan IDs are not backed by completed indexed phases: ['P4-002', 'P4-003', 'P4-005', 'P4-006', 'P4-007', 'P4-008', 'P4-009', 'P4-010', 'P4-011', 'P4-012', 'P4-013', 'P4-014', 'P4-015', 'P4-016', 'P4-018']",
+      "duration_ms": 3.311,
+      "name": "plan_contract",
+      "status": "fail"
+    },
+    {
+      "detail": "validated live plan index with 2007 direct observations",
+      "duration_ms": 85.777,
+      "name": "plan_index",
+      "status": "pass"
+    },
+    {
+      "detail": "rejected 8 hostile plan fixtures: duplicate-json-key, missing-dependency, dependency-cycle, missing-gate, multiple-current-phases, completed-without-evidence, owner-path-escape, duplicate-plan-id",
+      "duration_ms": 781.7,
+      "name": "plan_index_rejections",
+      "status": "pass"
+    },
+    {
+      "detail": "verified 33/33 preserved source files against their byte hashes",
+      "duration_ms": 2.068,
+      "name": "source_manifest",
+      "status": "pass"
+    }
+  ],
+  "counts": {
+    "failed": 5,
+    "passed": 33,
+    "skipped": 0
+  },
+  "domain": "vm_lab",
+  "ended_at": "2026-08-07T11:07:05.466991+00:00",
+  "fail_count": 5,
+  "mode": "COMPOSE",
+  "pass_count": 33,
+  "scope": "SCOPE.md",
+  "skip_count": 0,
+  "started_at": "2026-08-07T11:06:41.090094+00:00",
+  "status": "fail",
+  "target_module": "src/somnus_vm/host/qemu.py,"
+}

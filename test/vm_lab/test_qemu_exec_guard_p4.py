@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import os
+from hashlib import sha256
 import shutil
 import signal
 import socket
@@ -20,6 +21,8 @@ import tempfile
 import time
 import unittest
 from pathlib import Path
+
+import stat
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -92,7 +95,93 @@ def _cleanup_observed(process: ObservedProcessIdentity) -> None:
         pass
 
 
+def _descriptor_spec(
+    *,
+    role: str,
+    fd: int,
+    access: str,
+    content_sha256: str | None,
+) -> tuple[str, ...]:
+    """Encode the guard's explicit descriptor-facts positional protocol."""
+
+    details = os.fstat(fd)
+    if role == "overlay":
+        assert content_sha256 is None
+        digest = "-"
+    else:
+        assert content_sha256 is not None
+        digest = content_sha256
+    return (
+        role,
+        str(fd),
+        str(details.st_dev),
+        str(details.st_ino),
+        str(details.st_uid),
+        str(details.st_gid),
+        f"{stat.S_IMODE(details.st_mode):04o}",
+        str(details.st_nlink),
+        str(details.st_size),
+        str(details.st_blocks),
+        str(details.st_mtime_ns),
+        str(details.st_ctime_ns),
+        access,
+        digest,
+    )
+
+
+def _open_storage_descriptors(
+    root: Path,
+) -> tuple[tuple[int, int, int], tuple[str, ...], tuple[Path, Path, Path]]:
+    """Create real P3-shaped owned artifacts and retain their exact FDs."""
+
+    storage_root = root / "p3-owned-storage"
+    storage_root.mkdir(mode=0o700)
+    overlay_path = storage_root / "overlay.qcow2"
+    base_path = storage_root / "base.qcow2"
+    marker_path = storage_root / "overlay.owner.json"
+    overlay_path.write_bytes(b"QFI\\xfb\\x00\\x00vm-lab-p4-overlay\\x00")
+    base_path.write_bytes(b"QFI\\xfb\\x00\\x00vm-lab-p4-immutable-base\\x00")
+    marker_path.write_bytes(
+        b'{"kind":"somnus-p3-owner","version":1,"vm":"p4-proof"}'
+    )
+    overlay_path.chmod(0o600)
+    base_path.chmod(0o444)
+    marker_path.chmod(0o600)
+    overlay_fd = os.open(overlay_path, os.O_RDWR | os.O_CLOEXEC)
+    base_fd = os.open(base_path, os.O_RDONLY | os.O_CLOEXEC)
+    marker_fd = os.open(marker_path, os.O_RDONLY | os.O_CLOEXEC)
+    try:
+        specifications = (
+            *_descriptor_spec(
+                role="overlay", fd=overlay_fd, access="rw", content_sha256=None
+            ),
+            *_descriptor_spec(
+                role="base",
+                fd=base_fd,
+                access="r",
+                content_sha256=sha256(base_path.read_bytes()).hexdigest(),
+            ),
+            *_descriptor_spec(
+                role="owner-marker",
+                fd=marker_fd,
+                access="r",
+                content_sha256=sha256(marker_path.read_bytes()).hexdigest(),
+            ),
+        )
+        return (overlay_fd, base_fd, marker_fd), specifications, (
+            overlay_path,
+            base_path,
+            marker_path,
+        )
+    except BaseException:
+        for descriptor in (overlay_fd, base_fd, marker_fd):
+            os.close(descriptor)
+        raise
+
+
 class QemuExecGuardP4Tests(unittest.TestCase):
+    """Real-process proof for descriptor-bound QEMU handoff containment."""
+
     def _spawn_guard(
         self,
         *,
@@ -102,6 +191,7 @@ class QemuExecGuardP4Tests(unittest.TestCase):
         socket.socket,
         ObservedProcessIdentity,
         ExecutableIdentity,
+        tuple[Path, Path, Path],
     ]:
         parent_channel, child_channel = socket.socketpair(
             socket.AF_UNIX,
@@ -113,6 +203,9 @@ class QemuExecGuardP4Tests(unittest.TestCase):
         runtime_home.chmod(0o700)
         self.addCleanup(shutil.rmtree, runtime_home, True)
         target_identity, target_fd = open_pinned_executable("sleep")
+        storage_fds, storage_specifications, storage_paths = (
+            _open_storage_descriptors(runtime_home)
+        )
         guard_argv = (
             os.fspath(PYTHON),
             os.fspath(GUARD),
@@ -120,6 +213,8 @@ class QemuExecGuardP4Tests(unittest.TestCase):
             str(child_channel.fileno()),
             os.fspath(runtime_home),
             str(target_fd),
+            *storage_specifications,
+            "--",
             *target_argv,
         )
         try:
@@ -131,11 +226,17 @@ class QemuExecGuardP4Tests(unittest.TestCase):
                 stderr=subprocess.PIPE,
                 start_new_session=True,
                 close_fds=True,
-                pass_fds=(child_channel.fileno(), target_fd),
+                pass_fds=(
+                    child_channel.fileno(),
+                    target_fd,
+                    *storage_fds,
+                ),
             )
         finally:
             child_channel.close()
             os.close(target_fd)
+            for descriptor in storage_fds:
+                os.close(descriptor)
         self.addCleanup(_cleanup_process, process)
         self.addCleanup(parent_channel.close)
         _receive_exact(parent_channel, READY)
@@ -144,7 +245,13 @@ class QemuExecGuardP4Tests(unittest.TestCase):
             expected_executable=PYTHON,
             expected_argv=guard_argv,
         )
-        return process, parent_channel, guard_identity, target_identity
+        return (
+            process,
+            parent_channel,
+            guard_identity,
+            target_identity,
+            storage_paths,
+        )
 
     def _wait_for_exec(
         self,
@@ -179,8 +286,9 @@ class QemuExecGuardP4Tests(unittest.TestCase):
         self.fail(f"guard did not exec the pinned target: {latest}")
 
     def test_release_preserves_pid_start_time_argv_and_pinned_inode(self) -> None:
+        """Release preserves process identity and inherits only storage FDs."""
         target_argv = ("qemu-system-p4-proof-token", "30")
-        process, channel, guard_identity, target_identity = self._spawn_guard(
+        process, channel, guard_identity, target_identity, storage_paths = self._spawn_guard(
             target_argv=target_argv
         )
         channel.sendall(RELEASE)
@@ -204,17 +312,24 @@ class QemuExecGuardP4Tests(unittest.TestCase):
             except FileNotFoundError:
                 continue
         self.assertNotIn(os.fspath(SLEEP), inherited_targets)
+        self.assertIn(os.fspath(storage_paths[0]), inherited_targets)
+        self.assertIn(os.fspath(storage_paths[1]), inherited_targets)
+        self.assertNotIn(os.fspath(storage_paths[2]), inherited_targets)
         evidence = terminate_owned_process(target)
         self.assertTrue(evidence.pidfd_used)
         self.assertTrue(evidence.exited)
 
     def test_release_replaces_the_inherited_environment_exactly(self) -> None:
+        """Release drops the daemon environment before executing the target."""
         runtime_home = Path(
             tempfile.mkdtemp(prefix="vm-lab-p4-guard-environment-")
         ).resolve()
         runtime_home.chmod(0o700)
         self.addCleanup(shutil.rmtree, runtime_home, True)
         target_identity, target_fd = open_pinned_executable(os.fspath(PYTHON))
+        storage_fds, storage_specifications, _ = _open_storage_descriptors(
+            runtime_home
+        )
         self.assertEqual(target_identity.path, PYTHON)
         parent_channel, child_channel = socket.socketpair(
             socket.AF_UNIX,
@@ -240,6 +355,8 @@ class QemuExecGuardP4Tests(unittest.TestCase):
             str(child_channel.fileno()),
             os.fspath(runtime_home),
             str(target_fd),
+            *storage_specifications,
+            "--",
             *target_argv,
         )
         inherited = dict(os.environ)
@@ -263,11 +380,13 @@ class QemuExecGuardP4Tests(unittest.TestCase):
                 env=inherited,
                 start_new_session=True,
                 close_fds=True,
-                pass_fds=(child_channel.fileno(), target_fd),
+                pass_fds=(child_channel.fileno(), target_fd, *storage_fds),
             )
         finally:
             child_channel.close()
             os.close(target_fd)
+            for descriptor in storage_fds:
+                os.close(descriptor)
         self.addCleanup(_cleanup_process, process)
         _receive_exact(parent_channel, READY)
         parent_channel.sendall(RELEASE)
@@ -290,7 +409,8 @@ class QemuExecGuardP4Tests(unittest.TestCase):
         )
 
     def test_malformed_release_exits_without_executing_target(self) -> None:
-        process, channel, guard_identity, _ = self._spawn_guard(
+        """A non-canonical release token cannot execute the target."""
+        process, channel, guard_identity, _, _ = self._spawn_guard(
             target_argv=("qemu-system-p4-invalid-release", "30")
         )
         channel.sendall(b"INVALID\n")
@@ -305,7 +425,51 @@ class QemuExecGuardP4Tests(unittest.TestCase):
         self.assertIn("RuntimeError", stderr)
         self.assertFalse(Path(f"/proc/{guard_identity.pid}").exists())
 
+    def test_same_inode_overlay_mutation_after_ready_blocks_target_exec(self) -> None:
+        """An in-place writable-overlay mutation invalidates the release fence."""
+        process, channel, guard_identity, _, storage_paths = self._spawn_guard(
+            target_argv=("qemu-system-p4-overlay-drift", "30")
+        )
+        with storage_paths[0].open("r+b", buffering=0) as artifact:
+            artifact.write(b"MUTATED")
+            os.fsync(artifact.fileno())
+        channel.sendall(RELEASE)
+        channel.shutdown(socket.SHUT_WR)
+        self.assertEqual(process.wait(timeout=5.0), 125)
+        self.assertFalse(Path(f"/proc/{guard_identity.pid}").exists())
+
+    def test_same_inode_base_content_mutation_after_ready_blocks_target_exec(self) -> None:
+        """An immutable-base inode mutation invalidates the release fence."""
+        process, channel, guard_identity, _, storage_paths = self._spawn_guard(
+            target_argv=("qemu-system-p4-base-drift", "30")
+        )
+        storage_paths[1].chmod(0o644)
+        try:
+            with storage_paths[1].open("r+b", buffering=0) as artifact:
+                artifact.write(b"MUTATED")
+                os.fsync(artifact.fileno())
+        finally:
+            storage_paths[1].chmod(0o444)
+        channel.sendall(RELEASE)
+        channel.shutdown(socket.SHUT_WR)
+        self.assertEqual(process.wait(timeout=5.0), 125)
+        self.assertFalse(Path(f"/proc/{guard_identity.pid}").exists())
+
+    def test_same_inode_marker_content_mutation_after_ready_blocks_target_exec(self) -> None:
+        """An owner-marker inode mutation invalidates the release fence."""
+        process, channel, guard_identity, _, storage_paths = self._spawn_guard(
+            target_argv=("qemu-system-p4-marker-drift", "30")
+        )
+        with storage_paths[2].open("r+b", buffering=0) as artifact:
+            artifact.write(b"{")
+            os.fsync(artifact.fileno())
+        channel.sendall(RELEASE)
+        channel.shutdown(socket.SHUT_WR)
+        self.assertEqual(process.wait(timeout=5.0), 125)
+        self.assertFalse(Path(f"/proc/{guard_identity.pid}").exists())
+
     def test_parent_death_before_release_kills_unjournaled_guard(self) -> None:
+        """Parent death before durable release kills the guard at the same PID."""
         with tempfile.TemporaryDirectory(
             prefix="vm-lab-p4-guard-parent-"
         ) as raw:
@@ -331,6 +495,7 @@ class QemuExecGuardP4Tests(unittest.TestCase):
             )
 
     def test_parent_death_after_release_leaves_exact_adoptable_target(self) -> None:
+        """Parent death after release leaves the target alive and identifiable."""
         with tempfile.TemporaryDirectory(
             prefix="vm-lab-p4-guard-adopt-"
         ) as raw:
@@ -368,25 +533,38 @@ class QemuExecGuardP4Tests(unittest.TestCase):
         helper_path.write_text(
             "\n".join(
                 (
-                    "import json, os, socket, subprocess, sys, time",
+                    "import json, os, socket, stat, subprocess, sys, time",
+                    "from hashlib import sha256",
                     "from pathlib import Path",
                     "from somnus_vm.host.qemu_process import "
                     "open_pinned_executable, observe_process",
                     "mode, state_text, python_text, guard_text = sys.argv[1:]",
                     "state = Path(state_text)",
                     "target, target_fd = open_pinned_executable('sleep')",
+                    "storage = state.parent / 'p3-owned-storage'; storage.mkdir(mode=0o700)",
+                    "overlay_path = storage / 'overlay.qcow2'; overlay_path.write_bytes(b'QFI\\xfbguard-overlay')",
+                    "base_path = storage / 'base.qcow2'; base_path.write_bytes(b'QFI\\xfbguard-base')",
+                    "marker_path = storage / 'overlay.owner.json'; marker_path.write_bytes(b'{\"kind\":\"somnus-p3-owner\"}')",
+                    "overlay_path.chmod(0o600); base_path.chmod(0o444); marker_path.chmod(0o600)",
+                    "overlay_fd = os.open(overlay_path, os.O_RDWR | os.O_CLOEXEC)",
+                    "base_fd = os.open(base_path, os.O_RDONLY | os.O_CLOEXEC)",
+                    "marker_fd = os.open(marker_path, os.O_RDONLY | os.O_CLOEXEC)",
+                    "def spec(role, fd, access, digest):",
+                    "    item = os.fstat(fd)",
+                    "    return (role, str(fd), str(item.st_dev), str(item.st_ino), str(item.st_uid), str(item.st_gid), f'{stat.S_IMODE(item.st_mode):04o}', str(item.st_nlink), str(item.st_size), str(item.st_blocks), str(item.st_mtime_ns), str(item.st_ctime_ns), access, digest)",
+                    "specs = (*spec('overlay', overlay_fd, 'rw', '-'), *spec('base', base_fd, 'r', sha256(base_path.read_bytes()).hexdigest()), *spec('owner-marker', marker_fd, 'r', sha256(marker_path.read_bytes()).hexdigest()))",
                     "parent, child = socket.socketpair("
                     "socket.AF_UNIX, socket.SOCK_STREAM)",
                     "target_argv = ('qemu-system-p4-adoption-token', '30')",
                     "guard_argv = (python_text, guard_text, str(os.getpid()), "
                     "str(child.fileno()), str(state.parent), "
-                    "str(target_fd), *target_argv)",
+                    "str(target_fd), *specs, '--', *target_argv)",
                     "process = subprocess.Popen("
                     "guard_argv, executable=python_text, "
                     "stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, "
                     "stderr=subprocess.DEVNULL, start_new_session=True, "
-                    "close_fds=True, pass_fds=(child.fileno(), target_fd))",
-                    "child.close(); os.close(target_fd)",
+                    "close_fds=True, pass_fds=(child.fileno(), target_fd, overlay_fd, base_fd, marker_fd))",
+                    "child.close(); os.close(target_fd); os.close(overlay_fd); os.close(base_fd); os.close(marker_fd)",
                     "parent.settimeout(5.0)",
                     "ready = bytearray()",
                     f"while len(ready) < {len(READY)}:",

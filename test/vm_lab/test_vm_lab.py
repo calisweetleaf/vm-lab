@@ -44,7 +44,7 @@ import stat
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SOURCE_ROOT = PROJECT_ROOT / "src"
-EXPECTED_CHECK_COUNT = 37
+EXPECTED_CHECK_COUNT = 40
 if str(SOURCE_ROOT) not in sys.path:
     sys.path.insert(0, str(SOURCE_ROOT))
 
@@ -742,6 +742,27 @@ def check_qemu_planning_p4() -> str:
     )
 
 
+def check_doctor_p4() -> str:
+    return _run_physical_test_module(
+        "test_doctor_p4.py",
+        "proved read-only QEMU sandbox option consumption and structured incompatibility evidence",
+    )
+
+
+def check_disposable_launch_authority_p4() -> str:
+    return _run_physical_test_module(
+        "test_disposable_launch_authority_p4.py",
+        "proved one-shot non-production fixture authority and canonical launch receipt without launching QEMU",
+    )
+
+
+def check_p4_gate_coordinator() -> str:
+    return _run_physical_test_module(
+        "test_p4_gate_coordinator.py",
+        "proved exact physical-gate preparation and pre-daemon denial without launching QEMU",
+    )
+
+
 def check_qemu_process_p4() -> str:
     return _run_physical_test_module(
         "test_qemu_process_p4.py",
@@ -859,12 +880,19 @@ def check_plan_contract() -> str:
     completed_phases = {
         phase["id"] for phase in plan_index["phases"] if phase["status"] == "complete"
     }
+    completed_items = {
+        item["id"]
+        for phase in plan_index["phases"]
+        for item in phase["items"]
+        if item["status"] == "complete"
+    }
     allowed_completed = {
         identifier
         for identifier in identifiers
         if identifier.startswith("BASE-")
+        or identifier in completed_items
         or any(
-            identifier.startswith(f"{phase_id}-") or identifier == f"GATE-{phase_id}"
+            identifier == f"GATE-{phase_id}"
             for phase_id in completed_phases
         )
     }
@@ -1207,6 +1235,12 @@ def main() -> int:
         ("storage_p3_adversarial", check_storage_p3_adversarial),
         ("daemon_storage_p3", check_daemon_storage_p3),
         ("qemu_planning_p4", check_qemu_planning_p4),
+        ("doctor_p4", check_doctor_p4),
+        (
+            "disposable_launch_authority_p4",
+            check_disposable_launch_authority_p4,
+        ),
+        ("p4_gate_coordinator", check_p4_gate_coordinator),
         ("qemu_process_p4", check_qemu_process_p4),
         ("qemu_exec_guard_p4", check_qemu_exec_guard_p4),
         ("qemu_logs_p4", check_qemu_logs_p4),

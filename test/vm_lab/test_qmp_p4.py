@@ -35,13 +35,17 @@ from somnus_vm.host.qmp import (  # noqa: E402
     QMPClient,
     QMPCommandError,
     QMPError,
+    QMPEvent,
+    QMPGreeting,
     QMPHandshakeError,
     QMPProtocolError,
+    QMPResponse,
     QMPSocketIdentity,
     QMPStateError,
     QMPTimeout,
     QMPUnavailable,
     QMPValidationError,
+    QMPVersion,
 )
 
 
@@ -549,6 +553,7 @@ def _client(
     max_items: int = 16,
     max_string: int = 16,
     max_events: int = 256,
+    max_responses: int = 4_096,
     allowed_server_uids: tuple[int, ...] | None = None,
 ) -> QMPClient:
     return QMPClient(
@@ -559,11 +564,177 @@ def _client(
         max_items=max_items,
         max_string=max_string,
         max_events=max_events,
+        max_responses=max_responses,
         allowed_server_uids=allowed_server_uids,
     )
 
 
 class QMPP4Tests(unittest.TestCase):
+    def test_public_records_have_canonical_copy_safe_serialization(self) -> None:
+        version = QMPVersion(major=8, minor=2, micro=2, package="fixture")
+        greeting = QMPGreeting(
+            version=version,
+            capabilities=("oob", "query-target"),
+        )
+        response = QMPResponse(
+            command="query-status",
+            command_id=7,
+            value={"nested": ["value"]},
+        )
+        event = QMPEvent(
+            name="READY",
+            data={"nested": ["value"]},
+            timestamp_seconds=10,
+            timestamp_microseconds=20,
+        )
+        identity = QMPSocketIdentity(
+            device_id=1,
+            inode=2,
+            uid=3,
+            mode=0o600,
+        )
+
+        self.assertEqual(
+            version.to_json(),
+            '{"major":8,"micro":2,"minor":2,"package":"fixture"}',
+        )
+        self.assertEqual(
+            greeting.to_dict(),
+            {
+                "capabilities": ["oob", "query-target"],
+                "version": version.to_dict(),
+            },
+        )
+        self.assertEqual(
+            response.to_dict(),
+            {
+                "command": "query-status",
+                "command_id": 7,
+                "value": {"nested": ["value"]},
+            },
+        )
+        self.assertEqual(
+            event.to_dict(),
+            {
+                "data": {"nested": ["value"]},
+                "name": "READY",
+                "timestamp_microseconds": 20,
+                "timestamp_seconds": 10,
+            },
+        )
+        self.assertEqual(
+            identity.to_dict(),
+            {"device_id": 1, "inode": 2, "mode": 0o600, "uid": 3},
+        )
+        for record in (version, greeting, response, event, identity):
+            self.assertEqual(
+                json.loads(record.to_json()),
+                json.loads(record.canonical_bytes.decode("utf-8")),
+            )
+        # Each projection is fresh; callers cannot mutate a record through a
+        # prior JSON projection or through the frozen wire value.
+        projection = response.to_dict()
+        projection["value"]["nested"].append("mutated")  # type: ignore[index]
+        self.assertEqual(response.to_dict()["value"], {"nested": ["value"]})
+
+    def test_successful_response_history_is_bounded_and_ordered(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            fixture = _Fixture(
+                Path(temporary),
+                "happy",
+                expected_commands=2,
+            ).start()
+            client = _client(
+                fixture,
+                max_responses=2,
+                max_message_bytes=4_096,
+                max_depth=16,
+                max_items=256,
+                max_string=256,
+            )
+            try:
+                client.connect()
+                client.query_status()
+                client.query_name()
+                history = client.response_history
+                self.assertIsInstance(history, tuple)
+                self.assertEqual(
+                    [(item.command, item.command_id) for item in history],
+                    [("query-status", 2), ("query-name", 3)],
+                )
+                self.assertIsNot(history, client.response_history)
+                self.assertEqual(history[0].value["command"], "query-status")
+                with self.assertRaises(TypeError):
+                    history[0].value["command"] = "tampered"  # type: ignore[index]
+            finally:
+                client.close()
+            fixture.stop()
+
+    def test_response_errors_and_hostile_messages_never_enter_history(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            fixture = _Fixture(Path(temporary), "command_error").start()
+            client = _client(fixture, max_string=64)
+            try:
+                client.connect()
+                _expect(QMPCommandError, client.query_status)
+                self.assertEqual(
+                    [(item.command, item.command_id) for item in client.response_history],
+                    [("qmp_capabilities", 1)],
+                )
+            finally:
+                client.close()
+            fixture.stop()
+
+    def test_response_history_follows_wire_arrival_for_out_of_order_replies(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            fixture = _Fixture(
+                Path(temporary),
+                "out_of_order",
+                expected_commands=2,
+            ).start()
+            client = _client(fixture)
+            client.connect()
+            responses: list[BaseException] = []
+            barrier = threading.Barrier(3)
+
+            def invoke(command: str) -> None:
+                try:
+                    barrier.wait(timeout=2.0)
+                    client.execute(command)
+                except BaseException as exc:
+                    responses.append(exc)
+
+            threads = [
+                threading.Thread(target=invoke, args=(command,), daemon=False)
+                for command in ("query-status", "query-uuid")
+            ]
+            for thread in threads:
+                thread.start()
+            barrier.wait(timeout=2.0)
+            for thread in threads:
+                thread.join(timeout=3.0)
+            try:
+                self.assertEqual(responses, [])
+                history = client.response_history
+                self.assertEqual(
+                    [(item.command, item.command_id) for item in history[:1]],
+                    [("qmp_capabilities", 1)],
+                )
+            finally:
+                client.close()
+            fixture.stop()
+            wire_commands = fixture.transcript()[1:]
+            self.assertEqual(len(wire_commands), 2)
+            self.assertEqual(
+                [(item.command, item.command_id) for item in history[1:]],
+                [
+                    (wire_commands[1]["execute"], wire_commands[1]["id"]),
+                    (wire_commands[0]["execute"], wire_commands[0]["id"]),
+                ],
+            )
+
     def test_socket_identity_is_captured_connection_evidence(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -689,16 +860,18 @@ class QMPP4Tests(unittest.TestCase):
                     "query-name": client.query_name,
                     "query-uuid": client.query_uuid,
                     "query-block": client.query_block,
+                    "query-fdsets": client.query_fdsets,
+                    "query-named-block-nodes": client.query_named_block_nodes,
+                    "query-blockstats": client.query_blockstats,
                     "query-cpus-fast": client.query_cpus_fast,
                     "system_powerdown": client.system_powerdown,
                     "quit": client.quit,
                 }
                 for command in commands:
-                    if command in BLOCK_GRAPH_QMP_COMMANDS:
-                        if command in {
-                            "query-named-block-nodes",
-                            "query-block-jobs",
-                        }:
+                    if command in core_methods:
+                        response = core_methods[command]()
+                    elif command in BLOCK_GRAPH_QMP_COMMANDS:
+                        if command == "query-block-jobs":
                             response = client.execute_block_graph(command)
                         else:
                             response = client.execute_block_graph(
@@ -991,6 +1164,32 @@ class QMPP4Tests(unittest.TestCase):
                     finally:
                         client.close()
                     fixture.stop()
+
+    def test_reader_failure_fence_is_terminal_and_does_not_leave_pending_work(
+        self,
+    ) -> None:
+        """A hostile real transcript cannot leave a dead reader looking live."""
+
+        with tempfile.TemporaryDirectory() as temporary:
+            fixture = _Fixture(
+                Path(temporary) / "reader-fence",
+                "response_unexpected",
+            ).start()
+            client = _client(fixture)
+            try:
+                client.connect()
+                self.assertEqual(
+                    client.next_event(timeout_seconds=1.0).name,
+                    "CAPABILITY_READY",
+                )
+                _expect(QMPProtocolError, client.query_status)
+                self.assertFalse(client.connected)
+                # The reader-boundary cleanup fence wakes and fails the
+                # command path rather than leaving it pending after failure.
+                _expect(QMPProtocolError, client.query_uuid)
+            finally:
+                client.close()
+            fixture.stop()
 
     def test_event_queue_is_bounded_and_idle_wait_has_a_deadline(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

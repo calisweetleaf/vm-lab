@@ -680,103 +680,217 @@
       ],
       "gate_id": "GATE-P4",
       "owner_files": [
+        "src/somnus_vm/daemon_runtime.py",
+        "src/somnus_vm/host/launch_authority.py",
+        "src/somnus_vm/host/p4_gate.py",
         "src/somnus_vm/host/qemu.py",
-        "src/somnus_vm/host/planner.py",
-        "FAILURE_GRAMMAR.md"
+        "src/somnus_vm/host/qemu_exec_guard.py",
+        "src/somnus_vm/host/qemu_log_guard.py",
+        "src/somnus_vm/host/qemu_logs.py",
+        "src/somnus_vm/host/qemu_process.py",
+        "src/somnus_vm/host/qemu_runtime.py",
+        "src/somnus_vm/host/qemu_runtime_journal.py",
+        "src/somnus_vm/host/qmp.py",
+        "src/somnus_vm/host/qmp_identity.py",
+        "src/somnus_vm/host/registry.py",
+        "test/vm_lab/test_daemon_runtime_p4.py",
+        "test/vm_lab/test_disposable_launch_authority_p4.py",
+        "test/vm_lab/test_qemu_exec_guard_p4.py",
+        "test/vm_lab/test_qemu_logs_p4.py",
+        "test/vm_lab/test_qemu_planning_p4.py",
+        "test/vm_lab/test_qemu_process_p4.py",
+        "test/vm_lab/test_qemu_runtime_journal_p4.py",
+        "test/vm_lab/test_qemu_runtime_p4.py",
+        "test/vm_lab/test_qmp_identity_p4.py",
+        "test/vm_lab/test_qmp_p4.py",
+        "test/vm_lab/test_registry_p4.py",
+        "test/vm_lab/test_storage_runtime_p4.py",
+        "scripts/run_gate_p4.py",
+        "test/vm_lab/test_p4_gate_coordinator.py"
       ],
       "items": [
         {
           "id": "P4-001",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/host/qemu.py",
+            "src/somnus_vm/host/launch_authority.py",
+            "src/somnus_vm/host/qemu_runtime.py",
+            "src/somnus_vm/host/qemu_exec_guard.py",
+            "src/somnus_vm/host/qemu_runtime_journal.py",
+            "src/somnus_vm/host/qmp.py",
+            "src/somnus_vm/host/qmp_identity.py",
+            "test/vm_lab/test_daemon_runtime_p4.py",
+            "test/vm_lab/test_disposable_launch_authority_p4.py",
+            "test/vm_lab/test_qemu_exec_guard_p4.py",
+            "test/vm_lab/test_qemu_runtime_journal_p4.py",
+            "test/vm_lab/test_qmp_p4.py",
+            "test/vm_lab/test_qmp_identity_p4.py"
+          ]
         },
         {
           "id": "P4-002",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/host/qemu.py",
+            "test/vm_lab/test_qemu_planning_p4.py"
+          ]
         },
         {
           "id": "P4-003",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/host/qemu.py",
+            "test/vm_lab/test_qemu_planning_p4.py"
+          ]
         },
         {
           "id": "P4-004",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/doctor.py",
+            "src/somnus_vm/host/qemu.py",
+            "test/vm_lab/test_doctor_p4.py",
+            "test/vm_lab/test_qemu_planning_p4.py"
+          ]
         },
         {
           "id": "P4-005",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/host/qemu.py",
+            "test/vm_lab/test_qemu_planning_p4.py"
+          ]
         },
         {
           "id": "P4-006",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/host/qemu_logs.py",
+            "src/somnus_vm/host/qemu_log_guard.py",
+            "test/vm_lab/test_qemu_logs_p4.py"
+          ]
         },
         {
           "id": "P4-007",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/host/qemu_logs.py",
+            "src/somnus_vm/host/qmp.py",
+            "test/vm_lab/test_qemu_logs_p4.py",
+            "test/vm_lab/test_qmp_p4.py"
+          ]
         },
         {
           "id": "P4-008",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/host/qmp.py",
+            "test/vm_lab/test_qmp_p4.py"
+          ]
         },
         {
           "id": "P4-009",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/host/qmp.py",
+            "test/vm_lab/test_qmp_p4.py"
+          ]
         },
         {
           "id": "P4-010",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/host/qmp.py",
+            "test/vm_lab/test_qmp_p4.py"
+          ]
         },
         {
           "id": "P4-011",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/host/qmp.py",
+            "test/vm_lab/test_qmp_p4.py"
+          ]
         },
         {
           "id": "P4-012",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/host/qmp.py",
+            "test/vm_lab/test_qmp_p4.py"
+          ]
         },
         {
           "id": "P4-013",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/host/qmp_identity.py",
+            "test/vm_lab/test_qmp_identity_p4.py"
+          ]
         },
         {
           "id": "P4-014",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/host/qemu_process.py",
+            "src/somnus_vm/host/qmp_identity.py",
+            "src/somnus_vm/host/qemu_runtime_journal.py",
+            "test/vm_lab/test_qemu_process_p4.py",
+            "test/vm_lab/test_qmp_identity_p4.py",
+            "test/vm_lab/test_qemu_runtime_journal_p4.py"
+          ]
         },
         {
           "id": "P4-015",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/host/qemu_runtime.py",
+            "src/somnus_vm/host/qmp_identity.py",
+            "test/vm_lab/test_qmp_identity_p4.py",
+            "test/vm_lab/test_qemu_runtime_journal_p4.py"
+          ]
         },
         {
           "id": "P4-016",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/host/qemu_runtime.py",
+            "src/somnus_vm/host/qmp_identity.py",
+            "test/vm_lab/test_qmp_identity_p4.py"
+          ]
         },
         {
           "id": "P4-017",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/host/qemu_runtime.py",
+            "src/somnus_vm/host/qemu_runtime_journal.py",
+            "test/vm_lab/test_qemu_runtime_journal_p4.py",
+            "test/vm_lab/test_qemu_runtime_p4.py"
+          ]
         },
         {
           "id": "P4-018",
-          "status": "pending",
-          "evidence": []
+          "status": "complete",
+          "evidence": [
+            "src/somnus_vm/host/qemu_process.py",
+            "src/somnus_vm/host/qemu_runtime.py",
+            "src/somnus_vm/host/registry.py",
+            "test/vm_lab/test_qemu_process_p4.py",
+            "test/vm_lab/test_registry_p4.py"
+          ]
         }
       ],
-      "evidence": []
+      "evidence": [
+        "test/vm_lab/runs/20260807T121437Z/result.json",
+        "test/vm_lab/runs/20260807T121437Z/result.md",
+        "test/vm_lab/runs/20260807T121437Z/result.log",
+        "test/vm_lab/test_p4_gate_coordinator.py",
+        "test/vm_lab/runs/20260807T123747Z/result.json",
+        "test/vm_lab/runs/20260807T123747Z/result.md",
+        "test/vm_lab/runs/20260807T123747Z/result.log"
+      ]
     },
     {
       "id": "P5",

@@ -27,10 +27,10 @@
 > records chronological decisions. Do not duplicate the phase plan into those
 > files.
 >
-> **Active unit:** [`TASK-P4-001`](TASK.md) — compose QEMU process truth and a
-> bounded QMP control boundary. P3 is closed by real `qemu-img` storage
-> evidence; no VM is running and no public lifecycle command is promoted
-> before `GATE-P4`.
+> **Active unit:** [`TASK-P4-019`](TASK.md) — prove the completed bounded P4
+> path against one Daeron-authorized disposable QEMU machine. P3 is closed by
+> real `qemu-img` storage evidence; no VM is running and no public lifecycle
+> command is promoted before `GATE-P4`.
 
 ## 0. Document contract
 
@@ -462,34 +462,65 @@ launched, no image was mounted, and no public lifecycle command was promoted.
 
 ### Command construction
 
-- [ ] `P4-001` Split planning from launch: the existing planner stays non-mutating and a process backend consumes only validated records.
-- [ ] `P4-002` Keep argv shell-free and non-daemonized.
-- [ ] `P4-003` Use JSON `-blockdev` objects for every path-bearing block configuration.
-- [ ] `P4-004` Add QEMU sandbox flags appropriate to the chosen feature set and reject incompatible options during doctor checks.
-- [ ] `P4-005` Disable display by default; expose VNC or SPICE only through an explicit secured profile.
-- [ ] `P4-006` Add serial and QEMU logs with bounded rotation and secret redaction.
-- [ ] `P4-007` Create state and runtime directories as `0700`, regular artifacts as `0600`, and sockets inaccessible to other users.
+- [x] `P4-001` Split planning from launch: the existing planner stays non-mutating and a process backend consumes only validated records.
+- [x] `P4-002` Keep argv shell-free and non-daemonized.
+- [x] `P4-003` Use JSON `-blockdev` objects for every path-bearing block configuration.
+- [x] `P4-004` Add QEMU sandbox flags appropriate to the chosen feature set and reject incompatible options during doctor checks.
+- [x] `P4-005` Disable display by default; expose VNC or SPICE only through an explicit secured profile.
+- [x] `P4-006` Add serial and QEMU logs with bounded rotation and secret redaction.
+- [x] `P4-007` Create state and runtime directories as `0700`, regular artifacts as `0600`, and sockets inaccessible to other users.
 
 ### QMP client
 
-- [ ] `P4-008` Implement a framed QMP Unix-socket client with bounded reads and deadlines.
-- [ ] `P4-009` Parse the QMP greeting and negotiate `qmp_capabilities` before any command.
-- [ ] `P4-010` Implement `query-status`, `query-name`, `query-uuid`, `query-block`, `query-cpus-fast`, `system_powerdown`, `quit`, and required block-graph commands.
-- [ ] `P4-011` Correlate command IDs and asynchronously record QMP events without confusing events for responses.
-- [ ] `P4-012` Reject malformed, oversized, timed-out, mismatched, or unexpected QMP messages.
-- [ ] `P4-013` Treat socket existence as no evidence until the greeting, capabilities, UUID, and status checks pass.
+- [x] `P4-008` Implement a framed QMP Unix-socket client with bounded reads and deadlines.
+- [x] `P4-009` Parse the QMP greeting and negotiate `qmp_capabilities` before any command.
+- [x] `P4-010` Implement `query-status`, `query-name`, `query-uuid`, `query-block`, `query-cpus-fast`, `system_powerdown`, `quit`, and required block-graph commands.
+- [x] `P4-011` Correlate command IDs and asynchronously record QMP events without confusing events for responses.
+- [x] `P4-012` Reject malformed, oversized, timed-out, mismatched, or unexpected QMP messages.
+- [x] `P4-013` Treat socket existence as no evidence until the greeting, capabilities, UUID, and status checks pass.
 
 ### Process identity
 
-- [ ] `P4-014` Record Popen PID, QEMU pidfile PID, process start time, executable identity, command hash, VM UUID, and QMP-reported UUID.
-- [ ] `P4-015` Require those identities to agree before entering the QMP-running state.
-- [ ] `P4-016` Verify the process survived a bounded stabilization window after QMP negotiation.
-- [ ] `P4-017` On launch failure, prove the child exited; if it cannot be terminated, record an orphan emergency instead of losing the PID.
-- [ ] `P4-018` Never signal a PID after restart until process start time, executable, and QMP identity are revalidated.
+- [x] `P4-014` Record Popen PID, QEMU pidfile PID, process start time, executable identity, command hash, VM UUID, and QMP-reported UUID.
+- [x] `P4-015` Require those identities to agree before entering the QMP-running state.
+- [x] `P4-016` Verify the process survived a bounded stabilization window after QMP negotiation.
+- [x] `P4-017` On launch failure, prove the child exited; if it cannot be terminated, record an orphan emergency instead of losing the PID.
+- [x] `P4-018` Never signal a PID after restart until process start time, executable, and QMP identity are revalidated.
+
+P4 implementation checkpoint (2026-08-07): all eighteen bounded implementation
+items now have direct current-source tests. The daemon-owned runtime pins the
+P3 overlay, immutable base, and owner marker through the exec guard; QEMU
+receives the overlay/base only through two fdsets and a four-node block graph;
+QMP normalization binds those fdsets, named nodes, recursive edges, and
+peer-process descriptors back to storage-owned inodes. Doctor consumes the
+selected QEMU sandbox option set without launching a VM, and ambiguous child
+recovery persists a named orphan emergency. These implementation closures do
+not close the phase or substitute for the Daeron-authorized actual-QEMU
+`GATE-P4`.
+
+Gate-readiness correction (2026-08-07): actual launch now additionally requires
+a one-shot `DisposableLaunchPermit` minted from a private marked fixture,
+explicit production exclusions, the P3 disk/base facts, and all configured
+roots. Its canonical consumed receipt is persisted with `runtime.launch`.
+`daemon_runtime` exposes the existing owner through a Python-only activation
+hook that is absent from the public CLI and AF_UNIX operation vocabulary.
+`src/somnus_vm/host/p4_gate.py` and `scripts/run_gate_p4.py` now implement the
+non-public coordinator: canonical 17-scenario matrix specification, isolated
+compact fixture roots, exact matrix preflight/result validation, one-shot
+authorization, daemon activation, strict serial execution/resume only from
+sealed scenarios, stop-and-preserve failure behavior, checkpoint/recovery
+observation, sealed runtime-log bytes, and aggregate result validation.
+`test_p4_gate_coordinator.py` proves 8/8 non-launch cases. Per-scenario
+validation requires exact checkpoint prefixes, conditional adoption/cleanup
+evidence, and cleanup scope `runtime-process-only;fixture-retained`. The exact
+fixture is restored; valid full-matrix execute authority, explicit production
+exclusions, and Daeron launch authority are absent; the physical gate remains
+open. The deterministic phrase is only an accidental-execution fence, never
+authentication or authority proof.
 
 ### Gate P4
 
-- [ ] `GATE-P4` On actual QEMU, launch one disposable overlay, complete QMP negotiation, prove matching UUID and process identity, capture serial output, then terminate the daemon at each launch checkpoint and adopt or clean the child without orphaning or signaling a foreign process.
+- [ ] `GATE-P4` Through the explicit non-public physical-gate coordinator and one consumed disposable permit, launch one exact P3 overlay on actual QEMU, complete QMP negotiation, prove matching UUID/process/root-disk/fdset/block-graph identity, capture raw QMP shapes plus retained serial/QEMU output, then terminate the daemon at each launch checkpoint and adopt or clean the child without orphaning or signaling a foreign process; seal exact JSON, Markdown, and terminal-log evidence.
 
 ## 13. Phase P5 — networking and durable endpoint allocation
 

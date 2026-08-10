@@ -11,6 +11,7 @@ import tempfile
 import threading
 import time
 import unittest
+from dataclasses import replace
 from pathlib import Path
 from uuid import UUID, uuid4
 
@@ -27,6 +28,9 @@ from somnus_vm.host.qmp_identity import (
     extract_qmp_disk_runtime_evidence,
     greeting_sha256,
     normalize_qmp_identity_sample,
+    normalize_qmp_blockstats,
+    normalize_qmp_fdsets,
+    normalize_qmp_named_block_nodes,
     normalize_qmp_status,
 )
 
@@ -333,6 +337,149 @@ class QMPIdentityP4Tests(unittest.TestCase):
                 second=second,
             ).evidence_sha256,
         )
+
+    def test_fd_bound_machine_truth_observers_and_qmp_filenames(self) -> None:
+        """Normalize the exact fdset, node, and recursive graph contracts."""
+
+        fdsets = normalize_qmp_fdsets(
+            self._response(
+                "query-fdsets",
+                90,
+                [
+                    {
+                        "fdset-id": 2,
+                        "fds": [
+                            {"fd": 12, "opaque": "somnus-base-ro"}
+                        ],
+                    },
+                    {
+                        "fdset-id": 1,
+                        "fds": [
+                            {"fd": 11, "opaque": "somnus-overlay-rw"}
+                        ],
+                    },
+                ],
+            )
+        )
+        self.assertEqual([entry.fdset_id for entry in fdsets], [1, 2])
+        self.assertEqual([entry.fd for entry in fdsets], [11, 12])
+
+        nodes = normalize_qmp_named_block_nodes(
+            self._response(
+                "query-named-block-nodes",
+                91,
+                [
+                    {
+                        "node-name": "somnus-disk",
+                        "drv": "qcow2",
+                        "ro": False,
+                        "file": "/dev/fdset/1",
+                        "encrypted": False,
+                        "image": {"filename": "/dev/fdset/1"},
+                    },
+                    {
+                        "node-name": "somnus-base-qcow2",
+                        "drv": "qcow2",
+                        "ro": True,
+                        "file": "/dev/fdset/2",
+                        "encrypted": False,
+                    },
+                    {
+                        "node-name": "somnus-base-file",
+                        "drv": "file",
+                        "ro": True,
+                        "file": "/dev/fdset/2",
+                    },
+                    {
+                        "node-name": "somnus-overlay-file",
+                        "drv": "file",
+                        "ro": False,
+                        "file": "/dev/fdset/1",
+                    },
+                ],
+            )
+        )
+        self.assertEqual(
+            {node.node_name for node in nodes},
+            {
+                "somnus-overlay-file",
+                "somnus-base-file",
+                "somnus-base-qcow2",
+                "somnus-disk",
+            },
+        )
+
+        blockstats = normalize_qmp_blockstats(
+            self._response(
+                "query-blockstats",
+                92,
+                [
+                    {
+                        "node-name": "somnus-disk",
+                        "parent": {"node-name": "somnus-overlay-file"},
+                        "backing": {
+                            "node-name": "somnus-base-qcow2",
+                            "parent": {"node-name": "somnus-base-file"},
+                        },
+                    }
+                ],
+            )
+        )
+        by_name = {node.node_name: node for node in blockstats}
+        self.assertEqual(
+            (by_name["somnus-disk"].parent_node, by_name["somnus-disk"].backing_node),
+            ("somnus-overlay-file", "somnus-base-qcow2"),
+        )
+        self.assertEqual(
+            by_name["somnus-base-qcow2"].parent_node,
+            "somnus-base-file",
+        )
+
+        overlay_stat = self.overlay.stat(follow_symlinks=False)
+        base_stat = self.base.stat(follow_symlinks=False)
+        fd_contract = QMPBlockContract(
+            layers=(
+                QMPBlockLayer(
+                    path=self.overlay,
+                    format="qcow2",
+                    virtual_size_bytes=_VIRTUAL_SIZE,
+                    device_id=overlay_stat.st_dev,
+                    inode=overlay_stat.st_ino,
+                    qmp_filename="/dev/fdset/1",
+                ),
+                QMPBlockLayer(
+                    path=self.base,
+                    format="qcow2",
+                    virtual_size_bytes=_VIRTUAL_SIZE,
+                    device_id=base_stat.st_dev,
+                    inode=base_stat.st_ino,
+                    qmp_filename="/dev/fdset/2",
+                ),
+            ),
+            storage_chain_sha256="1" * 64,
+        )
+        self.assertNotIn("qmp_filename", self.block_contract.layers[0].to_dict())
+        self.assertEqual(
+            fd_contract.layers[0].to_dict()["qmp_filename"],
+            "/dev/fdset/1",
+        )
+        fd_expectation = replace(self.expectation, block=fd_contract)
+        fd_block = self._block_payload()
+        inserted = fd_block[0]["inserted"]
+        inserted["file"] = "/dev/fdset/1"
+        inserted["backing_file"] = "/dev/fdset/2"
+        image = inserted["image"]
+        image["filename"] = "/dev/fdset/1"
+        image["backing-filename"] = "/dev/fdset/2"
+        image["full-backing-filename"] = "/dev/fdset/2"
+        image["backing-image"]["filename"] = "/dev/fdset/2"
+        normalized = self._sample(
+            command_id=94,
+            monotonic_ns=time.monotonic_ns(),
+            block=fd_block,
+            expectation=fd_expectation,
+        )
+        self.assertEqual(normalized.snapshot.block.layers, fd_contract.layers)
 
     def test_greeting_digest_is_semantic_and_strictly_versioned(self) -> None:
         first = QMPGreeting(

@@ -6,9 +6,16 @@ ends with lateral routes. This is a traversal map—not a system summary.
 
 **Promoted baseline:** snapshot `v0.1`, closed P1 protocol authority, live
 internal P2 daemon/registry ownership, and physically verified P3 image
-storage, 2026-08-05. The public host CLI remains read-only; P4 QEMU/QMP process
-ownership is the current frontier. Current code outranks this map if an anchor
-drifts.
+storage. P4 now has a bounded daemon-wired QEMU/QMP runtime owner and an explicit
+non-public physical-gate coordinator: descriptor-bound storage handoff, journal,
+process/log guards, QMP fdset/block graph, doctor, orphan recovery, one-shot
+disposable launch authority, canonical 17-scenario matrix preparation, exact
+preflight, strict serial execution/resume policy, checkpoint/recovery sealing,
+and canonical QMP response-history capture all have direct non-launch proof.
+The exact fixture is restored and current local aggregate is 40/0/0. Valid
+full-matrix Daeron authority, explicit production exclusions, checkpoint
+execution, and disposable machine-truth `GATE-P4` remain open. The public host CLI remains read-only.
+Current code outranks this map if an anchor drifts.
 
 ---
 
@@ -20,16 +27,28 @@ topology and host preflight, and emits a non-mutating QEMU plan. Guest bootstrap
 is a separate local entrypoint. Behind that public boundary, a separately
 invoked internal daemon now owns the durable SQLite registry, authenticated
 Unix control transport, base-image import, and independent sparse-overlay
-materialization. It does not launch QEMU, speak QMP, mount a guest filesystem,
-establish guest readiness, or expose public lifecycle mutation.
+materialization. The daemon composition also wires an internal P4 runtime owner
+for descriptor-bound QEMU/QMP launch journalling, process/log observation,
+fdset/block-graph identity, one-shot non-production permits, and restart
+recovery. All bounded P4 phase items are implemented, but the repository still
+contains `src/somnus_vm/host/p4_gate.py` and the non-public
+`scripts/run_gate_p4.py` driver for the daemon-owned 17-scenario
+checkpoint/QMP evidence matrix. The matrix is prepared and preflightable but
+has not executed. No disposable-QEMU machine truth exists:
+`GATE-P4` remains open, and the public boundary exposes no lifecycle mutation.
 
 **Enter through these five layers:**
 
 1. Operator contract: `AGENTS.md:1` → authority, scope, and physical gates.
 2. Shared contracts: `src/somnus_protocol/__init__.py:1` → pure protocol root.
 3. Public runtime: `src/somnus_vm/cli.py:76` → `main()`.
-4. Internal mutation root: `src/somnus_vm/daemon_runtime.py:42` → `run()`.
-5. Direct consumed proof: `test/vm_lab/test_vm_lab.py:1063` → `main()`.
+4. Internal mutation root: `src/somnus_vm/daemon_runtime.py` → `run()`.
+5. P4 launch membrane: `src/somnus_vm/host/launch_authority.py` →
+   `src/somnus_vm/host/p4_gate.py` →
+   `mint_disposable_launch_permit()`.
+6. P4 runtime owner: `src/somnus_vm/host/qemu_runtime.py` →
+   `QemuRuntimeOwner`.
+7. Direct consumed proof: `test/vm_lab/test_vm_lab.py` → `main()`.
 
 **→ To follow a public command:** BRANCH A.
 **→ To understand promoted authority:** BRANCH B.
@@ -38,6 +57,7 @@ establish guest readiness, or expose public lifecycle mutation.
 **→ To understand planning or bootstrap:** BRANCH E or F.
 **→ To locate current proof:** BRANCH G.
 **→ To trace daemon/registry/storage mutation:** BRANCH I.
+**→ To trace the internal P4 runtime owner:** BRANCH J.
 
 ---
 
@@ -137,9 +157,9 @@ establish guest readiness, or expose public lifecycle mutation.
 
 The protocol package records **what must be observed** before a transition
 becomes truth. It does not itself observe QMP, authenticate a peer, persist a
-registry, or launch QEMU. The separately composed P2/P3 host owner now
-authenticates local Unix peers and persists registry/storage facts; QEMU/QMP and
-guest evidence remain later physical gates.
+registry, or launch QEMU. The separately composed daemon now also constructs the
+internal P4 runtime owner, but its direct non-launch proof has not satisfied the
+external disposable-QEMU `GATE-P4`; guest evidence remains later work.
 
 **→ For physical success rules:** `TOPOLOGY.md` § LBC 3.
 **→ For rejected/unsafe state changes:** `FAILURE_GRAMMAR.md:1`.
@@ -190,7 +210,7 @@ not launch QEMU.
 **→ For VM truth/migration:** BRANCH C.
 **→ For planner false success:** `FAILURE_GRAMMAR.md` § FS-VM-02.
 **→ For internal daemon/storage ownership:** BRANCH I.
-**→ For P4 QEMU process work:** the active phase in `PLAN.md`.
+**→ For P4 QEMU process work:** BRANCH J, then the active phase in `PLAN.md`.
 
 ---
 
@@ -250,6 +270,17 @@ invoked P2/P3 physical modules:
   post-publication SQLite conflict recovery, and native-child containment;
 - `test/vm_lab/test_daemon_storage_p3.py:194` — one real daemon/client
   materialization plus startup physical reconciliation test.
+- `test/vm_lab/test_qemu_runtime_p4.py`, `test_daemon_runtime_p4.py`,
+  `test_qemu_runtime_journal_p4.py`, `test_qmp_p4.py`,
+  `test_p4_gate_coordinator.py`,
+  `test_qmp_identity_p4.py`, `test_qemu_process_p4.py`,
+  `test_qemu_logs_p4.py`, `test_qemu_exec_guard_p4.py`, and
+  `test_storage_runtime_p4.py` — direct P4 owner, daemon composition, journal,
+  QMP, process, log, guard, and storage-runtime tests. These are non-launch
+  implementation proof, not `GATE-P4` closure. `test_p4_gate_coordinator.py`
+  proves exact non-launch matrix behavior 8/8; `scripts/run_gate_p4.py` is the
+  non-public prepare/preflight/execute-matrix surface. Its deterministic phrase
+  is an accidental-execution fence only, not authentication or Daeron proof.
 
 The focused P3 gate is 15 tests: six core, eight adversarial, and one
 daemon-composition test. It kills and resumes at 7 base plus 7 overlay
@@ -261,9 +292,10 @@ at `test/vm_lab/runs/20260805T211740Z/` records 26/26 passes with no skip.
 `test/vm_lab/test_vm_lab.py:982` writes JSON, Markdown, and a terminal log;
 `test/vm_lab/smoke.py:1` is the external entry. This proves the specified
 protocol, public read-only, packaging, internal daemon/registry, and initial
-physical-storage boundaries. It does **not** prove `qemu-system-*` launch, QMP
-identity/status, filesystem mount, guest readiness, guest-visible writes, or
-public lifecycle mutation.
+physical-storage boundaries. The later P4 module tests prove their bounded
+implementation owners only. No current proof establishes a disposable
+`qemu-system-*` run, external QMP machine truth, filesystem mount, guest
+readiness, guest-visible writes, or public lifecycle mutation.
 
 **→ For latest evidence:** `SOTA_RUN.md:1`.
 **→ For repository packet integrity:** `scripts/verify_repository.py:1`.
@@ -299,11 +331,14 @@ not silently promote its candidate implementations.
 
 1. `run()` loads strict host configuration, opens
    `SQLiteRegistry` at `src/somnus_vm/host/registry.py:1792`, and composes
-   `RegistryMutationService` at `src/somnus_vm/host/service.py:289`.
-2. Before any listener exists, it calls
+   `RegistryMutationService` at `src/somnus_vm/host/service.py:289` plus
+   `QemuRuntimeOwner` at `src/somnus_vm/host/qemu_runtime.py:978`.
+2. Before any listener exists, it settles incomplete and completed P4 launch
+   records through `QemuRuntimeOwner`, then calls
    `recover_incomplete_operations()` (`src/somnus_vm/host/service.py:1542`) and
-   `reconcile_storage_authority()` (`:1569`). A recovery or physical mismatch
-   aborts startup instead of exposing a clean socket.
+   `reconcile_storage_authority()` (`:1569`) while excluding live runtime VM
+   identities. A recovery or physical mismatch aborts startup instead of
+   exposing a clean socket.
 3. `UnixControlDaemon` at `src/somnus_vm/daemon.py:375` owns one private Unix
    socket, a process-held ownership lock, bounded framing/workers/deadlines, and
    a UID allowlist. Kernel peer identity comes from `SO_PEERCRED` at
@@ -338,17 +373,47 @@ not silently promote its candidate implementations.
 rows and physically observed base/overlay evidence. The public
 `python -m somnus_vm` parser does not expose this mutation surface.
 
-**Hard stop:** this branch ends at image files. It does not launch
-`qemu-system-*`, negotiate QMP, mount an overlay, enter a lifecycle state,
-authenticate a guest agent, or prove model/runtime readiness. P4 must also
-define how P3's creation-time immutable overlay facts transition to a
-versioned, write-aware evidence policy before allowing QEMU to mutate an
-overlay.
+**Hard stop:** storage ownership does not establish a machine. P4 implementation
+now has a distinct journal/runtime owner (BRANCH J), but no disposable QEMU run
+has yet established external QMP machine truth. This branch does not establish a
+mount, guest agent, model/runtime readiness, or public lifecycle action.
 
 **→ For P3 false-success mechanisms:** `FAILURE_GRAMMAR.md` § P3 storage
 authority and recovery failures.
 **→ For P3 proof:** BRANCH G.
-**→ For the next machine boundary:** the active P4 phase in `PLAN.md`.
+**→ For the P4 implementation boundary:** BRANCH J.
+**→ For the physical machine gate:** the active P4 phase in `PLAN.md`.
+
+---
+
+## BRANCH J: Where is the internal P4 QEMU/QMP runtime owner?
+
+**Entry point:** `src/somnus_vm/daemon_runtime.py:49` → `run()` →
+`src/somnus_vm/host/qemu_runtime.py:1447` → `QemuRuntimeOwner`
+
+1. The daemon composition constructs one `QemuRuntimeOwner`, settles its
+   incomplete/completed launch records before generic recovery and listener bind,
+   and releases daemon-local runtime state only after request handling ends.
+2. `qemu_runtime.py` owns the closed runtime path: registry-row selection,
+   pinned overlay/base/owner-marker descriptors, exact fd-bound execution argv,
+   process/QMP observation, journal advancement, completion, and restart
+   recovery. `qemu_runtime_journal.py` owns the durable frozen launch prefix,
+   descriptor authority, QMP graph evidence, and checkpoint facts.
+3. `qmp.py` and `qmp_identity.py` own the QMP client/protocol and machine
+   identity interpretation, including exact fdsets, named-node inventory, and
+   recursive blockstats edges; `qemu_process.py`, `qemu_logs.py`,
+   `qemu_exec_guard.py`, and `qemu_log_guard.py` own process identity, logs, and
+   containment. `qemu_runtime.py` binds QEMU-internal fd numbers through the
+   authenticated peer's `/proc` table to P3 storage inodes. `doctor.py`
+   separately consumes the selected sandbox option projection without launch.
+4. The direct owners are covered by the P4 modules listed in BRANCH G. They are
+   implementation and recovery proofs, not a substitute for a real disposable
+   `qemu-system-*` machine run. There is no public `start`, `stop`, `destroy`,
+   snapshot, or guest-readiness command.
+
+**→ For physical-gate requirements:** `PLAN.md` Phase P4.
+**→ For false-success recognition:** `FAILURE_GRAMMAR.md`.
+**→ For active state:** `TASK.md` and `STATE.md`.
 
 ---
 
@@ -367,7 +432,10 @@ authority and recovery failures.
 | Strict config owners | `src/somnus_vm/config.py:358-659`, `:748` |
 | Planner | `src/somnus_vm/host/planner.py:20`, `:30` |
 | Port probe/QEMU argv | `src/somnus_vm/host/ports.py:33`; `src/somnus_vm/host/qemu.py:43` |
-| Internal composition root | `src/somnus_vm/daemon_runtime.py:42` |
+| Internal composition root | `src/somnus_vm/daemon_runtime.py:49` |
+| Internal P4 runtime owner/journal | `src/somnus_vm/host/qemu_runtime.py:1447`; `src/somnus_vm/host/qemu_runtime_journal.py:3035` |
+| Physical-gate coordinator | `src/somnus_vm/host/p4_gate.py:267`; `scripts/run_gate_p4.py:1` |
+| QMP/process/log runtime modules | `src/somnus_vm/host/qmp.py:1`; `src/somnus_vm/host/qmp_identity.py:1`; `src/somnus_vm/host/qemu_process.py:1`; `src/somnus_vm/host/qemu_logs.py:1`; `src/somnus_vm/host/qemu_exec_guard.py:1`; `src/somnus_vm/host/qemu_log_guard.py:1`; live disk observation in `qemu_runtime.py` |
 | Unix daemon/client/peer auth | `src/somnus_vm/daemon.py:375`; `src/somnus_vm/client.py:95`; `src/somnus_vm/transport.py:292` |
 | Durable registry authority | `src/somnus_vm/host/registry.py:1771`, `:2992`, `:3206` |
 | Registry/storage operation owner | `src/somnus_vm/host/service.py:289`, `:1159`, `:1542`, `:1569` |
@@ -377,7 +445,8 @@ authority and recovery failures.
 | Disposition registry | `src/somnus_vm/topology.py:48` |
 | P1 direct checks | `test/vm_lab/test_protocol_*.py` |
 | P3 core/adversarial/daemon proof | `test/vm_lab/test_storage_p3.py:687`; `test/vm_lab/test_storage_p3_adversarial.py:194`; `test/vm_lab/test_daemon_storage_p3.py:194` |
-| Integration smoke | `test/vm_lab/test_vm_lab.py:1063` |
+| P4 direct non-launch proof | `test/vm_lab/test_p4_gate_coordinator.py` (8/8); `test/vm_lab/test_qemu_runtime_p4.py`; `test_daemon_runtime_p4.py`; `test_qemu_runtime_journal_p4.py`; `test_qmp_p4.py`; `test_qmp_identity_p4.py`; `test_qemu_process_p4.py`; `test_qemu_logs_p4.py`; `test_qemu_exec_guard_p4.py`; `test_storage_runtime_p4.py` |
+| Integration smoke | `test/vm_lab/test_vm_lab.py:1196` |
 | Repository verifier | `scripts/verify_repository.py:1` |
 
 ## Anomalies and gotchas
@@ -410,9 +479,12 @@ authority and recovery failures.
   `actual-size`; `st_size` alone proves nothing about physical allocation.
 - `exec_guard.py` contains a Linux-specific parent-death membrane for native
   image children. Removing it would let a writer outlive the single owner.
-- P3 overlays have never been mounted or written by QEMU. Their exact
-  allocation/chain evidence is creation-time authority; P4 must define how
-  legitimate runtime mutation updates or supersedes it before launch.
+- P3 overlays have never been established as mounted or written by a proven
+  disposable QEMU machine run. P4 now has a separate runtime journal and
+  write-aware observation path, but its direct non-launch tests do not replace
+  the `GATE-P4` machine-truth run. The coordinator is implemented and the exact
+  source is restored, but full-matrix authority, production exclusions, and
+  checkpoint execution remain unconsumed.
 - The most feature-rich source may be candidate or lineage. `components/` and
   `quarantine/` do not enter live import graphs by convenience.
 - Repair anchors in this document whenever its owner moves; do not preserve
