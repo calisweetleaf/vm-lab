@@ -7,3 +7,9 @@ var/
 .codegraph/
 archive/vm-lab-first-zip.zip
 .gitignore
+.smart-index/
+
+/.gitignore
+/vm-lab.zip
+/.commandcode
+/.commandcode/taste

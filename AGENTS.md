@@ -70,6 +70,7 @@ When sources disagree, use this order:
    [`docs/RECONSTITUTION_AUDIT.md`](docs/RECONSTITUTION_AUDIT.md).
 9. Historical design intent under [`docs/lineage/`](docs/lineage/) and
    [`archive/`](archive/).
+10. [TOPOLOGY.md]
 
 Current code and physical observations outrank prose. Snapshot manifests are
 claims about a sealed baseline, not mutable progress ledgers.
