@@ -1,17 +1,21 @@
 {
   "schema_version": 1,
-  "session_id": "p4-launch-authority-gate-readiness-20260807",
+  "session_id": "vm-lab-recovery-r0-plan-reconciliation-20260824",
   "workspace": ".",
-  "last_agent": "Codex + Terra + Luna",
-  "last_timestamp": "2026-08-07T12:37:47-05:00",
-  "last_action": "Prepared and preflighted frozen 17-scenario matrix b9aca76a-a016-4d0c-9002-f0a90f383b21 without launching QEMU",
+  "last_agent": "Codex",
+  "last_timestamp": "2026-08-25T04:45:05.876005+00:00",
+  "last_action": "Corrected remaining current-control topology/map/filetree/platform documentation to distinguish historical fixture proof from current 36/4 fixture-only evidence.",
   "active_task": "TASK-P4-019",
   "open_tasks": [
-    "Record Daeron authority to execute prepared matrix b9aca76a-a016-4d0c-9002-f0a90f383b21",
-    "Execute the prepared matrix through the daemon-owned QEMU/QMP checkpoint/recovery path and seal GATE-P4 evidence"
+    "Acquire or locate only the exact authenticated P3 fixture b3064efb...14cced6 (264306688 bytes)",
+    "Re-run fixture-dependent P3/P4 non-launch proof and seal current evidence",
+    "Obtain Daeron physical authority only after RECOVERY-R0 for the existing P4 matrix"
   ],
-  "warm_start_valid": true,
-  "notes": "Aggregate 20260807T123747Z: 40 pass/0 fail/0 skip across 40 checks; plan/index 2040 observations. Frozen matrix b9aca76a-a016-4d0c-9002-f0a90f383b21 is prepared/preflighted at /tmp/vm-lab-gate-p4-matrix-20260807T124705Z with 17 scenarios, spec SHA256 9567494af6899c1d2ce5353845950b78a087f4fcf4deb22d67db54950542a104, and conservative exclusions for /home/daeron and /media/daeron/usb-128gb. Host discovery found no deployed qcow2, domain, or active QEMU; only the exact disposable source exists. No qemu-system VM or matrix has run; the generated phrase is accidental-execution fence only. Daeron execution authority and GATE-P4 physical truth remain open.",
-  "ready_task": "Obtain Daeron authority, execute prepared physical P4 matrix, and validate sealed aggregate",
-  "topology_hash": "sha256:a931085c27008b1c93c216f8fd3a180ec28fa5230dc23b9581c7f727ab24075c"
+  "warm_start_valid": false,
+  "notes": "Current SOTA run 20260825T043503Z is 36 pass/4 fail. All 33 source-manifest entries now pass after archive/Git-authorized repair. Exact P3 fixture remains absent. RECOVERY-R0 freezes execute-matrix and public promotion.",
+  "ready_task": "Acquire exact fixture authority; no substitute image or physical P4 execution before fresh P3/P4 proof.",
+  "topology_hash": "sha256:1c0b9a942910b42c5c484374e7cc1ab684edf4ef003a5c2aed22ca7560c4dfcc",
+  "authorized_domains": [
+    "vm-lab planning and continuity surfaces"
+  ]
 }

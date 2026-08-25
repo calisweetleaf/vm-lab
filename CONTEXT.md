@@ -1,5 +1,13 @@
 # VM Lab Context Index
 
+> **Current-evidence correction — 2026-08-24:** Historical P3/P4 green bundles
+> remain provenance, not current reproducibility. RECOVERY-R0 restored all 33
+> manifest-bound source bytes from retained authority; the exact P3 fixture is
+> still absent. `SOTA_RUN.md` records 36 pass / 4 fixture-only failures. Physical
+> P4 execution remains blocked until fixture authority is independently
+> re-established. The external `backend/virtual_machine` system is first-party
+> semantic lineage only, never a live VM Lab dependency.
+
 **Current promoted snapshot:** [`v0.1`](SNAPSHOT.md)
 **Closed composition:** P1 protocol, P2 local daemon/registry, and P3 verified
 image/storage authority
@@ -70,24 +78,22 @@ promoted capabilities:
   evidence.
 - **Guest bootstrap:** a separate local-only, one-read hash/size-bounded payload
   installer with hostile archive checks and atomic placement.
-- **Current proof:** the sealed P3 promotion bundle remains
-  `test/vm_lab/runs/20260805T211740Z/` at 26/26. Current focused P4 suites are
-  green, including real exec-guard processes, journal/replay, QMP transport and
-  identity, daemon/runtime composition, and selected-QEMU sandbox doctor
-  interrogation. The current-HEAD aggregate
-  `test/vm_lab/runs/20260807T123747Z/` is 40 pass, 0 fail, 0 skip across 40
-  checks: the exact fixture-dependent P3/P4 storage lanes now pass. The pinned
-  source is restored at `/tmp/vm-lab-p3-fixture-20260801.qcow2` with verified
-  size 264,306,688, mode 0600, uid 1000, nlink 1, and SHA-256
-  `b3064efb500d71d6ccbe619b1716062b803e285116e040627b430aaee14cced6`.
-  QMP direct proof is 14/14 and coordinator full-matrix preflight/denial is 8/8.
-  A real non-launch matrix is now prepared and preflighted at
-  `/tmp/vm-lab-gate-p4-matrix-20260807T124705Z`: matrix ID
-  `b9aca76a-a016-4d0c-9002-f0a90f383b21`, spec SHA-256
-  `9567494af6899c1d2ce5353845950b78a087f4fcf4deb22d67db54950542a104`,
-  exact 17 scenarios, no registry/socket/PID/result/QEMU process. Conservative
-  exclusions protect the observed operator roots `/home/daeron` and
-  `/media/daeron/usb-128gb`; host discovery found no deployed qcow2 or active
+- **Current proof:** the sealed P3 promotion bundle remains historical
+  `test/vm_lab/runs/20260805T211740Z/` at 26/26. Source preservation is current
+  and current focused P4 suites remain green, including real exec-guard
+  processes, journal/replay, QMP transport/identity, daemon/runtime composition,
+  and selected-QEMU sandbox doctor interrogation. Current aggregate
+  `test/vm_lab/runs/20260825T043503Z/` is 36 pass, 4 fail, 0 skip: every failure
+  is exact fixture absence. The historical 20260807T123747Z 40/0/0 aggregate
+  followed then-fixture restoration; it is not current readiness. The exact
+  fixture is absent from `/tmp`, so current matrix preflight/execution is
+  blocked by RECOVERY-R0. QMP direct proof remains 14/14 and coordinator
+  full-matrix preflight/denial remains 8/8 as non-launch implementation proof.
+  The historical matrix identity is
+  `b9aca76a-a016-4d0c-9002-f0a90f383b21`, with spec SHA-256
+  `9567494af6899c1d2ce5353845950b78a087f4fcf4deb22d67db54950542a104`.
+  Conservative exclusions protect the observed operator roots `/home/daeron`
+  and `/media/daeron/usb-128gb`; host discovery found no deployed qcow2 or active
   VM authority to name more narrowly.
 
 Public host lifecycle mutation remains absent by design. P1 defines its strict
@@ -126,7 +132,7 @@ flowchart TD
 | Guest | verified payload bootstrap | authenticated agent plus separately promoted runtime |
 | Operator | internal control client plus preserved candidate advanced shell | Kerminal consumer; never QEMU owner |
 | Artifact processing | cold external code | disposable worker plus recorded ingress manifest |
-| VM-Go | separate project | measured behavior/protocol compatibility |
+| External `backend/virtual_machine` donor | first-party read-only semantic lineage | explicit migration fixtures; never runtime import or lifecycle owner |
 
 ---
 

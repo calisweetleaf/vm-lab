@@ -669,7 +669,8 @@
         "test/vm_lab/runs/20260805T211740Z/result.md",
         "test/vm_lab/runs/20260805T211740Z/result.log",
         "SOTA_RUN.md"
-      ]
+      ],
+      "blocker": "Historical GATE-P3 is sealed, but current reproducibility is blocked only by RECOVERY-R0 fixture authority: the exact required fixture is absent."
     },
     {
       "id": "P4",
@@ -889,8 +890,11 @@
         "test/vm_lab/test_p4_gate_coordinator.py",
         "test/vm_lab/runs/20260807T123747Z/result.json",
         "test/vm_lab/runs/20260807T123747Z/result.md",
-        "test/vm_lab/runs/20260807T123747Z/result.log"
-      ]
+        "test/vm_lab/runs/20260807T123747Z/result.log",
+        "SOTA_RUN.md",
+        "test/vm_lab/runs/20260825T011700Z/result.json"
+      ],
+      "blocker": "RECOVERY-R0 source authority is resolved. The exact P3 fixture remains absent; until it is authenticated and current P3/P4 non-launch proof passes, no Daeron-authorized 17-scenario physical QEMU matrix may execute. GATE-P4 remains open."
     },
     {
       "id": "P5",

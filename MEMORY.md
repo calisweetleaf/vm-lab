@@ -34,8 +34,9 @@ old commands or broadening the public CLI ahead of proof.
 ### 2026-08-04 — Keep four authority planes separate
 
 Host lifecycle, guest control/cognition, Kerminal agency, and disposable
-Artifact processing are separate authorities. VM-Go also remains a separate
-host-lifecycle project.
+Artifact processing are separate authorities. The external
+`backend/virtual_machine` donor is first-party read-only semantic lineage, not
+a host-lifecycle dependency.
 
 **Future consequence:** integration occurs through explicit behavioral
 contracts. Direct cross-imports or repository consolidation are not shortcuts.
@@ -373,3 +374,25 @@ matrix at `/tmp/vm-lab-gate-p4-matrix-20260807T124705Z`. Its matrix ID is
 `b9aca76a-a016-4d0c-9002-f0a90f383b21` and canonical spec SHA-256 is
 `9567494af6899c1d2ce5353845950b78a087f4fcf4deb22d67db54950542a104`.
 This is frozen non-launch state, not physical authority or gate evidence.
+
+### 2026-08-24 — RECOVERY-R0 and true donor-boundary correction
+
+Current disk/proof truth supersedes stale continuity prose: the exact P3 fixture
+is absent; the latest aggregate is 35 pass / 5 fail; and one preserved-source
+hash diverges. P3 remains a sealed historical gate, but current reproducibility
+must be rebuilt through RECOVERY-R0 before physical P4 work. The relevant
+first-party donor is the external `backend/virtual_machine` system, not VM-Go.
+It supplies persistent-AIPC, guest, operator, reversible-evolution, cognition,
+and Artifact semantics; it is read-only lineage and never a VM Lab dependency
+or import source. Its PID/shell/default-auth/fallback/snapshot-copy mechanisms
+are rejected by design.
+
+### 2026-08-24 — RECOVERY-R0 source-preservation branch closed
+
+The source-preservation branch is now verified: `internal_browser.py` was
+restored to manifest hash `d27779…cf644e` only after two retained local archives
+and the original Git blob agreed. The later `198917…29a81` bytes remain in Git
+history and `vm-lab.zip` as divergence evidence. Fresh aggregate
+`20260825T043503Z` proves 36 pass / 4 fail; every remaining failure is exact
+fixture absence. This does not close RECOVERY-R0, P3 current reproducibility,
+or P4; fixture authority remains the sole blocker.

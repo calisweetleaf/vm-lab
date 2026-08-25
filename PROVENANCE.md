@@ -47,8 +47,9 @@ until the physical QMP/registry/guest gates in `PLAN.md` pass.
 
 ### ADR-003 — Keep authority planes separate
 
-The host, guest, Kerminal/operator, Artifact workers, and VM-Go integrate through
-contracts. They do not absorb one another's lifecycle authority.
+The host, guest, Kerminal/operator, Artifact workers, and the external
+`backend/virtual_machine` donor integrate only through explicit semantic
+migration contracts. They do not absorb one another's lifecycle authority.
 
 ### ADR-004 — Use bounded living-repository ownership
 
@@ -74,7 +75,8 @@ evidence is in `docs/RECONSTITUTION_AUDIT.md`. Major rejections:
 ## Open questions
 
 - How are per-VM secrets provisioned without argv/TOML/log exposure?
-- What behavior contracts bind Kerminal and VM-Go without repository merger?
+- Which donor-semantic migration fixtures bind Kerminal and the external
+  `backend/virtual_machine` lineage without repository merger or import?
 - What snapshot generation model closes stopped rollback before live work?
 - What exact QMP/process checkpoint model can adopt or clean a real child after
   daemon death without signaling a foreign PID?
@@ -501,3 +503,33 @@ evidence is in `docs/RECONSTITUTION_AUDIT.md`. Major rejections:
   qemu-system process exists in the matrix. This crosses the non-launch
   preparation boundary only; Daeron physical execution authority and
   `GATE-P4` remain open.
+
+### 2026-08-24 — Canonical completion-plan and evidence-authority correction
+
+- Daeron authorized a no-fallback completion plan rather than a parallel roadmap.
+  `PLAN.md` now names RECOVERY-R0 as a non-promoting prerequisite to P4 physical
+  execution and retains the P0–P18 DAG as the complete destination.
+- Live evidence, not August 7 continuity claims, is authoritative: the exact
+  fixture is absent, `SOTA_RUN.md` records 35 pass / 5 fail, and the source
+  manifest diverges at one tracked preserved artifact. Historical P3/P4 bundles
+  remain preserved provenance only.
+- The true external first-party donor is `backend/virtual_machine`. Its AIPC
+  semantics are mapped to P5–P14; it is never imported or treated as live
+  dependency. Its weak lifecycle and fallback mechanisms are explicit
+  non-migration examples.
+- No runtime module, source artifact, fixture, snapshot, QEMU process, or
+  external service was mutated by this plan packet.
+
+### 2026-08-24 — RECOVERY-R0 source preservation repaired; fixture remains
+
+- Read-only authority comparison found the root `vm-lab.zip` is a later bundle
+  (`b90a74…38e1`) containing the divergent browser bytes, not the manifest's
+  declared source archive. Two independent retained local archives and original
+  Git blob `0c1383d6c4e634689d99871a11952471d569bafe` instead agreed on the
+  manifest-bound `d27779…cf644e` bytes.
+- Restored only that preserved candidate artifact atomically. The later bytes
+  remain retained in Git history and the later zip; `source-manifest.json` was
+  not rebaselined.
+- Fresh aggregate `20260825T043503Z` records 36 pass, 4 fail, 0 skip. Source
+  preservation and plan contract pass; the four remaining failures are only the
+  absent exact P3 fixture. No QEMU, matrix, snapshot, or external action ran.

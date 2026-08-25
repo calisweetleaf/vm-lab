@@ -12,9 +12,11 @@ process/log guards, QMP fdset/block graph, doctor, orphan recovery, one-shot
 disposable launch authority, canonical 17-scenario matrix preparation, exact
 preflight, strict serial execution/resume policy, checkpoint/recovery sealing,
 and canonical QMP response-history capture all have direct non-launch proof.
-The exact fixture is restored and current local aggregate is 40/0/0. Valid
-full-matrix Daeron authority, explicit production exclusions, checkpoint
-execution, and disposable machine-truth `GATE-P4` remain open. The public host CLI remains read-only.
+Historical run `test/vm_lab/runs/20260807T123747Z/` was 40/0/0 after then-fixture
+restoration. The exact fixture is now absent; current run
+`test/vm_lab/runs/20260825T043503Z/` is 36/4 with fixture-only failures. Exact
+fixture recovery, current preflight, valid full-matrix Daeron authority,
+checkpoint execution, and disposable machine-truth `GATE-P4` remain open. The public host CLI remains read-only.
 Current code outranks this map if an anchor drifts.
 
 ---
@@ -33,8 +35,9 @@ fdset/block-graph identity, one-shot non-production permits, and restart
 recovery. All bounded P4 phase items are implemented, but the repository still
 contains `src/somnus_vm/host/p4_gate.py` and the non-public
 `scripts/run_gate_p4.py` driver for the daemon-owned 17-scenario
-checkpoint/QMP evidence matrix. The matrix is prepared and preflightable but
-has not executed. No disposable-QEMU machine truth exists:
+checkpoint/QMP evidence matrix. The coordinator implements matrix preparation
+and preflight, but no current physical matrix can preflight-pass while the
+exact fixture is absent; it has not executed. No disposable-QEMU machine truth exists:
 `GATE-P4` remains open, and the public boundary exposes no lifecycle mutation.
 
 **Enter through these five layers:**
@@ -481,10 +484,10 @@ authority and recovery failures.
   image children. Removing it would let a writer outlive the single owner.
 - P3 overlays have never been established as mounted or written by a proven
   disposable QEMU machine run. P4 now has a separate runtime journal and
-  write-aware observation path, but its direct non-launch tests do not replace
-  the `GATE-P4` machine-truth run. The coordinator is implemented and the exact
-  source is restored, but full-matrix authority, production exclusions, and
-  checkpoint execution remain unconsumed.
+write-aware observation path, but its direct non-launch tests do not replace
+the `GATE-P4` machine-truth run. The coordinator is implemented, but the exact
+fixture is not currently present; full-matrix authority, production exclusions,
+fixture recovery, and checkpoint execution remain unconsumed.
 - The most feature-rich source may be candidate or lineage. `components/` and
   `quarantine/` do not enter live import graphs by convenience.
 - Repair anchors in this document whenever its owner moves; do not preserve

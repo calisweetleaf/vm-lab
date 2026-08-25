@@ -212,77 +212,41 @@ are accepted.
 
 ---
 
-## ACTIVE — `TASK-P4-019`: Prove disposable QEMU machine truth
+## ACTIVE — `TASK-P4-019`: Re-establish current P3 evidence authority before P4 machine truth
 
 **Outcome lock**
 
-> Deliver Phase P4 QEMU process truth and QMP; done when actual QEMU launches
-> one disposable P3-owned overlay through the daemon-owned runtime, QMP proves
-> the expected machine UUID, running state, and root-disk attachment, serial
-> output is retained, and daemon restart adopts or cleans the exact child
-> without touching a foreign process.
+> Deliver current, authoritative P3 reproducibility evidence; done when the
+> source-preservation divergence and exact fixture authority are resolved by
+> their named sources, current P3/P4 fixture-dependent proof is green, and no
+> physical VM action has occurred.
 
-**Plan owner:** [`PLAN.md`](PLAN.md) §12, Phase P4.
+**Plan owner:** [`PLAN.md`](PLAN.md) §3.1 RECOVERY-R0, then §12 Phase P4.
 
-**Compiled progress:** all 18 bounded P4 phase items have direct current-source
-evidence. The runtime consumes P3 storage through exact pinned
-overlay/base/owner-marker descriptors; the guard revalidates metadata and
-immutable hashes at release; the QEMU argv uses two fdsets and four explicit
-block nodes; QMP observers bind fdsets, named nodes, recursive edges, and the
-authenticated peer's `/proc` descriptors back to storage-owned inodes. Doctor
-consumes the selected sandbox option projection, and ambiguous recovery records
-a durable orphan emergency. A one-shot `DisposableLaunchPermit` now binds the
-actual `QemuRuntimeOwner.launch()` boundary to a private marked fixture,
-explicit production exclusions, immutable base identity, and a durable launch
-receipt. The daemon also exposes a Python-only activation hook to the physical
-gate without adding a CLI or AF_UNIX lifecycle operation.
+**Current truth**
 
-The actual-QEMU `GATE-P4` remains open. The explicit non-public coordinator is
-implemented in `src/somnus_vm/host/p4_gate.py` and
-`scripts/run_gate_p4.py`. It now defines the canonical full matrix
-specification, exact preflight/result validators, seventeen isolated compact
-scenario roots (`00-success` plus every `CHECKPOINT_ORDER` case), strict serial
-execution, resume only from sealed validated scenarios, stop-and-preserve on
-failure, and aggregate matrix sealing. Successful runtime-log bytes are sealed;
-per-scenario validation requires the exact checkpoint prefix and conditional
-adoption/cleanup evidence with explicit cleanup scope
-`runtime-process-only;fixture-retained`. The deterministic execution phrase is
-only an accidental-execution fence, not authentication or proof of Daeron
-authority. `test/vm_lab/test_p4_gate_coordinator.py` proves 8/8 non-launch cases.
-
-The exact pinned source remains restored and verified at
-`/tmp/vm-lab-p3-fixture-20260801.qcow2` with size 264,306,688, mode 0600,
-uid 1000, nlink 1, and SHA-256
-`b3064efb500d71d6ccbe619b1716062b803e285116e040627b430aaee14cced6`.
-Current-HEAD aggregate `test/vm_lab/runs/20260807T123747Z/result.json`
-records 40 pass, 0 fail, and 0 skip across 40 checks. No Daeron physical launch
-authorization has been supplied. Read-only host discovery found no deployed
-qcow2, libvirt domain, QEMU process, or Somnus/AIPC production state, so the
-non-launch coordinator conservatively excluded `/home/daeron` and
-`/media/daeron/usb-128gb` and prepared/preflighted frozen matrix
-`b9aca76a-a016-4d0c-9002-f0a90f383b21` under
-`/tmp/vm-lab-gate-p4-matrix-20260807T124705Z`. No qemu-system VM or matrix has
-launched, and no actual success/checkpoint machine truth exists.
-This is implementation and full local proof, not physical gate closure.
+The historical P3 gate and 2026-08-07 40/0/0 aggregate remain sealed historical
+claims. They are not current proof: `/tmp/vm-lab-p3-fixture-20260801.qcow2` is
+absent. RECOVERY-R0 resolved the browser preservation divergence from matching
+retained archives and original Git evidence; fresh aggregate
+`20260825T043503Z` records 36 pass and 4 fixture-only failures. The P4 runtime,
+permit, coordinator, and non-launch owners remain source-complete, but the
+physical gate is frozen until exact fixture authority is current.
 
 **Active bounded unit**
 
-1. obtain Daeron's explicit authority to execute prepared disposable matrix
-   `b9aca76a-a016-4d0c-9002-f0a90f383b21`;
-2. run `scripts/run_gate_p4.py execute-matrix` against its frozen spec and
-   generated accidental-invocation phrase through the daemon-owned runtime;
-3. capture actual QEMU 8.2.2 fdset/named-node/blockstats response shapes,
-   UUID/status/root-disk truth, sealed serial/QEMU log bytes, exact process
-   identity, and every scenario's checkpoint adoption/cleanup outcome;
-4. only then close `GATE-P4`, move the active phase to P5, and promote no public
-   lifecycle command beyond the physically proved boundary.
+1. retain every failed aggregate and freeze P4 execute-matrix/public promotion;
+2. locate or supply only the exact manifest-bound P3 fixture or an authenticated
+   byte-identical copy; reject all substitutes;
+3. re-run the fixture-dependent P3/P4 owners, publish a fresh bundle, and
+   update current-state documents only from it;
+4. return to the Daeron-authorized P4 matrix only after R0 passes.
 
-Do not treat a PID, socket pathname, open port, log line, or QEMU argv as
-machine truth. Do not claim guest readiness, promote P5 networking, expose
-`start`/`stop`/`destroy`, or launch Daeron's production AIPC. The physical
-`GATE-P4` run requires Daeron-authorized disposable VM execution. Keep
-additional adversarial checks only when they discriminate this consumed path;
-they are not a parallel phase and do not replace the physical gate.
+**Hard bans**
+
+Do not launch QEMU, execute the prepared matrix, introduce a public lifecycle
+command, create a substitute fixture, import the external donor, erase failed
+artifacts, or reinterpret historical green output as current success.
 
 ---
 

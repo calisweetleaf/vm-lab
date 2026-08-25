@@ -783,3 +783,44 @@ generated run-bound phrase, monitor all 17 serial scenarios, and validate the
 sealed aggregate. Do not regenerate the matrix, substitute an image, alter its
 exclusions, touch an operator-owned root, advance P5, or claim `GATE-P4` before
 external QEMU/QMP machine truth.
+
+## 2026-08-24 — Canonical plan activation / RECOVERY-R0
+
+- Daeron authorized execution of the full no-fallback completion program.
+  The plan is one canonical `PLAN.md`, not a second roadmap. RECOVERY-R0 now
+  freezes physical P4 execution until exact source/fixture authority is current.
+- Current truth: `/tmp/vm-lab-p3-fixture-20260801.qcow2` is absent;
+  `SOTA_RUN.md` records 35 pass / 5 fail; one source-manifest entry diverges.
+  Historical green evidence is retained but cannot be promoted as current.
+- The true first-party donor is external `backend/virtual_machine`; preserve
+  its AIPC/operator semantics, rebuild all mechanisms through VM Lab gates,
+  and never import its weak PID/shell/default-auth/fallback paths.
+
+**Next packet:** complete RECOVERY-R0 only. **Owner files:** `source-manifest.json`,
+`components/operator/native_tools/internal_browser.py`,
+`test/vm_lab/fixtures/images/ubuntu-minimal-noble-amd64-20260801.json`,
+`test/vm_lab/test_storage_p3.py`, `test/vm_lab/test_storage_p3_adversarial.py`,
+`test/vm_lab/test_daemon_storage_p3.py`, `test/vm_lab/test_storage_runtime_p4.py`,
+and `SOTA_RUN.md`. Establish authority for the manifest-bound browser bytes and
+exact qcow2 fixture, restore neither without that proof, run
+`python scripts/verify_repository.py` plus the four fixture-dependent owners,
+and publish a fresh bundle. Do not launch QEMU, execute the P4 matrix, expose
+lifecycle commands, alter snapshots, import donor code, or erase failed evidence.
+
+## 2026-08-24 — RECOVERY-R0 source authority resolved
+
+- Verified the manifest-bound browser source with two retained archives plus
+  original Git, then restored exact `d27779…cf644e` bytes atomically. The later
+  `198917…29a81` bytes remain retained in Git and `vm-lab.zip`; no manifest hash
+  was rewritten.
+- Fresh `20260825T043503Z` aggregate is 36 pass / 4 fail. `source_manifest` and
+  plan contract now pass. The exact fixture is the sole remaining blocker.
+
+**Next packet:** acquire only the exact fixture named by
+`test/vm_lab/fixtures/images/ubuntu-minimal-noble-amd64-20260801.json`; owner
+files are that manifest, `test_storage_p3.py`, `test_storage_p3_adversarial.py`,
+`test_daemon_storage_p3.py`, `test_storage_runtime_p4.py`, and `SOTA_RUN.md`.
+Verify size/hash/regular-file/private-ownership identity, run the four owners
+plus `python scripts/verify_repository.py`, and publish the new bundle. Do not
+substitute/rebuild/download a different image, launch QEMU, execute the P4
+matrix, alter snapshots, or erase failed evidence.

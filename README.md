@@ -12,7 +12,7 @@
   <rect x="14" y="14" width="852" height="162" fill="none" stroke="url(#vmLabGrad)" stroke-width="1.2" rx="16" opacity="0.6"/>
   <text x="440" y="82" font-family="monospace" font-size="40" fill="url(#vmLabGrad)" text-anchor="middle" filter="url(#vmLabGlow)" font-weight="bold">VM LAB v0.1</text>
   <text x="440" y="120" font-family="monospace" font-size="15" fill="#c9d1d9" text-anchor="middle">one clean boundary · cold extras · zero synthetic success</text>
-  <text x="440" y="149" font-family="monospace" font-size="11" fill="#8b949e" text-anchor="middle">experimental Python control plane; not a replacement claim for VM-Go</text>
+  <text x="440" y="149" font-family="monospace" font-size="11" fill="#8b949e" text-anchor="middle">experimental Python control plane; donor semantics, not donor imports</text>
 </svg>
 </div>
 
@@ -28,11 +28,11 @@ registry/mutation service, and manifest-bound `qemu-img` storage publication
 and recovery. The separately invoked guest bootstrap is also live. The
 advanced shell remains an operator candidate rather than entering host boot.
 
-P1, P2, and P3 are closed; P4 is next. The internal daemon can durably declare
-VM ownership, import one pinned immutable base, and create independently owned
-sparse overlays, but it does not launch QEMU, query QMP, mount an image, or
-claim guest readiness. Public `start`, `stop`, `destroy`, snapshot, scaling,
-and image-build commands remain absent—not simulated.
+P1 and P2 are closed; P3 remains a sealed historical gate whose current
+reproducibility is blocked by an absent exact fixture. P4's internal runtime,
+QMP/process owner, and non-public coordinator are source-complete but lack a
+current fixture-backed physical run. Public `start`, `stop`, `destroy`,
+snapshot, scaling, and image-build commands remain absent—not simulated.
 
 [`PLAN.md`](PLAN.md) is the execution authority for crossing that gap. It names every phase, invariant, physical gate, failure test, file disposition, and full-SOTA sign-off condition so a future Codex Operator cannot mistake preserved lineage for promoted runtime.
 

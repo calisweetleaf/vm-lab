@@ -13,10 +13,12 @@ authorization, daemon activation, checkpoint/recovery, raw QMP-history capture,
 and sealed-result validation. It prepares 17 isolated compact scenario roots for
 success plus every exact `CHECKPOINT_ORDER` case, and validates exact
 checkpoint prefixes, conditional recovery evidence, sealed runtime-log bytes,
-and cleanup scope `runtime-process-only;fixture-retained`. The exact pinned
-source is restored and the 40/0/0 aggregate is green. `GATE-P4` remains open
-pending Daeron authority to execute frozen/preflighted matrix
-`b9aca76a-a016-4d0c-9002-f0a90f383b21`, checkpoint execution, and a disposable
+and cleanup scope `runtime-process-only;fixture-retained`. Historical run
+`test/vm_lab/runs/20260807T123747Z/` recorded 40/0/0 after then-fixture
+restoration. The exact P3 fixture is currently absent; current run
+`test/vm_lab/runs/20260825T043503Z/` is 36 pass, 4 fail, 0 skip with
+fixture-only failures. `GATE-P4` remains open pending exact fixture recovery,
+current preflight, Daeron authority, checkpoint execution, and a disposable
 QEMU machine-truth run; the public host CLI remains read-only.
 **Language:** Python 3.12+, standard-library live runtime
 **Overall density:** DENSE at truth/ownership/security boundaries; THIN at

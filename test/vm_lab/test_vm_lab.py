@@ -904,7 +904,7 @@ def check_plan_contract() -> str:
     )
     for boundary in (
         "AIPC is a persistent full computer",
-        "VM-Go remains a separate host-lifecycle project",
+        "external `backend/virtual_machine` donor remains first-party read-only lineage",
         "Kerminal remains the agency and operator surface",
         "Artifact processors remain outside the qcow2",
         "normal policy permits one active AIPC",

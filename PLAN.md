@@ -27,10 +27,11 @@
 > records chronological decisions. Do not duplicate the phase plan into those
 > files.
 >
-> **Active unit:** [`TASK-P4-019`](TASK.md) — prove the completed bounded P4
-> path against one Daeron-authorized disposable QEMU machine. P3 is closed by
-> real `qemu-img` storage evidence; no VM is running and no public lifecycle
-> command is promoted before `GATE-P4`.
+> **Current active unit:** [`TASK-P4-019`](TASK.md) — re-establish the
+> current P3 evidence authority, then prove the completed bounded P4 path
+> against one Daeron-authorized disposable QEMU machine. P3 remains a sealed
+> historical gate, but its fixture-dependent proof is not currently
+> reproducible; no VM is running and no public lifecycle command is promoted.
 
 ## 0. Document contract
 
@@ -60,7 +61,7 @@ The rules for using this plan are strict:
 
 ## 1. Mission
 
-I am building an honest control plane for a persistent Somnus AIPC: a full virtual computer whose disk, identity, state, guest services, and recovery history survive the host process that controls it. The Python lab is an experimental backend and reference implementation. It does not replace VM-Go by declaration; it earns that position only through measured parity or becomes a compatible alternate backend.
+I am building an honest control plane for a persistent Somnus AIPC: a full virtual computer whose disk, identity, state, guest services, and recovery history survive the host process that controls it. The Python lab is an experimental backend and reference implementation. Its first-party semantic donor is the external `backend/virtual_machine` system, which supplies product intent and migration constraints only; it is never a runtime dependency, source-copy target, or competing lifecycle owner. This lab earns any successor role only through measured consumed-boundary proof.
 
 Full SOTA means the system can prove this lifecycle on real virtualization hardware:
 
@@ -83,7 +84,7 @@ These invariants outrank convenience and implementation reuse.
 - [ ] `INV-001` The AIPC is a persistent full computer, not an Artifact container. Its baseline virtual disk target is approximately 100 GB unless a profile explicitly chooses another size.
 - [ ] `INV-002` Runtime payloads update in place through a versioned guest deployment path. Normal updates do not reinstall the guest operating system.
 - [ ] `INV-003` The normal policy permits one active AIPC. Multi-VM correctness is still required so ports, state, and storage never collide, but a warm pool is a later explicit policy.
-- [ ] `INV-004` VM-Go remains a separate host-lifecycle project. This lab may implement a compatible backend contract; it may not absorb or overwrite VM-Go history.
+- [ ] `INV-004` The external `backend/virtual_machine` donor remains first-party read-only lineage. This lab may recover its AIPC/operator semantics through named contracts, but may not import, overwrite, or silently reinterpret donor code as live authority.
 - [ ] `INV-005` Kerminal remains the agency and operator surface. It calls a control API and never constructs or owns QEMU processes.
 - [ ] `INV-006` Artifact processors remain outside the qcow2. They are disposable external execution and security workers for inbound or outbound files.
 - [ ] `INV-007` The host control plane never imports guest cognition, prompt, memory, model, browser, or file-processing implementations during boot.
@@ -100,7 +101,7 @@ These invariants outrank convenience and implementation reuse.
 
 The v0.1 reconstitution is the floor. These items must keep passing throughout all later phases.
 
-- [x] `BASE-001` All 33 uploaded files are preserved byte-for-byte exactly once and recorded in `source-manifest.json`.
+- [x] `BASE-001` Current source preservation is exact: all 33 recorded source files match their authoritative bytes. RECOVERY-R0 restored the manifest-bound browser bytes from matching retained local archives and original Git evidence.
 - [x] `BASE-002` `src/somnus_vm` is an isolated, installable, standard-library-only package.
 - [x] `BASE-003` `python -m somnus_vm doctor` performs read-only host preflight and fails honestly when metal is absent.
 - [x] `BASE-004` `python -m somnus_vm topology` reports live, candidate, cold, lineage, and quarantine placement.
@@ -113,6 +114,72 @@ The v0.1 reconstitution is the floor. These items must keep passing throughout a
 - [x] `BASE-011` The wheel runs outside the source checkout.
 - [x] `BASE-012` The direct-Python integration harness emits JSON, Markdown, and full log evidence plus `SOTA_RUN.md`.
 - [x] `BASE-013` Lifecycle, snapshots, resource scaling, image building, guest agent, cognitive runtime, shell, and file processing remain absent from the promoted CLI.
+
+### 3.1 RECOVERY-R0 — current evidence authority (blocks P4 execution)
+
+**Status:** active prerequisite. This is not a new promoted phase and does not
+reopen the sealed historical P3 gate. It establishes whether the current checkout
+can truthfully consume that gate. Until it passes, physical P4 execution,
+public lifecycle promotion, source-manifest rebaselining, fixture substitution,
+and every claim that the historical 40/0/0 run is current are prohibited.
+
+**Observed starting state before source repair (2026-08-24):**
+
+- `SOTA_RUN.md` names `test/vm_lab/runs/20260825T011700Z/`: 35 pass, 5 fail.
+  The P3 core/adversarial/daemon lanes and P4 runtime-storage lane fail because
+  `/tmp/vm-lab-p3-fixture-20260801.qcow2` is absent; the source-manifest lane
+  fails independently.
+- The manifest requires a regular private fixture with exact size
+  264,306,688 bytes and SHA-256
+  `b3064efb500d71d6ccbe619b1716062b803e285116e040627b430aaee14cced6`.
+  A newer image, a rebuilt qcow2, or a merely bootable image is not equivalent.
+- Of 33 source-manifest entries, `components/operator/native_tools/internal_browser.py`
+  is the only current mismatch: the manifest names `d27779…cf644e`; the tracked
+  current blob is `198917…29a81`. The original reconstitution commit
+  `0c1383d6c4e634689d99871a11952471d569bafe` contains a blob matching the
+  manifest, while later commit `6aa1357baa82b645299140d4cf27c32f305b449c`
+  changed that artifact without changing the manifest. Neither fact authorizes
+  an automatic restore or manifest rewrite.
+
+**Source authority resolution (2026-08-24):** two independent retained local
+archives (`archive/vm-lab-first-zip.zip` and
+`/home/daeron/Downloads/vm_lab_reorganized.zip`) and original Git blob
+`0c1383d6c4e634689d99871a11952471d569bafe` all contain the manifest-bound
+`d27779…cf644e` bytes. The divergent `198917…29a81` bytes remain preserved in
+later Git history and the current `vm-lab.zip`. The live preserved artifact was
+atomically restored to the manifest-bound bytes; the repository verifier and
+current smoke source-manifest lane now pass. Fresh aggregate
+`20260825T043503Z` is 36 pass / 4 fail; every remaining failure is exact fixture
+absence. This resolves source authority, not fixture authority or the physical
+P4 gate.
+
+**Required sequence:**
+
+- [x] `RECOVERY-R0-001` Freeze P4 matrix execution and public promotion; retain
+  the failed `20260825T011700Z` bundle unchanged as current failure evidence.
+- [x] `RECOVERY-R0-002` Establish source-preservation authority from an
+  authenticated `vm_lab.zip` matching the declared archive SHA-256
+  `63f698f7af3ce989de8885a3b3b68b7214dedbffb1ac6671636b1f5d13829f94`, or
+  explicitly decide whether the matching original Git blob is sufficient
+  first-party recovery authority. Stage and compare bytes before any mutation.
+- [x] `RECOVERY-R0-003` If the authoritative original is `d27779…cf644e`,
+  restore those exact bytes atomically while preserving the displaced
+  `198917…29a81` commit evidence. If the authoritative original is
+  `198917…29a81`, prove the manifest transcription defect before changing the
+  manifest. Any third result halts for provenance reconciliation.
+- [ ] `RECOVERY-R0-004` Acquire only a declared-origin or separately
+  authenticated byte-identical fixture. Require canonical regular-file,
+  private mode/owner, size, hash, and P3 identity checks; do not download,
+  synthesize, or substitute an image merely to unblock tests.
+- [ ] `RECOVERY-R0-005` Run the existing structural verifier and all
+  fixture-dependent P3/P4 owners. Publish a fresh result bundle. Only that
+  bundle may correct task/state/provenance claims; RECOVERY-R0 never closes
+  the P4 physical gate.
+
+**Hard bans:** do not rebaseline a hash without source authority; do not copy a
+file from the external donor tree; do not remove failed evidence; do not skip or
+weaken fixture checks; do not invoke the P4 execute-matrix driver during this
+packet.
 
 ## 4. Full-SOTA definition of done
 
@@ -148,7 +215,7 @@ The project reaches full SOTA only when every item in this section is backed by 
 - [ ] `DONE-017` Kerminal reaches the VM only through a stable control-plane client and does not instantiate QEMU.
 - [ ] `DONE-018` Guest cognitive modules load only inside the AIPC and remain optional to basic agent readiness.
 - [ ] `DONE-019` Artifact file processing runs outside the AIPC and transfers only approved outputs through a recorded ingress manifest.
-- [ ] `DONE-020` VM-Go compatibility is measured through a shared behavior contract without merging repositories.
+- [ ] `DONE-020` Donor-semantic compatibility is measured through explicit migration fixtures and consumed behavior without merging repositories or importing donor modules.
 
 ### 4.5 Certification evidence
 
@@ -283,7 +350,7 @@ flowchart TD
 | v0.3 | first physically verified boot | QMP identity, owned overlay, serial evidence |
 | v0.4 | authenticated AIPC lifecycle | readiness, command, file, graceful stop, reconciliation |
 | v0.5 | storage recovery | quiesced snapshot, rollback, crash recovery, destructive gates |
-| v0.6 | ecosystem bridges | Kerminal client, VM-Go compatibility, Artifact ingress |
+| v0.6 | ecosystem bridges | Kerminal client, donor-semantic migration fixtures, Artifact ingress |
 | v1.0 | certified reference backend | full matrix, final disposition, release packaging, complete evidence |
 
 The stable phase IDs are not the final execution order at the release boundary.
@@ -512,15 +579,40 @@ sealed scenarios, stop-and-preserve failure behavior, checkpoint/recovery
 observation, sealed runtime-log bytes, and aggregate result validation.
 `test_p4_gate_coordinator.py` proves 8/8 non-launch cases. Per-scenario
 validation requires exact checkpoint prefixes, conditional adoption/cleanup
-evidence, and cleanup scope `runtime-process-only;fixture-retained`. The exact
-fixture is restored; valid full-matrix execute authority, explicit production
-exclusions, and Daeron launch authority are absent; the physical gate remains
-open. The deterministic phrase is only an accidental-execution fence, never
-authentication or authority proof.
+evidence, and cleanup scope `runtime-process-only;fixture-retained`. Historical
+fixture restoration is preserved in the August evidence bundle, but the exact
+fixture is currently absent; RECOVERY-R0 blocks current preflight/execution.
+Valid full-matrix execute authority, explicit production exclusions, and Daeron
+launch authority are also absent; the physical gate remains open. The
+deterministic phrase is only an accidental-execution fence, never authentication
+or authority proof.
 
 ### Gate P4
 
 - [ ] `GATE-P4` Through the explicit non-public physical-gate coordinator and one consumed disposable permit, launch one exact P3 overlay on actual QEMU, complete QMP negotiation, prove matching UUID/process/root-disk/fdset/block-graph identity, capture raw QMP shapes plus retained serial/QEMU output, then terminate the daemon at each launch checkpoint and adopt or clean the child without orphaning or signaling a foreign process; seal exact JSON, Markdown, and terminal-log evidence.
+
+## 12.1 Donor semantic migration boundary
+
+The first-party external `backend/virtual_machine` donor is the origin of the
+AIPC/operator system shape, not a dependency. Each future promotion must retain
+the semantic in the middle column and reject the mechanism in the final column.
+No donor file crosses into the live import graph by convenience.
+
+| Donor semantic | Canonical VM Lab recovery path | Explicitly reject or rebuild |
+| --- | --- | --- |
+| Named persistent AI computer: disk, identity, resource intent, session association | P2/P3/P4/P8 through canonical protocol, registry, storage, runtime, and public lifecycle owners | in-memory active-VM authority, JSON-as-runtime truth, lifecycle state assigned before QMP observation, broad catches returning false or none |
+| QEMU/KVM as machine engine under a sovereign controller | P4 runtime, pinned executable/storage, QMP, process identity, journal, recovery | daemonized child ownership, launcher PID proof, raw path-bearing drive options, pidfile-only authority, output as machine truth |
+| Immutable base to independently owned qcow2 overlay | P3 retained; P8 provision consumes it | unpinned base image, unverified qemu-img publication, path-only adoption |
+| Reversible machine evolution before capability changes | P7 release activation plus P9 quiesce, block graph, snapshot, rollback, backup | backing snapshot while running without quiesce, copying snapshot bytes over a disk, log-only restore success |
+| Local host-to-guest operational bridge | P5 durable loopback endpoints and P6 authenticated guest agent/client | fixed ports, fabricated guest IPs, public binding, unauthenticated readiness |
+| In-place evolution of the resident AIPC | P7 content-addressed release activation and P9 rollback receipt | raw capability-pack shell strings, arbitrary post-install hooks, logging an install as completed |
+| Operator/session composition around, never inside, lifecycle ownership | P12 Kerminal adapter and separate operator session linkage | direct supervisor construction, default token/endpoint, session/cognition becoming a second lifecycle authority |
+| Profiles, cognition, digital twin, and development environment | P9/P13/P16 with control readiness independent of optional cognition | record mutation treated as resource actuation, heavy cognition in guest health path, global unauthenticated endpoints |
+| Disposable Artifact work with approved return path | P14 manifest-driven external Artifact ingress | container execution as host authority, unbounded file/network work, simulated scanner success, host/guest boot imports |
+
+Every implementation packet that draws on the donor must name: the exact donor
+semantic, the live owner being built, the unsafe donor mechanism rejected, the
+consumed-boundary test, and the gate that alone may promote it.
 
 ## 13. Phase P5 — networking and durable endpoint allocation
 
@@ -729,11 +821,11 @@ Kerminal remains a separate project. This phase creates a contract bridge, not a
 - [ ] `P12-008` Add explicit native-tool adapters and registration contracts instead of relying on absent `get_tools()` or `bb7_*` exports.
 - [ ] `P12-009` Keep operator sessions separate from VM process records while linking them by VM ID.
 - [ ] `P12-010` Prove two Kerminal clients cannot create two lifecycle owners or bypass the one-active-AIPC policy.
-- [ ] `P12-011` Define behavior compatibility tests against VM-Go without copying VM-Go internals into this tree.
+- [ ] `P12-011` Define donor-semantic migration fixtures for persistent-AIPC/session/operator behavior without copying or importing donor internals into this tree.
 
 ### Gate P12
 
-- [ ] `GATE-P12` A real Kerminal adapter connects to a restarted daemon, selects the persistent AIPC, executes one guest command, writes and reads one file, requests a snapshot, receives structured progress and completion, and never imports or constructs QEMU; the same behavior contract can be exercised against VM-Go where supported.
+- [ ] `GATE-P12` A real Kerminal adapter connects to a restarted daemon, selects the persistent AIPC, executes one guest command, writes and reads one file, requests a snapshot, receives structured progress and completion, and never imports or constructs QEMU; donor-derived semantics are tested through explicit fixtures, not donor execution or imports.
 
 ## 21. Phase P13 — guest cognitive runtime promotion
 
@@ -930,7 +1022,7 @@ No quarantined file returns wholesale. Every salvage decision names exact concep
 | `src/somnus_vm/doctor.py` | expand physical and security checks | P11 gate |
 | `src/somnus_vm/cli.py` | become daemon client for mutations; preserve standalone reads | P8 gate |
 | `src/somnus_vm/guest/bootstrap.py` | move to `somnus_guest`; add release activation without arbitrary commands | P7 gate |
-| `archive/lineage/host/vm_supervisor.py` | donor reference only; never import | replacement passes P8/P9 |
+| `archive/lineage/host/vm_supervisor.py` | historical donor copy only; never import; external donor revisions remain read-only evidence | replacement passes P8/P9 with no donor mechanism leakage |
 | `components/host/vm_image_manager.py` | extract verified image concepts; rewrite success semantics | P3/P7 gate |
 | `components/guest/agent/digital_twin.py` | do not promote wholesale; salvage isolated telemetry only | P6 first, then P13 |
 | `components/guest/runtime/*` | port package-relatively one domain at a time | P13 per-domain proof |
@@ -972,7 +1064,7 @@ The following tests are mandatory; they are not interchangeable.
 - [ ] `TEST-021` hostile bootstrap archive, TOCTOU, disk-full, permission, recovery, and activation tests;
 - [ ] `TEST-022` clean-wheel, packaged-resource, service install, upgrade, and uninstall tests;
 - [ ] `TEST-023` cold-import isolation tests;
-- [ ] `TEST-024` Kerminal client and VM-Go compatibility-contract tests;
+- [ ] `TEST-024` Kerminal client and donor-semantic migration-contract tests;
 - [ ] `TEST-025` disposable Artifact ingress and blocked-malicious-file tests;
 - [ ] `TEST-026` cognitive-runtime-off readiness and per-module failure-isolation tests;
 - [ ] `TEST-027` TCG full lifecycle;
@@ -982,21 +1074,42 @@ The following tests are mandatory; they are not interchangeable.
 
 ## 29. Immediate next implementation sequence
 
-The next Operator does not begin with snapshots, file processing, shell wiring, or cognitive memory. The exact first sequence is:
+This is the sole execution order. It replaces the obsolete P0-first sequence.
+No later packet begins because a source file exists, a unit test is green, or a
+historical run was green.
 
-1. Close P0 with `STATE.md`, the machine plan index, decisions, and direct plan validation.
-2. Scope P1 only after `GATE-P0` passes.
-3. Split `somnus_protocol` and close the schema/transition tests.
-4. Build the daemon control envelope and SQLite registry without launching QEMU.
-5. Prove interprocess ownership and recovery journal behavior.
-6. Build owned overlay creation around a known disposable image.
-7. Implement QMP and process identity.
-8. Run the first physical QEMU boot gate.
-9. Implement the small authenticated guest agent.
-10. Complete lifecycle and reconciliation.
-11. Implement stopped-VM rollback before any live snapshot claim.
+1. **RECOVERY-R0: evidence authority.** Resolve the source-manifest divergence
+   and exact P3 fixture through their named authorities; publish current P3/P4
+   non-launch proof. Keep all physical P4 work frozen until then.
+2. **P4 physical gate.** With Daeron's explicit disposable-run authority, run
+   the existing 17-scenario QEMU/QMP checkpoint matrix. Capture QMP/process/
+   fdset/block-graph/log truth and exact adoption-or-cleanup evidence. A
+   successful implementation test or preflight is not a substitute.
+3. **P5 durable endpoint authority.** Add registry-owned loopback endpoint
+   leases, launch-time collision rechecks, and restart reconciliation before
+   any host-to-guest service exposure.
+4. **P6 authenticated guest control.** Build the resident agent and client with
+   secret provisioning, replay resistance, bounded argv execution, atomic
+   file operations, quiesce/resume, and consumed receipts.
+5. **P7 then P8.** Prove install/release activation and rollback before exposing
+   public lifecycle commands. Public declare/start/stop/destroy remains absent
+   until it consumes P4–P7 truth through the sole daemon owner.
+6. **P9.** Make AIPC history real: guest quiesce, QMP block-graph switch,
+   stopped rollback, backup/restore-to-new-identity, resource policy and
+   observed actuation.
+7. **P10 and P11.** Close adversarial isolation, destructive-action constraints,
+   diagnostic bundles, and operator-visible failure evidence.
+8. **P12–P14.** Recover donor semantics through Kerminal, optional resident
+   cognition, and external Artifacts; each remains independently disableable
+   and never acquires host lifecycle ownership.
+9. **P15–P16, then P18, then P17.** Run real-machine certification and measured
+   behavior; settle every candidate/quarantine disposition; only then package,
+   document, snapshot, and release.
 
-If real QEMU/KVM metal is unavailable, implementation stops at the next physical gate. The Operator may improve contracts, fixtures, diagnostics, and deterministic failure behavior, but must not mark the blocked capability complete or expose its mutation command.
+Every packet must contain one outcome lock, named owner files, explicit
+non-owners, exact input authority, failure states, no-fallback bans, and a
+consumed-boundary acceptance command. A failed gate preserves its artifacts,
+leaves the public capability absent, and routes to its named recovery owner.
 
 ## 30. Final sign-off
 
@@ -1006,7 +1119,7 @@ I will call this backend full SOTA only when:
 - [ ] every `GATE-*` item is checked;
 - [ ] every `TEST-*` item required for the target platform passes;
 - [ ] the latest global certification run has zero failures and zero required skips;
-- [ ] the one-active-AIPC, persistent-disk, Kerminal, VM-Go, guest, and Artifact boundaries remain intact;
+- [ ] the one-active-AIPC, persistent-disk, Kerminal, donor-lineage, guest, and Artifact boundaries remain intact;
 - [ ] a clean install can reproduce the full disposable lifecycle from the published runbook;
 - [ ] the snapshot, provenance, migration map, plan index, source manifest, and release archive hashes agree;
 - [ ] no capability is promoted on intent alone.

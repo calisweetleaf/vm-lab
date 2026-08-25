@@ -23,7 +23,7 @@ acceleration, machine profile, image hash, backing chain, and exact supported
 commands. Unsupported required features block the profile; they are not
 silently removed.
 
-## Current observed host
+## Historical host observation (2026-08-05)
 
 Observed on 2026-08-05:
 
@@ -33,14 +33,17 @@ Observed on 2026-08-05:
 - qemu-img: 8.2.2 at `/usr/bin/qemu-img`;
 - `/dev/kvm`: readable and writable by the operator through group `kvm`;
 - current default profile: explicit TCG;
-- P3 disposable source:
+- P3 disposable source at that observation:
   `/tmp/vm-lab-p3-fixture-20260801.qcow2`, observed as 264,306,688 bytes;
 - repository authority:
   `test/vm_lab/fixtures/images/ubuntu-minimal-noble-amd64-20260801.json`;
 - pinned source SHA256:
   `b3064efb500d71d6ccbe619b1716062b803e285116e040627b430aaee14cced6`.
 
-## Current physical proof boundary
+The exact source is not currently present. `SOTA_RUN.md` is the current
+authority and records fixture-only failures until RECOVERY-R0 completes.
+
+## Historical physical proof boundary
 
 [`GATE-P3`](../test/vm_lab/runs/20260805T211740Z/result.json) used the pinned
 Ubuntu Minimal 24.04 amd64 source and the local `qemu-img` 8.2.2 executable to
