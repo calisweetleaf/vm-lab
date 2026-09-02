@@ -1,1 +1,24 @@
-# The promoted host control plane and guest bootstrap are standard-library only.
+aiofiles
+aiohttp
+aiosqlite
+chardet
+cryptography
+docker
+GitPython
+httpx
+networkx
+nltk
+numpy
+pandas
+Pillow
+psutil
+pydantic
+pydantic-settings
+python-docx
+pypdf
+PyYAML
+requests
+sentence-transformers
+scikit-learn
+scipy
+toml
