@@ -11,6 +11,13 @@
 # where the pinned P3 image fixture is expected) — restores same-device
 # semantics, exactly as a normal Linux dev host with a tmpfs /tmp would provide.
 # This is idempotent: it is a no-op when /tmp already exposes consistent devices.
+#
+# Note: a mount is scoped to the mount namespace it runs in. If the platform
+# runs this `start` step in a detached namespace separate from the interactive
+# agent shell, the mount may not be visible there. Running this script directly
+# in the working shell (`bash .cursor/start.sh`) reconciles /tmp for that shell
+# and all its subsequent commands, which is only needed for the launch-authority
+# and disposable-fixture physical proofs (everything else needs no /tmp change).
 set -uo pipefail
 
 # Returns 0 when a freshly created file and its parent directory report the same
