@@ -25,14 +25,29 @@ set -uo pipefail
 tmp_devices_consistent() {
   python3 - <<'PY'
 import os, sys, tempfile
+
+d = None
+f = None
+ok = False
 try:
     d = tempfile.mkdtemp(dir="/tmp")
     f = os.path.join(d, ".probe")
     open(f, "w").close()
     ok = os.lstat(d).st_dev == os.lstat(f).st_dev
-    os.remove(f); os.rmdir(d)
 except Exception:
     ok = False
+finally:
+    if f is not None:
+        try:
+            os.remove(f)
+        except OSError:
+            pass
+    if d is not None:
+        try:
+            os.rmdir(d)
+        except OSError:
+            pass
+
 sys.exit(0 if ok else 1)
 PY
 }
