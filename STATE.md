@@ -13,11 +13,19 @@
 
 ## Live execution
 
-- current aggregate: `test/vm_lab/runs/20260905T101913Z/result.json` — 36 pass,
+- current aggregate: `test/vm_lab/runs/20260905T104044Z/result.json` — 36 pass,
   4 fail, 0 skip; `SOTA_RUN.md` is authoritative for this run.
 - current failures: only `storage_p3`, `storage_p3_adversarial`,
   `daemon_storage_p3`, and `storage_runtime_p4`; all fail loudly because
   `/tmp/vm-lab-p3-fixture-20260801.qcow2` is absent.
+- 2026-09-05 push-trigger review of `1b0121c..1d0e118` (PR #2 merge): docs-only
+  push, hard bans held, trigger metadata matched observed git truth. Verifier
+  2628/2628; plan DAG 2042/2042; fresh aggregate `20260905T104044Z` exactly
+  reproduces the pushed `20260905T101913Z` claim. Repaired one stale kernel
+  anchor: AGENTS.md §9 framed sealed bundle `20260807T123747Z` as
+  "current-HEAD" with the fixture present-tense "restored"; it is now a named
+  historical fixture-present claim routing current-proof authority to
+  `SOTA_RUN.md`. No runtime, gate, or routing change.
 - 2026-09-05 push-trigger review: verifier 2628/2628 on the Cloud Agent Linux
   host; found and repaired latent plan-contract drift from `ae0b077` (§3.1
   recovery items carried out-of-grammar `RECOVERY-R0-00x` IDs; now `BASE-014`
@@ -47,7 +55,7 @@
 ## Evidence
 
 - promoted historical floor: `snapshots/v0.1/manifest.json`
-- current failing ledger: `SOTA_RUN.md` and `test/vm_lab/runs/20260905T101913Z/`
+- current failing ledger: `SOTA_RUN.md` and `test/vm_lab/runs/20260905T104044Z/`
 - preserved plan-contract failure: `test/vm_lab/runs/20260905T101438Z/`
 - resolved source authority: `source-manifest.json`, `archive/vm-lab-first-zip.zip`,
   `/home/daeron/Downloads/vm_lab_reorganized.zip`, and original matching Git blob

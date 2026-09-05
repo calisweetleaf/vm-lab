@@ -83,10 +83,12 @@ promoted capabilities:
   and current focused P4 suites remain green, including real exec-guard
   processes, journal/replay, QMP transport/identity, daemon/runtime composition,
   and selected-QEMU sandbox doctor interrogation. Current aggregate
-  `test/vm_lab/runs/20260905T101913Z/` is 36 pass, 4 fail, 0 skip: every failure
-  is exact fixture absence. The 2026-09-05 push-trigger review repaired latent
+  `test/vm_lab/runs/20260905T104044Z/` is 36 pass, 4 fail, 0 skip: every failure
+  is exact fixture absence. The 2026-09-05 push-trigger reviews repaired latent
   `ae0b077` plan-contract drift (§3.1 recovery items now carry in-grammar
-  `BASE-014`…`BASE-018` IDs); the pre-repair failure bundle
+  `BASE-014`…`BASE-018` IDs) and reframed the stale AGENTS.md §9
+  "current-HEAD" framing of sealed bundle `20260807T123747Z` as the historical
+  fixture-present claim it is; the pre-repair failure bundle
   `test/vm_lab/runs/20260905T101438Z/` is preserved as drift evidence. The
   historical 20260807T123747Z 40/0/0 aggregate followed then-fixture
   restoration; it is not current readiness. The exact fixture is absent from
