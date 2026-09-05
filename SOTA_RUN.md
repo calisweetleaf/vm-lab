@@ -6,21 +6,27 @@
 - scope: SCOPE.md
 - target_module: PLAN.md, docs/plan-index.json, TASK.md, STATE.md, and
 - smoke_harness: test/vm_lab/smoke.py
-- run_dir: test/vm_lab/runs/20260905T111215Z
+- run_dir: test/vm_lab/runs/20260905T124449Z
 - status: pass
 - pass_count: 40
 - fail_count: 0
 - skip_count: 0
-- result_json: test/vm_lab/runs/20260905T111215Z/result.json
-- result_md: test/vm_lab/runs/20260905T111215Z/result.md
-- result_log: test/vm_lab/runs/20260905T111215Z/result.log
+- result_json: test/vm_lab/runs/20260905T124449Z/result.json
+- result_md: test/vm_lab/runs/20260905T124449Z/result.md
+- result_log: test/vm_lab/runs/20260905T124449Z/result.log
 <!-- SOTA_RUN_LATEST_END -->
 
-Interpretation: RECOVERY-R0 is closed. The four previously failing
-fixture-absence lanes (`storage_p3`, `storage_p3_adversarial`,
-`daemon_storage_p3`, `storage_runtime_p4`) now pass against the declared-origin
-qcow2 at `/tmp/vm-lab-p3-fixture-20260801.qcow2`. Failed aggregates
-`20260905T104044Z`, `20260905T101913Z`, and earlier remain preserved. This is
-a current non-launch aggregate, not `GATE-P4` evidence. No qemu-system process
-ran. Note: the harness rewrites this file to the bare ledger block on every
-run; this interpretation is operator-owned and re-appended after each run.
+Interpretation: RECOVERY-R0 is fully satisfied. The exact manifest-bound fixture
+was located at its declared origin URL
+(`https://cloud-images.ubuntu.com/minimal/releases/noble/release-20260801/ubuntu-24.04-minimal-cloudimg-amd64.img`),
+verified at exactly 264,306,688 bytes and SHA-256
+`b3064efb500d71d6ccbe619b1716062b803e285116e040627b430aaee14cced6`, placed at
+`/tmp/vm-lab-p3-fixture-20260801.qcow2` with mode 0600 uid 1000 nlink 1. All 40
+checks pass: every P1/P2/P3/P4 direct owner, plan contract (410 unique IDs),
+plan index (2042 observations), and source manifest (33/33). This is current
+non-launch proof; it unblocks the P4 physical gate but does not close it.
+`GATE-P4` still requires Daeron's explicit disposable-matrix authority,
+production-exclusion paths, and an authorized `qemu-system-x86_64` run.
+The previous 36/4 aggregates (`20260905T101438Z`, `20260905T101913Z`) are
+preserved as fixture-absence evidence; the pre-repair plan-contract failure is
+in `20260905T101438Z`.
