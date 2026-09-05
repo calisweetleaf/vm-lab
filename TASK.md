@@ -226,12 +226,14 @@ are accepted.
 **Current truth**
 
 The historical P3 gate and 2026-08-07 40/0/0 aggregate remain sealed historical
-claims. They are not current proof: `/tmp/vm-lab-p3-fixture-20260801.qcow2` is
-absent. RECOVERY-R0 resolved the browser preservation divergence from matching
-retained archives and original Git evidence; fresh aggregate
-`20260825T043503Z` records 36 pass and 4 fixture-only failures. The P4 runtime,
-permit, coordinator, and non-launch owners remain source-complete, but the
-physical gate is frozen until exact fixture authority is current.
+claims. Current published proof is `20260905T101913Z` at 36 pass / 4 fixture-only
+failures. RECOVERY-R0 resolved the browser preservation divergence from matching
+retained archives and original Git evidence. This host now has declared-origin
+bytes at `/tmp/vm-lab-p3-fixture-20260801.qcow2` with matching size, SHA-256,
+regular-file, mode `0600`, uid, and nlink identity; `BASE-018` is unconsumed
+until the four fixture-dependent owners and a fresh aggregate pass. The P4
+runtime, permit, coordinator, and non-launch owners remain source-complete, but
+the physical gate stays frozen until that current proof exists.
 
 **Active bounded unit**
 
@@ -254,8 +256,8 @@ artifacts, or reinterpret historical green output as current success.
 
 | Order | Unit | Depends on | Gate |
 | --- | --- | --- | --- |
-| 1 | P4 QMP/process identity | P3 | `GATE-P4` |
-| 2 | P5 durable networking | P4 | `GATE-P5` |
+| 1 | GATE-P4 disposable QEMU/QMP checkpoint matrix | RECOVERY-R0 / `BASE-018` | `GATE-P4` |
+| 2 | P5 durable networking | `GATE-P4` | `GATE-P5` |
 | 3 | authenticated guest readiness | P5 | `GATE-P6` |
 
 All later work remains in [`PLAN.md`](PLAN.md), not duplicated here.
