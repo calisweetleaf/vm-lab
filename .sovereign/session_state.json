@@ -1,20 +1,20 @@
 {
   "schema_version": 1,
-  "session_id": "vm-lab-push-trigger-drift-review-20260905",
+  "session_id": "vm-lab-recovery-r0-fixture-closure-20260905",
   "workspace": ".",
-  "last_agent": "Cursor Automation",
-  "last_timestamp": "2026-09-05T10:25:00+00:00",
-  "last_action": "Push-trigger drift review at HEAD 1b0121c: verified restoration (2628/2628), repaired latent ae0b077 plan-contract drift (PLAN.md section 3.1 items now BASE-014..BASE-018), sealed fresh aggregate 20260905T101913Z at 36 pass / 4 fail with plan_contract green at 410 IDs.",
-  "active_task": "TASK-P4-019",
+  "last_agent": "Cursor Cloud Agent",
+  "last_timestamp": "2026-09-05T11:20:00+00:00",
+  "last_action": "Closed RECOVERY-R0: acquired declared-origin P3 fixture, published 20260905T111215Z at 40/0/0, marked TASK-P4-019 complete and TASK-P4-020 ready.",
+  "active_task": "TASK-P4-020",
   "open_tasks": [
-    "Acquire or locate only the exact authenticated P3 fixture b3064efb...14cced6 (264306688 bytes)",
-    "Re-run fixture-dependent P3/P4 non-launch proof and seal current evidence",
-    "Obtain Daeron physical authority only after RECOVERY-R0 for the existing P4 matrix"
+    "Prepare and preflight a new private P4 matrix on this host from the declared-origin fixture",
+    "Record this host's production exclusions",
+    "Execute GATE-P4 through scripts/run_gate_p4.py; do not add public lifecycle commands"
   ],
-  "warm_start_valid": true,
-  "notes": "Current SOTA run 20260905T101913Z is 36 pass/4 fail; all four failures are exact fixture absence on this host. Pre-repair drift bundle 20260905T101438Z preserved. Source manifest 33/33. RECOVERY-R0 freezes execute-matrix and public promotion. No QEMU launch; GATE-P4 open.",
-  "ready_task": "Acquire exact fixture authority; no substitute image or physical P4 execution before fresh P3/P4 proof.",
-  "topology_hash": "sha256:1c0b9a942910b42c5c484374e7cc1ab684edf4ef003a5c2aed22ca7560c4dfcc",
+  "warm_start_valid": false,
+  "notes": "Current SOTA run 20260905T111215Z is 40 pass/0 fail/0 skip. Fixture is host /tmp only. Failed 36/4 bundles preserved. No QEMU launch; GATE-P4 open.",
+  "ready_task": "TASK-P4-020 execute disposable GATE-P4 matrix; preflight is not GATE-P4.",
+  "topology_hash": "sha256:5e8a197d4af50f54940ebc4d56598acb15339c1e1c547beae9b61ec3597b49c3",
   "authorized_domains": [
     "vm-lab planning and continuity surfaces"
   ]

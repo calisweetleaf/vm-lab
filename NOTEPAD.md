@@ -886,3 +886,24 @@ update only the owning continuity surfaces from it. **Hard bans:** no
 substitute/rebuilt/downloaded image, no QEMU launch, no P4 matrix execution,
 no public lifecycle command, no snapshot mutation, no erasure of failed
 bundles.
+
+## 2026-09-05 — declared-origin fixture restored; RECOVERY-R0 closed
+
+- Canonical `SHA256SUMS` and the repository manifest agree on
+  `b3064efb500d71d6ccbe619b1716062b803e285116e040627b430aaee14cced6`.
+  `/tmp/vm-lab-p3-fixture-20260801.qcow2` is regular, mode 0600, uid 1000,
+  nlink 1, size 264,306,688, qcow2 virtual-size 3758096384, no backing file.
+- Fresh aggregate `20260905T111215Z` is 40 pass / 0 fail / 0 skip. The four
+  previous fixture-absence lanes pass. Failed bundles are retained.
+- `TASK-P4-019` complete. `TASK-P4-020` ready. Kernel banner no longer treats
+  historical 40/0/0 as current. No qemu-system launch. `GATE-P4` remains open.
+
+**Next packet:** prepare and preflight a new private P4 matrix on this host
+from the current declared-origin fixture, record this host's production
+exclusions, then execute `TASK-P4-020` through `scripts/run_gate_p4.py`.
+**Owner files:** `src/somnus_vm/host/p4_gate.py`,
+`scripts/run_gate_p4.py`, `src/somnus_vm/host/launch_authority.py`,
+`src/somnus_vm/host/qemu_runtime.py`. **Verify:** sealed matrix JSON/Markdown/log
+plus QMP identity and checkpoint adoption/cleanup. **Hard bans:** no public
+lifecycle command, no fixture substitution, no foreign-PID signaling, no guest
+readiness claim, no treating the 40/0/0 non-launch aggregate as `GATE-P4`.

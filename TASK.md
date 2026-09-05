@@ -212,7 +212,7 @@ are accepted.
 
 ---
 
-## ACTIVE — `TASK-P4-019`: Re-establish current P3 evidence authority before P4 machine truth
+## COMPLETE — `TASK-P4-019`: Re-establish current P3 evidence authority before P4 machine truth
 
 **Outcome lock**
 
@@ -223,32 +223,59 @@ are accepted.
 
 **Plan owner:** [`PLAN.md`](PLAN.md) §3.1 RECOVERY-R0, then §12 Phase P4.
 
-**Current truth**
+**Completed unit**
 
-The historical P3 gate and 2026-08-07 40/0/0 aggregate remain sealed historical
-claims. Current published proof is `20260905T101913Z` at 36 pass / 4 fixture-only
-failures. RECOVERY-R0 resolved the browser preservation divergence from matching
-retained archives and original Git evidence. This host now has declared-origin
-bytes at `/tmp/vm-lab-p3-fixture-20260801.qcow2` with matching size, SHA-256,
-regular-file, mode `0600`, uid, and nlink identity; `BASE-018` is unconsumed
-until the four fixture-dependent owners and a fresh aggregate pass. The P4
-runtime, permit, coordinator, and non-launch owners remain source-complete, but
-the physical gate stays frozen until that current proof exists.
+1. [x] retained every failed aggregate and froze P4 execute-matrix/public promotion;
+2. [x] acquired only the exact manifest-bound P3 fixture from the declared Ubuntu
+   origin and Canonical `SHA256SUMS`; rejected all substitutes;
+3. [x] re-ran the fixture-dependent P3/P4 owners, published
+   `test/vm_lab/runs/20260905T111215Z/`, and updated current-state documents
+   only from it;
+4. [x] left the physical P4 matrix unexecuted.
 
-**Active bounded unit**
+**Acceptance evidence**
 
-1. retain every failed aggregate and freeze P4 execute-matrix/public promotion;
-2. locate or supply only the exact manifest-bound P3 fixture or an authenticated
-   byte-identical copy; reject all substitutes;
-3. re-run the fixture-dependent P3/P4 owners, publish a fresh bundle, and
-   update current-state documents only from it;
-4. return to the Daeron-authorized P4 matrix only after R0 passes.
+- declared origin
+  `https://cloud-images.ubuntu.com/minimal/releases/noble/release-20260801/ubuntu-24.04-minimal-cloudimg-amd64.img`
+  matched Canonical `SHA256SUMS` and the repository manifest SHA-256
+  `b3064efb500d71d6ccbe619b1716062b803e285116e040627b430aaee14cced6`;
+- host identity: `/tmp/vm-lab-p3-fixture-20260801.qcow2` size 264,306,688, mode
+  `0600`, uid 1000, nlink 1, regular file, qemu-img qcow2 virtual-size
+  3,758,096,384, no backing file;
+- verifier: `python scripts/verify_repository.py` 2633/2633 before the smoke
+  (kernel-repair revision);
+- current aggregate: `test/vm_lab/runs/20260905T111215Z/` — 40 pass, 0 fail,
+  0 skip, including `storage_p3`, `storage_p3_adversarial`,
+  `daemon_storage_p3`, and `storage_runtime_p4`;
+- no qemu-system process, no `execute-matrix`, no public lifecycle command.
+
+---
+
+## READY — `TASK-P4-020`: Execute the disposable GATE-P4 QEMU/QMP matrix
+
+**Outcome lock**
+
+> Deliver `GATE-P4` machine truth; done when the non-public coordinator runs the
+> exact 17-scenario disposable matrix through one consumed permit, QMP identity
+> and checkpoint adoption/cleanup are sealed, and the public CLI still has no
+> lifecycle command.
+
+**Plan owner:** [`PLAN.md`](PLAN.md) §12 `GATE-P4`.
+
+**Ready bounded unit**
+
+1. prepare and preflight a new private matrix on this host from the current
+   declared-origin fixture; do not reuse the August 7 `/tmp` matrix path;
+2. record explicit production exclusions for this host;
+3. execute the matrix only through `scripts/run_gate_p4.py execute-matrix` with
+   the run-bound accidental-execution phrase after preparation;
+4. seal JSON/Markdown/log evidence and leave failed artifacts in place.
 
 **Hard bans**
 
-Do not launch QEMU, execute the prepared matrix, introduce a public lifecycle
-command, create a substitute fixture, import the external donor, erase failed
-artifacts, or reinterpret historical green output as current success.
+Do not add public `start`/`stop`/`destroy`, do not substitute the fixture, do
+not signal foreign PIDs, do not claim guest readiness, and do not treat
+preflight or this 40/0/0 non-launch aggregate as `GATE-P4`.
 
 ---
 
@@ -256,7 +283,7 @@ artifacts, or reinterpret historical green output as current success.
 
 | Order | Unit | Depends on | Gate |
 | --- | --- | --- | --- |
-| 1 | GATE-P4 disposable QEMU/QMP checkpoint matrix | RECOVERY-R0 / `BASE-018` | `GATE-P4` |
+| 1 | GATE-P4 disposable QEMU/QMP checkpoint matrix | `TASK-P4-020` | `GATE-P4` |
 | 2 | P5 durable networking | `GATE-P4` | `GATE-P5` |
 | 3 | authenticated guest readiness | P5 | `GATE-P6` |
 
