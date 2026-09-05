@@ -533,3 +533,37 @@ evidence is in `docs/RECONSTITUTION_AUDIT.md`. Major rejections:
 - Fresh aggregate `20260825T043503Z` records 36 pass, 4 fail, 0 skip. Source
   preservation and plan contract pass; the four remaining failures are only the
   absent exact P3 fixture. No QEMU, matrix, snapshot, or external action ran.
+
+### 2026-09-05 — Operator-kernel restoration after b11880c deletion
+
+- `b11880c` ("Add file tree documentation and update requirements files")
+  deleted `PLAN.md`, `CONTEXT.md`, `MEMORY.md`, `SOTA_RUN.md`,
+  `Somnus-Core-Ideals.md`, `OPSEC.md`, `workflows-new.md`, the repo-local
+  skill, and `.gitignore`, and emptied the stdlib-only packaging contract —
+  4,433 lines of execution authority removed by an unrelated-looking commit.
+- `1b0121c` restored the last-good copies from `ae0b077`, kept the Cloud Agent
+  `.cursor/` environment from PR #1, moved the added filetree/requirements
+  docs under `docs/old-filetrees/` and `docs/requirements-singles/`, and
+  retargeted every affected link. Residual diff `ae0b077..HEAD` contains no
+  runtime-source change.
+- Recorded here retroactively by the push-trigger review; the restoration
+  commit itself carried no provenance row.
+
+### 2026-09-05 — Push-trigger drift review; plan-contract repair
+
+- Trigger metadata was synthetic (zero commits, placeholder SHAs); the review
+  ran against observed git truth at HEAD `1b0121c`. Verifier: 2628/2628 on the
+  Cloud Agent Linux host (Python 3.12.3, qemu-img/qemu-system 8.2.2).
+- First smoke of the restored tree, `test/vm_lab/runs/20260905T101438Z/`
+  (35 pass / 5 fail), exposed latent `ae0b077` drift: PLAN.md §3.1 completed
+  `RECOVERY-R0-00x` IDs were outside the closed plan-contract grammar and
+  unbacked by the 19-phase index. All sealed bundles predate that PLAN.md
+  edit, so the violation was never previously observed.
+- Repaired the smallest owning layer: §3.1 items renamed to `BASE-014`…
+  `BASE-018` with the mapping and failure evidence recorded in PLAN.md. No
+  validator, index schema, runtime source, fixture, or snapshot changed.
+- Fresh aggregate `test/vm_lab/runs/20260905T101913Z/` is 36 pass, 4 fail,
+  0 skip; `plan_contract` validates 410 unique execution IDs; the four
+  failures remain exactly the fixture-absence lanes. The pre-repair bundle is
+  preserved as drift evidence. No QEMU process launched; `GATE-P4` remains
+  open; the public CLI remains read-only.

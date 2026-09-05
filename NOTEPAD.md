@@ -844,3 +844,45 @@ matrix, alter snapshots, or erase failed evidence.
 `python scripts/verify_repository.py`, then continue `TASK-P4-019` only after
 the exact pinned qcow2 is present. Do not substitute an image, execute the P4
 matrix, or add public lifecycle commands.
+
+## 2026-09-05 — push-trigger drift review; latent plan-contract drift found and repaired
+
+- The push trigger metadata was synthetic (`test-user`, zero commits,
+  placeholder SHAs), so the review ran against observed git truth: HEAD
+  `1b0121c` == `main` == `origin/main`, clean tree. Trigger payloads are never
+  evidence; only the repository is.
+- The `1b0121c` restoration is verified complete: residual diff
+  `ae0b077..HEAD` is only the `.cursor/` Cloud Agent environment, four pure
+  moves into `docs/old-filetrees/` and `docs/requirements-singles/`, link
+  retargets, and the reconstitution note. Verifier: 2628/2628 on this Linux
+  host (Python 3.12.3, qemu-img 8.2.2).
+- First smoke of the restored tree (`20260905T101438Z`, 35 pass / 5 fail)
+  exposed latent drift from `ae0b077`: §3.1 recovery items carried completed
+  `RECOVERY-R0-00x` IDs outside the closed plan-contract grammar
+  (`INV|BASE|DONE|EXEC|TEST|Pn-nnn|GATE-Pn`), so `plan_contract` failed. Every
+  sealed bundle predates the `ae0b077` PLAN.md edit, so no historical bundle
+  ever validated it. The structural verifier could not see it: its index
+  parser only reads `## N. Phase Pn` sections.
+- Repair (docs-only, no runtime change): §3.1 items renamed to `BASE-014`…
+  `BASE-018` — current evidence authority is §3 floor truth, not a promoted
+  phase gate — with the mapping and failure evidence recorded in PLAN.md.
+  Fresh aggregate `20260905T101913Z` is 36 pass / 4 fail / 0 skip;
+  `plan_contract` validates 410 unique IDs; the four failures remain exactly
+  the fixture-absence lanes. The pre-repair bundle is preserved, not erased.
+- Physical truth is unchanged: `/tmp/vm-lab-p3-fixture-20260801.qcow2` is
+  absent on this host, no qemu-system process or matrix ran, `GATE-P4`
+  remains open, and the public CLI remains read-only.
+
+**Next packet:** acquire only the exact manifest-bound fixture
+(`ubuntu-minimal-noble-amd64-20260801.json`; 264,306,688 bytes, SHA-256
+`b3064efb…14cced6`) from declared origin or separately authenticated
+byte-identical authority. **Owner files:**
+`test/vm_lab/fixtures/images/ubuntu-minimal-noble-amd64-20260801.json`,
+`test/vm_lab/test_storage_p3.py`, `test/vm_lab/test_storage_p3_adversarial.py`,
+`test/vm_lab/test_daemon_storage_p3.py`, `test/vm_lab/test_storage_runtime_p4.py`,
+`SOTA_RUN.md`. **Verify:** `python scripts/verify_repository.py`, then
+`PYTHONPATH=src python test/vm_lab/smoke.py`; publish the fresh bundle and
+update only the owning continuity surfaces from it. **Hard bans:** no
+substitute/rebuilt/downloaded image, no QEMU launch, no P4 matrix execution,
+no public lifecycle command, no snapshot mutation, no erasure of failed
+bundles.

@@ -83,12 +83,16 @@ promoted capabilities:
   and current focused P4 suites remain green, including real exec-guard
   processes, journal/replay, QMP transport/identity, daemon/runtime composition,
   and selected-QEMU sandbox doctor interrogation. Current aggregate
-  `test/vm_lab/runs/20260825T043503Z/` is 36 pass, 4 fail, 0 skip: every failure
-  is exact fixture absence. The historical 20260807T123747Z 40/0/0 aggregate
-  followed then-fixture restoration; it is not current readiness. The exact
-  fixture is absent from `/tmp`, so current matrix preflight/execution is
-  blocked by RECOVERY-R0. QMP direct proof remains 14/14 and coordinator
-  full-matrix preflight/denial remains 8/8 as non-launch implementation proof.
+  `test/vm_lab/runs/20260905T101913Z/` is 36 pass, 4 fail, 0 skip: every failure
+  is exact fixture absence. The 2026-09-05 push-trigger review repaired latent
+  `ae0b077` plan-contract drift (§3.1 recovery items now carry in-grammar
+  `BASE-014`…`BASE-018` IDs); the pre-repair failure bundle
+  `test/vm_lab/runs/20260905T101438Z/` is preserved as drift evidence. The
+  historical 20260807T123747Z 40/0/0 aggregate followed then-fixture
+  restoration; it is not current readiness. The exact fixture is absent from
+  `/tmp`, so current matrix preflight/execution is blocked by RECOVERY-R0.
+  QMP direct proof remains 14/14 and coordinator full-matrix preflight/denial
+  remains 8/8 as non-launch implementation proof.
   The historical matrix identity is
   `b9aca76a-a016-4d0c-9002-f0a90f383b21`, with spec SHA-256
   `9567494af6899c1d2ce5353845950b78a087f4fcf4deb22d67db54950542a104`.

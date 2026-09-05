@@ -396,3 +396,29 @@ history and `vm-lab.zip` as divergence evidence. Fresh aggregate
 `20260825T043503Z` proves 36 pass / 4 fail; every remaining failure is exact
 fixture absence. This does not close RECOVERY-R0, P3 current reproducibility,
 or P4; fixture authority remains the sole blocker.
+
+### 2026-09-05 — Plan-checkbox IDs must stay inside the closed contract grammar
+
+`b11880c` deleted the operator-kernel and continuity surfaces while adding
+filetree docs; `1b0121c` restored them exactly from `ae0b077` and kept the
+Cloud Agent `.cursor/` environment. The restoration verified clean
+(2628/2628), but the first post-restore smoke (`20260905T101438Z`, 35/5)
+exposed older latent drift from `ae0b077` itself: PLAN.md §3.1 introduced
+completed `RECOVERY-R0-00x` checkbox IDs outside the closed plan-contract
+grammar (`INV|BASE|DONE|EXEC|TEST|Pn-nnn|GATE-Pn`), and every sealed bundle
+predated that PLAN.md edit, so no green run had ever validated it. The
+structural verifier could not see the drift because its index parser only
+reads `## N. Phase Pn` sections; only the smoke harness's generic
+completed-ID subset check observed it.
+
+Resolution: the §3.1 recovery sequence now carries `BASE-014`…`BASE-018` IDs —
+current evidence authority is §3 floor truth, not a promoted phase gate — with
+the mapping and the preserved pre-repair bundle recorded in PLAN.md. Fresh
+aggregate `20260905T101913Z` is 36 pass / 4 fail with `plan_contract` green at
+410 unique IDs.
+
+**Future consequence:** any new checkbox ID family in PLAN.md must extend the
+recognizing grammar and its backing authority in the same commit, or the next
+smoke fails closed. Never treat a sealed bundle as proof of plan text committed
+after that bundle. Trigger metadata, commit messages, and restoration prose are
+not evidence; observed git truth plus a fresh consumed-boundary run is.
