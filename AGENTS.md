@@ -7,12 +7,13 @@
 > public host planning, and separate guest bootstrap. P4 now has a daemon-wired
 > internal QEMU/QMP runtime owner, one-shot disposable launch authority, a
 > fail-closed non-public physical-gate coordinator, and direct non-launch proof
-> modules. All eighteen bounded phase items are implemented. The exact fixture is
-> restored; frozen matrix `b9aca76a-a016-4d0c-9002-f0a90f383b21` is prepared
-> and preflighted across all 17 scenarios with conservative operator-root
-> exclusions. Daeron-authorized execution, the physical checkpoint matrix, and
-> actual machine-truth `GATE-P4` remain open.
-> The public host boundary remains non-mutating.
+> modules. All eighteen bounded phase items are implemented. Current aggregate
+> [`20260905T111215Z`](test/vm_lab/runs/20260905T111215Z/) is 40 pass / 0 fail /
+> 0 skip after declared-origin fixture identity
+> (`b3064efb500d71d6ccbe619b1716062b803e285116e040627b430aaee14cced6`). Historical
+> 40/0/0 bundle [`20260807T123747Z`](test/vm_lab/runs/20260807T123747Z/) remains
+> provenance. Ready unit: [`TASK-P4-020`](TASK.md) (`GATE-P4`). No qemu-system
+> machine run has occurred. The public host boundary remains non-mutating.
 > **Canonical active work:** [`TASK.md`](TASK.md)
 > **Long-range execution authority:** [`PLAN.md`](PLAN.md)
 
@@ -503,19 +504,22 @@ daemon/client storage composition. That sealed bundle predates P4
 implementation work and does not establish QEMU launch, mounting, QMP identity,
 guest readiness, deployment, or public VM lifecycle.
 
-The sealed 2026-08-07 fixture-present aggregate
-[`20260807T123747Z`](test/vm_lab/runs/20260807T123747Z/) records 40 pass,
-0 fail, and 0 skip across 40 checks from the host where the exact pinned
-source was then restored at `/tmp/vm-lab-p3-fixture-20260801.qcow2` and
-verified at size 264,306,688, mode 0600, uid 1000, nlink 1, and SHA-256
-`b3064efb500d71d6ccbe619b1716062b803e285116e040627b430aaee14cced6`. Every
-fixture-dependent lane, coordinator preflight/denial, all bounded P4 owners,
-QMP response-history capture, doctor, and plan/index contract passed in that
-run. It is a sealed historical claim, not current readiness: the fixture is
-currently absent, [`PLAN.md`](PLAN.md) §3.1 `BASE-017` owns its exact
-re-acquisition, and the current truthful aggregate is the latest bundle
-recorded in [`SOTA_RUN.md`](SOTA_RUN.md). Neither bundle is a P4 gate pass
-nor a retroactive invalidation of sealed P3 evidence: valid execute
+The current-HEAD aggregate
+[`20260905T111215Z`](test/vm_lab/runs/20260905T111215Z/) records 40 pass,
+0 fail, and 0 skip across 40 checks. The exact pinned source was acquired from
+the declared origin in
+[`ubuntu-minimal-noble-amd64-20260801.json`](test/vm_lab/fixtures/images/ubuntu-minimal-noble-amd64-20260801.json)
+and verified at `/tmp/vm-lab-p3-fixture-20260801.qcow2`: size 264,306,688, mode
+0600, uid 1000, nlink 1, SHA-256
+`b3064efb500d71d6ccbe619b1716062b803e285116e040627b430aaee14cced6`, qcow2
+virtual-size 3,758,096,384, no backing file. Every fixture-dependent lane,
+coordinator preflight/denial, all bounded P4 owners, QMP response-history
+capture, doctor, and plan/index contract passed. The sealed 2026-08-07
+fixture-present aggregate
+[`20260807T123747Z`](test/vm_lab/runs/20260807T123747Z/) remains a historical
+claim, not this host's current bundle; living-ledger authority stays
+[`SOTA_RUN.md`](SOTA_RUN.md). This is neither a P4 gate
+pass nor a retroactive invalidation of sealed P3 evidence: valid execute
 authority, explicit production exclusions, actual qemu-system execution, and
 the checkpoint/adoption matrix remain unconsumed.
 

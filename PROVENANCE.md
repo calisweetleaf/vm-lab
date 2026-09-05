@@ -110,6 +110,7 @@ evidence is in `docs/RECONSTITUTION_AUDIT.md`. Major rejections:
 | 2026-08-05 | Codex + Daeron + Luna + Terra | Closed P2 and P3 through real daemon, SQLite, qemu-img, recovery, and adversarial gates; activated P4 | internal registry and storage mutation promoted; public CLI remains read-only; no VM launch | compose QMP and process identity without crossing Daeron's deployment authority |
 | 2026-08-07 | Codex + Daeron + Luna + Terra | Reconciled continuity around the internally composed P4 frontier and operator correction; ran one current-HEAD aggregate | 33 fixture-independent lanes passed; four storage lanes failed setup because the pinned qcow2 source is absent; physical QEMU gate remains open | wire the existing descriptor plan into the daemon-owned runtime, then run the authorized disposable gate when the fixture is restored |
 | 2026-08-07 | Codex + Daeron + Luna + Terra | Closed all bounded P4 implementation items and activated the physical-gate packet | runtime now consumes pinned P3 descriptors through the exec guard and QMP fdset/graph peer proof; doctor and orphan recovery close; no VM launched | restore the exact pinned fixture, record disposable-run authority, execute `TASK-P4-019` |
+| 2026-09-05 | Cursor Cloud Agent + Daeron | Closed RECOVERY-R0 from declared-origin fixture identity and current 40/0/0 non-launch aggregate | kernel banner no longer treats historical 40/0/0 as current; fixture is host `/tmp` only | execute `TASK-P4-020` / `GATE-P4` matrix; do not add public lifecycle commands |
 
 ### CTMv3 activation evidence
 
@@ -585,4 +586,21 @@ evidence is in `docs/RECONSTITUTION_AUDIT.md`. Major rejections:
   named sealed fixture-present historical claim; current-proof authority
   routes to `SOTA_RUN.md`. Docs-only; no runtime, gate, or routing change.
 - No QEMU process launched; `GATE-P4` remains open; the public CLI remains
-  read-only; `TASK-P4-019` remains the active unit.
+  read-only; `TASK-P4-019` remained the active unit at that review.
+
+### 2026-09-05 — RECOVERY-R0 fixture authority closed from declared origin
+
+- Canonical `SHA256SUMS` for Ubuntu minimal noble `release-20260801`
+  `ubuntu-24.04-minimal-cloudimg-amd64.img` equals the repository manifest
+  SHA-256 `b3064efb500d71d6ccbe619b1716062b803e285116e040627b430aaee14cced6`.
+  Host file `/tmp/vm-lab-p3-fixture-20260801.qcow2` is regular, mode `0600`,
+  uid 1000, nlink 1, size 264,306,688; `qemu-img` reports qcow2 virtual-size
+  3,758,096,384 with no backing file. This is declared-origin acquisition, not
+  a substitute image and not a repository blob.
+- `python scripts/verify_repository.py` passed 2633/2633 on the kernel-repair
+  revision. `PYTHONPATH=src python test/vm_lab/smoke.py` published
+  `test/vm_lab/runs/20260905T111215Z/` at 40 pass, 0 fail, 0 skip. Failed
+  fixture-absence bundles including `20260905T104044Z` remain.
+- `BASE-017` and `BASE-018` are checked. `TASK-P4-019` is complete.
+  `TASK-P4-020` is ready. No qemu-system process ran; `GATE-P4` remains open;
+  the public CLI remains read-only.

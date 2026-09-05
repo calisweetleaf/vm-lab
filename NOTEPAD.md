@@ -915,19 +915,27 @@ bundles.
 - Harness contract observed: `test_vm_lab.py` rewrites all of `SOTA_RUN.md`
   to the bare ledger block on every smoke run; the interpretation paragraph
   is operator-owned and must be re-appended after each run.
-- Physical truth unchanged: fixture absent, no qemu-system process,
+- Physical truth at that review: fixture absent, no qemu-system process,
   `GATE-P4` open, public CLI read-only, `TASK-P4-019` active.
 
-**Next packet:** acquire only the exact manifest-bound fixture
-(`ubuntu-minimal-noble-amd64-20260801.json`; 264,306,688 bytes, SHA-256
-`b3064efb…14cced6`) from declared origin or separately authenticated
-byte-identical authority. **Owner files:**
-`test/vm_lab/fixtures/images/ubuntu-minimal-noble-amd64-20260801.json`,
-`test/vm_lab/test_storage_p3.py`, `test/vm_lab/test_storage_p3_adversarial.py`,
-`test/vm_lab/test_daemon_storage_p3.py`, `test/vm_lab/test_storage_runtime_p4.py`,
-`SOTA_RUN.md`. **Verify:** `python scripts/verify_repository.py`, then
-`PYTHONPATH=src python test/vm_lab/smoke.py`; publish the fresh bundle and
-update only the owning continuity surfaces from it. **Hard bans:** no
-substitute/rebuilt/downloaded image, no QEMU launch, no P4 matrix execution,
-no public lifecycle command, no snapshot mutation, no erasure of failed
-bundles.
+## 2026-09-05 — declared-origin fixture restored; RECOVERY-R0 closed
+
+- Canonical `SHA256SUMS` and the repository manifest agree on
+  `b3064efb500d71d6ccbe619b1716062b803e285116e040627b430aaee14cced6`.
+  `/tmp/vm-lab-p3-fixture-20260801.qcow2` is regular, mode 0600, uid 1000,
+  nlink 1, size 264,306,688, qcow2 virtual-size 3758096384, no backing file.
+- Fresh aggregate `20260905T111215Z` is 40 pass / 0 fail / 0 skip. The four
+  previous fixture-absence lanes pass. Failed bundles including
+  `20260905T104044Z` are retained.
+- `TASK-P4-019` complete. `TASK-P4-020` ready. Kernel banner no longer treats
+  historical 40/0/0 as current. No qemu-system launch. `GATE-P4` remains open.
+
+**Next packet:** prepare and preflight a new private P4 matrix on this host
+from the current declared-origin fixture, record this host's production
+exclusions, then execute `TASK-P4-020` through `scripts/run_gate_p4.py`.
+**Owner files:** `src/somnus_vm/host/p4_gate.py`,
+`scripts/run_gate_p4.py`, `src/somnus_vm/host/launch_authority.py`,
+`src/somnus_vm/host/qemu_runtime.py`. **Verify:** sealed matrix JSON/Markdown/log
+plus QMP identity and checkpoint adoption/cleanup. **Hard bans:** no public
+lifecycle command, no fixture substitution, no foreign-PID signaling, no guest
+readiness claim, no treating the 40/0/0 non-launch aggregate as `GATE-P4`.

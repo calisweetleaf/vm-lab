@@ -12,11 +12,12 @@ process/log guards, QMP fdset/block graph, doctor, orphan recovery, one-shot
 disposable launch authority, canonical 17-scenario matrix preparation, exact
 preflight, strict serial execution/resume policy, checkpoint/recovery sealing,
 and canonical QMP response-history capture all have direct non-launch proof.
-Historical run `test/vm_lab/runs/20260807T123747Z/` was 40/0/0 after then-fixture
-restoration. The exact fixture is now absent; current run
-`test/vm_lab/runs/20260825T043503Z/` is 36/4 with fixture-only failures. Exact
-fixture recovery, current preflight, valid full-matrix Daeron authority,
-checkpoint execution, and disposable machine-truth `GATE-P4` remain open. The public host CLI remains read-only.
+Current run `test/vm_lab/runs/20260905T111215Z/` is 40/0/0 after declared-origin
+fixture restoration. Historical run `test/vm_lab/runs/20260807T123747Z/` was
+40/0/0 after then-fixture restoration and remains provenance. Current
+preflight, valid full-matrix execute authority, checkpoint execution, and
+disposable machine-truth `GATE-P4` remain open. The public host CLI remains
+read-only.
 Current code outranks this map if an anchor drifts.
 
 ---
@@ -36,8 +37,9 @@ recovery. All bounded P4 phase items are implemented, but the repository still
 contains `src/somnus_vm/host/p4_gate.py` and the non-public
 `scripts/run_gate_p4.py` driver for the daemon-owned 17-scenario
 checkpoint/QMP evidence matrix. The coordinator implements matrix preparation
-and preflight, but no current physical matrix can preflight-pass while the
-exact fixture is absent; it has not executed. No disposable-QEMU machine truth exists:
+and preflight. Current declared-origin fixture authority is restored and the
+non-launch aggregate is 40/0/0; a disposable matrix has not executed on this
+host. No disposable-QEMU machine truth exists:
 `GATE-P4` remains open, and the public boundary exposes no lifecycle mutation.
 
 **Enter through these five layers:**

@@ -294,9 +294,13 @@ log-safe projections. P1 errors accept no caller prose or nonempty `details`.
     aggregate: 40 pass, 0 fail, 0 skip after then-fixture restoration
   - [`runs/20260807T121437Z/`](test/vm_lab/runs/20260807T121437Z/) → historical
     36/4 missing-fixture setup evidence retained for provenance
-  - [`runs/20260825T043503Z/`](test/vm_lab/runs/20260825T043503Z/) → current
-    aggregate: 36 pass, 4 fail, 0 skip; exact fixture authority is absent; see
-    [`SOTA_RUN.md`](SOTA_RUN.md)
+  - [`runs/20260825T043503Z/`](test/vm_lab/runs/20260825T043503Z/) → preserved
+    36/4 fixture-absence evidence
+  - [`runs/20260905T101913Z/`](test/vm_lab/runs/20260905T101913Z/) → preserved
+    36/4 fixture-absence evidence after plan-contract repair
+  - [`runs/20260905T111215Z/`](test/vm_lab/runs/20260905T111215Z/) → current
+    aggregate: 40 pass, 0 fail, 0 skip after declared-origin fixture restoration;
+    see [`SOTA_RUN.md`](SOTA_RUN.md)
 - [`scripts/verify_repository.py`](scripts/verify_repository.py) → linked
   packet, anchors, fingerprint, JSON, and source-preservation integrity
 - [`docs/decisions/0005-errors-and-exit-codes.md`](docs/decisions/0005-errors-and-exit-codes.md)

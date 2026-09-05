@@ -1,0 +1,17 @@
+---
+description: GATE-P4 is a disposable qemu-system matrix, not a passing non-launch suite.
+globs: src/somnus_vm/host/p4*.py,src/somnus_vm/host/qemu*.py,src/somnus_vm/host/qmp*.py,src/somnus_vm/host/launch_authority.py,src/somnus_vm/daemon_runtime.py,scripts/run_gate_p4.py,test/vm_lab/test_*p4*.py
+alwaysApply: false
+---
+
+# P4 physical gate
+
+`TASK-P4-020` is ready. Owner: `src/somnus_vm/host/p4_gate.py` and `scripts/run_gate_p4.py`.
+
+Done when the coordinator runs the 17-scenario matrix through one consumed `DisposableLaunchPermit`, QMP UUID/status/block-graph match process identity, checkpoint kill/adopt/cleanup is sealed, and the public CLI still has no lifecycle command.
+
+`prepare-matrix` and `preflight-matrix` do not close `GATE-P4`. The 40/0/0 smoke bundle does not close it. Doctor sandbox interrogation does not close it.
+
+QEMU stays a non-daemonized child. Socket existence is not identity. Cleanup scope is `runtime-process-only;fixture-retained`. Do not signal a foreign PID.
+
+This host: declared-origin fixture at `/tmp/vm-lab-p3-fixture-20260801.qcow2`. TCG is honest if `/dev/kvm` is not writable. Record this host's production exclusions before execute.

@@ -27,11 +27,10 @@
 > records chronological decisions. Do not duplicate the phase plan into those
 > files.
 >
-> **Current active unit:** [`TASK-P4-019`](TASK.md) — re-establish the
-> current P3 evidence authority, then prove the completed bounded P4 path
-> against one Daeron-authorized disposable QEMU machine. P3 remains a sealed
-> historical gate, but its fixture-dependent proof is not currently
-> reproducible; no VM is running and no public lifecycle command is promoted.
+> **Current active unit:** [`TASK-P4-020`](TASK.md) — execute the disposable
+> GATE-P4 QEMU/QMP matrix. RECOVERY-R0 is closed; P3 remains a sealed
+> historical gate. No VM is running and no public lifecycle command is
+> promoted.
 
 ## 0. Document contract
 
@@ -117,11 +116,10 @@ The v0.1 reconstitution is the floor. These items must keep passing throughout a
 
 ### 3.1 RECOVERY-R0 — current evidence authority (blocks P4 execution)
 
-**Status:** active prerequisite. This is not a new promoted phase and does not
-reopen the sealed historical P3 gate. It establishes whether the current checkout
-can truthfully consume that gate. Until it passes, physical P4 execution,
-public lifecycle promotion, source-manifest rebaselining, fixture substitution,
-and every claim that the historical 40/0/0 run is current are prohibited.
+**Status:** closed. Source preservation and exact fixture authority are current.
+This is not a new promoted phase and does not reopen the sealed historical P3
+gate. Physical P4 execution, public lifecycle promotion, source-manifest
+rebaselining, and fixture substitution remain prohibited until `GATE-P4`.
 Sequence items use `BASE` family IDs (`BASE-014`…`BASE-018`): current evidence
 authority is §3 floor truth, not a promoted phase with its own gate. The
 original `RECOVERY-R0-00x` item IDs were outside the closed plan-contract
@@ -172,14 +170,22 @@ P4 gate.
   `198917…29a81` commit evidence. If the authoritative original is
   `198917…29a81`, prove the manifest transcription defect before changing the
   manifest. Any third result halts for provenance reconciliation.
-- [ ] `BASE-017` Acquire only a declared-origin or separately
+- [x] `BASE-017` Acquire only a declared-origin or separately
   authenticated byte-identical fixture. Require canonical regular-file,
   private mode/owner, size, hash, and P3 identity checks; do not download,
   synthesize, or substitute an image merely to unblock tests.
-- [ ] `BASE-018` Run the existing structural verifier and all
+  Evidence: Canonical `SHA256SUMS` for
+  `ubuntu-24.04-minimal-cloudimg-amd64.img` at
+  `release-20260801` equals repository SHA-256
+  `b3064efb500d71d6ccbe619b1716062b803e285116e040627b430aaee14cced6`; host file
+  `/tmp/vm-lab-p3-fixture-20260801.qcow2` is regular, mode `0600`, uid 1000,
+  nlink 1, size 264,306,688.
+- [x] `BASE-018` Run the existing structural verifier and all
   fixture-dependent P3/P4 owners. Publish a fresh result bundle. Only that
   bundle may correct task/state/provenance claims; RECOVERY-R0 never closes
   the P4 physical gate.
+  Evidence: `test/vm_lab/runs/20260905T111215Z/result.json` — 40 pass, 0 fail,
+  0 skip.
 
 **Hard bans:** do not rebaseline a hash without source authority; do not copy a
 file from the external donor tree; do not remove failed evidence; do not skip or
@@ -585,10 +591,11 @@ observation, sealed runtime-log bytes, and aggregate result validation.
 `test_p4_gate_coordinator.py` proves 8/8 non-launch cases. Per-scenario
 validation requires exact checkpoint prefixes, conditional adoption/cleanup
 evidence, and cleanup scope `runtime-process-only;fixture-retained`. Historical
-fixture restoration is preserved in the August evidence bundle, but the exact
-fixture is currently absent; RECOVERY-R0 blocks current preflight/execution.
-Valid full-matrix execute authority, explicit production exclusions, and Daeron
-launch authority are also absent; the physical gate remains open. The
+fixture restoration is preserved in the August evidence bundle. Current
+declared-origin fixture authority and non-launch aggregate
+`test/vm_lab/runs/20260905T111215Z/` (40/0/0) close RECOVERY-R0. Valid
+full-matrix execute authority, explicit production exclusions, and a disposable
+qemu-system run remain absent; the physical gate remains open. The
 deterministic phrase is only an accidental-execution fence, never authentication
 or authority proof.
 
@@ -1083,10 +1090,10 @@ This is the sole execution order. It replaces the obsolete P0-first sequence.
 No later packet begins because a source file exists, a unit test is green, or a
 historical run was green.
 
-1. **RECOVERY-R0: evidence authority.** Resolve the source-manifest divergence
-   and exact P3 fixture through their named authorities; publish current P3/P4
-   non-launch proof. Keep all physical P4 work frozen until then.
-2. **P4 physical gate.** With Daeron's explicit disposable-run authority, run
+1. **RECOVERY-R0: evidence authority.** Closed 2026-09-05: source-manifest
+   authority and exact P3 fixture are current; bundle
+   `test/vm_lab/runs/20260905T111215Z/` is 40/0/0. This does not close `GATE-P4`.
+2. **P4 physical gate.** With explicit disposable-run authority, run
    the existing 17-scenario QEMU/QMP checkpoint matrix. Capture QMP/process/
    fdset/block-graph/log truth and exact adoption-or-cleanup evidence. A
    successful implementation test or preflight is not a substitute.

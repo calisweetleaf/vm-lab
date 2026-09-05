@@ -29,9 +29,10 @@ and recovery. The separately invoked guest bootstrap is also live. The
 advanced shell remains an operator candidate rather than entering host boot.
 
 P1 and P2 are closed; P3 remains a sealed historical gate whose current
-reproducibility is blocked by an absent exact fixture. P4's internal runtime,
-QMP/process owner, and non-public coordinator are source-complete but lack a
-current fixture-backed physical run. Public `start`, `stop`, `destroy`,
+reproducibility is restored by declared-origin fixture identity and aggregate
+`20260905T111215Z` (40/0/0). P4's internal runtime, QMP/process owner, and
+non-public coordinator are source-complete but still lack a disposable
+qemu-system machine run. Public `start`, `stop`, `destroy`,
 snapshot, scaling, and image-build commands remain absent—not simulated.
 
 [`PLAN.md`](PLAN.md) is the execution authority for crossing that gap. It names every phase, invariant, physical gate, failure test, file disposition, and full-SOTA sign-off condition so a future Codex Operator cannot mistake preserved lineage for promoted runtime.

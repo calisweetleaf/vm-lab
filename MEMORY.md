@@ -440,3 +440,19 @@ embed a point-in-time "current" claim that lower surfaces then contradict.
 Related harness contract: each smoke run rewrites `SOTA_RUN.md` to the bare
 ledger block, so the operator-owned interpretation paragraph must be
 re-appended after every run.
+
+### 2026-09-05 — Declared-origin fixture acquisition is not a substitute download
+
+`BASE-017` forbids downloading a different or rebuilt image merely to unblock
+tests. The named origin URL for
+`ubuntu-minimal-noble-amd64-20260801.json` still served the exact
+264,306,688-byte object whose Canonical `SHA256SUMS` line equals the
+repository SHA-256. Placement at `/tmp/vm-lab-p3-fixture-20260801.qcow2` was
+allowed only after size, hash, regular-file, mode `0600`, uid, and nlink
+identity matched. A newer cloud image, a rebuilt qcow2, or a merely bootable
+file remains inadmissible.
+
+**Future consequence:** when the declared origin still hosts the pinned bytes,
+acquire those bytes and prove identity before any P3/P4 fixture-dependent run.
+If origin bytes diverge, halt. Do not mutate the manifest to chase a newer
+release.
