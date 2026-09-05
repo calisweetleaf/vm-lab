@@ -3,8 +3,8 @@
   "session_id": "vm-lab-recovery-r0-fixture-closure-20260905",
   "workspace": ".",
   "last_agent": "Cursor Cloud Agent",
-  "last_timestamp": "2026-09-05T11:20:00+00:00",
-  "last_action": "Closed RECOVERY-R0: acquired declared-origin P3 fixture, published 20260905T111215Z at 40/0/0, marked TASK-P4-019 complete and TASK-P4-020 ready.",
+  "last_timestamp": "2026-09-05T12:10:00+00:00",
+  "last_action": "Merged origin/main into cursor/p4-recovery-r0-kernel-c964: kept both 2026-09-05 ledgers; current truth remains declared-origin fixture plus 20260905T111215Z 40/0/0, TASK-P4-019 complete, TASK-P4-020 ready.",
   "active_task": "TASK-P4-020",
   "open_tasks": [
     "Prepare and preflight a new private P4 matrix on this host from the declared-origin fixture",
@@ -12,7 +12,7 @@
     "Execute GATE-P4 through scripts/run_gate_p4.py; do not add public lifecycle commands"
   ],
   "warm_start_valid": false,
-  "notes": "Current SOTA run 20260905T111215Z is 40 pass/0 fail/0 skip. Fixture is host /tmp only. Failed 36/4 bundles preserved. No QEMU launch; GATE-P4 open.",
+  "notes": "Current SOTA run 20260905T111215Z is 40 pass/0 fail/0 skip. Fixture is host /tmp only. Failed 36/4 bundles including 20260905T104044Z preserved. No QEMU launch; GATE-P4 open.",
   "ready_task": "TASK-P4-020 execute disposable GATE-P4 matrix; preflight is not GATE-P4.",
   "topology_hash": "sha256:5e8a197d4af50f54940ebc4d56598acb15339c1e1c547beae9b61ec3597b49c3",
   "authorized_domains": [

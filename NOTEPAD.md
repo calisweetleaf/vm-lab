@@ -887,6 +887,37 @@ substitute/rebuilt/downloaded image, no QEMU launch, no P4 matrix execution,
 no public lifecycle command, no snapshot mutation, no erasure of failed
 bundles.
 
+## 2026-09-05 — push-trigger review of 1b0121c..1d0e118 (PR #2 merge): no drift; stale kernel anchor repaired
+
+- Trigger metadata was well-formed this time (three commits, real SHAs,
+  valid compare URL) and matched observed git truth: `aed5be6` plan-grammar
+  repair, `1041f8e` continuity, `1d0e118` merge of PR #2. The review still
+  ran against the repository, not the payload.
+- Push content is docs-only: PLAN.md §3.1 `RECOVERY-R0-00x` → `BASE-014`…
+  `BASE-018`, continuity surfaces, and two sealed bundles. No `src/`,
+  `scripts/`, harness, or config change; no QEMU launch; no matrix; no
+  fixture substitution. Hard bans held.
+- Independent re-proof on this host: verifier 2628/2628; plan-only DAG
+  2042/2042; fresh aggregate `20260905T104044Z` is 36 pass / 4 fail / 0 skip
+  with `plan_contract` green at 410 IDs — exact reproduction of the pushed
+  `20260905T101913Z` claim. The preserved pre-repair bundle
+  `20260905T101438Z` (35/5) is internally consistent: its fifth failure is
+  the out-of-grammar `RECOVERY-R0-001..003` completed-ID rejection.
+- Drift found and repaired at the smallest owning layer: AGENTS.md §9 still
+  framed sealed bundle `20260807T123747Z` as "The current-HEAD aggregate"
+  with the fixture present-tense "restored" — stale since the 2026-08-24
+  RECOVERY-R0 correction, and contradicting STATE/CONTEXT/SOTA_RUN which
+  outrank nothing but were correct. Every other living surface (TOPOLOGY,
+  ARCHITECTURE_MAP, filetree, STATE, CONTEXT) already marks it historical.
+  The kernel paragraph now names it a sealed fixture-present historical
+  claim and routes current-proof authority to `SOTA_RUN.md`. No gate,
+  command, routing, or runtime claim changed.
+- Harness contract observed: `test_vm_lab.py` rewrites all of `SOTA_RUN.md`
+  to the bare ledger block on every smoke run; the interpretation paragraph
+  is operator-owned and must be re-appended after each run.
+- Physical truth at that review: fixture absent, no qemu-system process,
+  `GATE-P4` open, public CLI read-only, `TASK-P4-019` active.
+
 ## 2026-09-05 — declared-origin fixture restored; RECOVERY-R0 closed
 
 - Canonical `SHA256SUMS` and the repository manifest agree on
@@ -894,7 +925,8 @@ bundles.
   `/tmp/vm-lab-p3-fixture-20260801.qcow2` is regular, mode 0600, uid 1000,
   nlink 1, size 264,306,688, qcow2 virtual-size 3758096384, no backing file.
 - Fresh aggregate `20260905T111215Z` is 40 pass / 0 fail / 0 skip. The four
-  previous fixture-absence lanes pass. Failed bundles are retained.
+  previous fixture-absence lanes pass. Failed bundles including
+  `20260905T104044Z` are retained.
 - `TASK-P4-019` complete. `TASK-P4-020` ready. Kernel banner no longer treats
   historical 40/0/0 as current. No qemu-system launch. `GATE-P4` remains open.
 

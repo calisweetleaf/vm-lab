@@ -423,6 +423,24 @@ smoke fails closed. Never treat a sealed bundle as proof of plan text committed
 after that bundle. Trigger metadata, commit messages, and restoration prose are
 not evidence; observed git truth plus a fresh consumed-boundary run is.
 
+### 2026-09-05 — Entry-kernel proof prose must route to the living ledger
+
+The 2026-08-24 RECOVERY-R0 correction marked the 40/0/0 aggregate historical
+in `TOPOLOGY.md`, `ARCHITECTURE_MAP.md`, `filetree.md`, `STATE.md`, and
+`CONTEXT.md`, but `AGENTS.md` §9 kept calling `20260807T123747Z` "The
+current-HEAD aggregate" with the fixture present-tense "restored". Two later
+sessions left it untouched. The push-trigger review of the PR #2 merge
+repaired it: the bundle is named a sealed fixture-present historical claim
+with its host context, and current-proof authority routes to `SOTA_RUN.md`.
+
+**Future consequence:** when a proof claim's recency changes, grep every
+living surface for the bundle ID — including `AGENTS.md` — and reframe all
+of them in the same commit. The kernel routes to living ledgers; it must not
+embed a point-in-time "current" claim that lower surfaces then contradict.
+Related harness contract: each smoke run rewrites `SOTA_RUN.md` to the bare
+ledger block, so the operator-owned interpretation paragraph must be
+re-appended after every run.
+
 ### 2026-09-05 — Declared-origin fixture acquisition is not a substitute download
 
 `BASE-017` forbids downloading a different or rebuilt image merely to unblock

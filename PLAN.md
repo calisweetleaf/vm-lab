@@ -27,11 +27,10 @@
 > records chronological decisions. Do not duplicate the phase plan into those
 > files.
 >
-> **Current active unit:** [`TASK-P4-019`](TASK.md) — re-establish the
-> current P3 evidence authority, then prove the completed bounded P4 path
-> against one Daeron-authorized disposable QEMU machine. P3 remains a sealed
-> historical gate, but its fixture-dependent proof is not currently
-> reproducible; no VM is running and no public lifecycle command is promoted.
+> **Current active unit:** [`TASK-P4-020`](TASK.md) — execute the disposable
+> GATE-P4 QEMU/QMP matrix. RECOVERY-R0 is closed; P3 remains a sealed
+> historical gate. No VM is running and no public lifecycle command is
+> promoted.
 
 ## 0. Document contract
 

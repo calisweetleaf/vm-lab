@@ -569,6 +569,25 @@ evidence is in `docs/RECONSTITUTION_AUDIT.md`. Major rejections:
   preserved as drift evidence. No QEMU process launched; `GATE-P4` remains
   open; the public CLI remains read-only.
 
+### 2026-09-05 — Push-trigger review of PR #2 merge; kernel anchor repair
+
+- Reviewed push `1b0121c..1d0e118` (the plan-grammar repair and continuity
+  from the prior push-trigger run, merged as PR #2). Docs-only; hard bans
+  held; trigger metadata matched observed git truth for the first time.
+- Independently reproduced the pushed proof on this host: verifier
+  2628/2628, plan DAG 2042/2042, fresh aggregate
+  `test/vm_lab/runs/20260905T104044Z/` at 36 pass / 4 fail / 0 skip with
+  `plan_contract` green at 410 unique execution IDs; the four failures are
+  exactly the fixture-absence lanes.
+- Repaired stale AGENTS.md §9 proof prose: sealed bundle `20260807T123747Z`
+  was still framed as "The current-HEAD aggregate" with the fixture
+  present-tense "restored", contradicting the 2026-08-24 RECOVERY-R0
+  correction already carried by every other living surface. It is now a
+  named sealed fixture-present historical claim; current-proof authority
+  routes to `SOTA_RUN.md`. Docs-only; no runtime, gate, or routing change.
+- No QEMU process launched; `GATE-P4` remains open; the public CLI remains
+  read-only; `TASK-P4-019` remained the active unit at that review.
+
 ### 2026-09-05 — RECOVERY-R0 fixture authority closed from declared origin
 
 - Canonical `SHA256SUMS` for Ubuntu minimal noble `release-20260801`
@@ -581,7 +600,7 @@ evidence is in `docs/RECONSTITUTION_AUDIT.md`. Major rejections:
 - `python scripts/verify_repository.py` passed 2633/2633 on the kernel-repair
   revision. `PYTHONPATH=src python test/vm_lab/smoke.py` published
   `test/vm_lab/runs/20260905T111215Z/` at 40 pass, 0 fail, 0 skip. Failed
-  fixture-absence bundles remain.
+  fixture-absence bundles including `20260905T104044Z` remain.
 - `BASE-017` and `BASE-018` are checked. `TASK-P4-019` is complete.
   `TASK-P4-020` is ready. No qemu-system process ran; `GATE-P4` remains open;
   the public CLI remains read-only.

@@ -514,7 +514,11 @@ and verified at `/tmp/vm-lab-p3-fixture-20260801.qcow2`: size 264,306,688, mode
 `b3064efb500d71d6ccbe619b1716062b803e285116e040627b430aaee14cced6`, qcow2
 virtual-size 3,758,096,384, no backing file. Every fixture-dependent lane,
 coordinator preflight/denial, all bounded P4 owners, QMP response-history
-capture, doctor, and plan/index contract passed. This is neither a P4 gate
+capture, doctor, and plan/index contract passed. The sealed 2026-08-07
+fixture-present aggregate
+[`20260807T123747Z`](test/vm_lab/runs/20260807T123747Z/) remains a historical
+claim, not this host's current bundle; living-ledger authority stays
+[`SOTA_RUN.md`](SOTA_RUN.md). This is neither a P4 gate
 pass nor a retroactive invalidation of sealed P3 evidence: valid execute
 authority, explicit production exclusions, actual qemu-system execution, and
 the checkpoint/adoption matrix remain unconsumed.
