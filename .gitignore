@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+var/
+.codegraph/
+archive/vm-lab-first-zip.zip
+.gitignore
+.smart-index/
+
+/.gitignore
+/vm-lab.zip
+/vm-lab-direct-clone.zip
+/.commandcode
+/.commandcode/taste

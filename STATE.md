@@ -28,8 +28,14 @@
 - active blocker: the exact fixture must come from declared origin or separately
   authenticated byte-identical authority. No substitute/rebuilt/newer image is
   admissible.
-- next consumed action: acquire/locate the exact fixture, rerun current P3/P4
-  non-launch proof, then obtain Daeron's explicit physical authority for P4.
+- reconstitution: 2026-09-05 restored `PLAN.md`, `CONTEXT.md`, `MEMORY.md`,
+  `SOTA_RUN.md`, `Somnus-Core-Ideals.md`, `OPSEC.md`, `workflows-new.md`,
+  `.codex/skills/vm-lab/SKILL.md`, `.gitignore`, and stdlib-only packaging from
+  `ae0b077` after `b11880c` deleted them. Cloud `.cursor/` environment kept.
+- next consumed action: on Linux/Cloud Agent, run
+  `python scripts/verify_repository.py`, then acquire/locate the exact fixture,
+  rerun current P3/P4 non-launch proof, then obtain Daeron's explicit physical
+  authority for P4.
 
 ## Evidence
 

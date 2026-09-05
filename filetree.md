@@ -30,7 +30,7 @@ you whether a path may execute.
 | Inspect daemon/registry truth | [`src/somnus_vm/daemon_runtime.py`](src/somnus_vm/daemon_runtime.py) | P2 owner tests |
 | Inspect image/storage truth | [`src/somnus_vm/host/images.py`](src/somnus_vm/host/images.py) → [`src/somnus_vm/host/storage.py`](src/somnus_vm/host/storage.py) | focused P3 tests and fixture manifest |
 | Inspect current proof | [`SOTA_RUN.md`](SOTA_RUN.md) | latest `test/vm_lab/runs/` bundle |
-| Confirm point-in-time file presence | [`tree-codebase.md`](tree-codebase.md) | this map for authority |
+| Confirm point-in-time file presence | [`tree-codebase.md`](docs/old-filetrees/tree-codebase.md) | this map for authority |
 
 ---
 
@@ -311,9 +311,9 @@ log-safe projections. P1 errors accept no caller prose or nonempty `details`.
 - [`configs/guest-bootstrap.example.toml`](configs/guest-bootstrap.example.toml)
   → local-only payload contract example
 - [`requirements.txt`](requirements.txt) → live dependency record
-- [`requirements-candidates.txt`](requirements-candidates.txt) → candidate-only
+- [`requirements-candidates.txt`](docs/requirements-singles/requirements-candidates.txt) → candidate-only
   dependencies
-- [`requirements-file-processing.txt`](requirements-file-processing.txt) → cold
+- [`requirements-file-processing.txt`](docs/requirements-singles/requirements-file-processing.txt) → cold
   file-processing dependencies
 
 ### Candidate surfaces — preserved, never boot-imported

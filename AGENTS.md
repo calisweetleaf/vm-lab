@@ -454,7 +454,7 @@ After a turn changes runtime state, routing, implementation, or gate status:
 | [`CONTEXT.md`](CONTEXT.md) | Update the current implementation/proof snapshot |
 | [`MEMORY.md`](MEMORY.md) | Append durable decisions, corrections, and reusable failure lessons |
 | [`PROVENANCE.md`](PROVENANCE.md) | Record material implementation lineage and verification |
-| [`filetree.md`](filetree.md) / [`tree-codebase.md`](tree-codebase.md) | Refresh after structural add/move/delete; use `filetree.md` as the anti-tunnelvision topology reset |
+| [`filetree.md`](filetree.md) / [`tree-codebase.md`](docs/old-filetrees/tree-codebase.md) | Refresh after structural add/move/delete; use `filetree.md` as the anti-tunnelvision topology reset |
 | [`SOTA_RUN.md`](SOTA_RUN.md) | Keep the latest aggregate result and its exact interpretation synchronized |
 | snapshot/source manifests | Change only when their owned promoted boundary actually changes |
 
@@ -664,7 +664,7 @@ nearest physical owner.
 - [Foundational Somnus system intent](Somnus-Core-Ideals.md)
 - [Repository runtime workflow driver](workflows-new.md)
 - [Living file tree](filetree.md)
-- [Generated point-in-time file inventory](tree-codebase.md)
+- [Generated point-in-time file inventory](docs/old-filetrees/tree-codebase.md)
 - [Architecture traversal map](ARCHITECTURE_MAP.md)
 - [Cognitive topology](TOPOLOGY.md)
 - [Failure grammar](FAILURE_GRAMMAR.md)

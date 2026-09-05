@@ -824,3 +824,23 @@ Verify size/hash/regular-file/private-ownership identity, run the four owners
 plus `python scripts/verify_repository.py`, and publish the new bundle. Do not
 substitute/rebuild/download a different image, launch QEMU, execute the P4
 matrix, alter snapshots, or erase failed evidence.
+
+## 2026-09-05 — restore operator kernel after b11880c deletion
+
+- Fresh Windows clone of `origin/main` at `1c4a131` was missing the execution
+  authority and continuity surfaces. Git history shows `b11880c` deleted
+  `PLAN.md`, `CONTEXT.md`, `MEMORY.md`, `SOTA_RUN.md`, `Somnus-Core-Ideals.md`,
+  `OPSEC.md`, `workflows-new.md`, `.codex/skills/vm-lab/SKILL.md`, `.gitignore`,
+  and emptied the stdlib-only `pyproject.toml` / `requirements.txt` while adding
+  file-tree docs. Last good copies restored from `ae0b077`. Cloud Agent
+  `.cursor/` files from PR #1 were kept.
+- Candidate dependency lists remain under `docs/requirements-singles/`. Live
+  runtime dependencies stay empty.
+- Current physical truth is unchanged: sealed P3/P4 historical bundles exist;
+  current aggregate `20260825T043503Z` is 36/4 because the exact fixture is
+  absent. No QEMU launch. `TASK-P4-019` remains active.
+
+**Next packet:** on the Cloud Agent Linux host, run
+`python scripts/verify_repository.py`, then continue `TASK-P4-019` only after
+the exact pinned qcow2 is present. Do not substitute an image, execute the P4
+matrix, or add public lifecycle commands.
