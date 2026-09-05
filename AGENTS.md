@@ -503,17 +503,21 @@ daemon/client storage composition. That sealed bundle predates P4
 implementation work and does not establish QEMU launch, mounting, QMP identity,
 guest readiness, deployment, or public VM lifecycle.
 
-The current-HEAD aggregate
+The sealed 2026-08-07 fixture-present aggregate
 [`20260807T123747Z`](test/vm_lab/runs/20260807T123747Z/) records 40 pass,
-0 fail, and 0 skip across 40 checks. The exact pinned source is restored at
-`/tmp/vm-lab-p3-fixture-20260801.qcow2` and verified size 264,306,688, mode
-0600, uid 1000, nlink 1, and SHA-256
+0 fail, and 0 skip across 40 checks from the host where the exact pinned
+source was then restored at `/tmp/vm-lab-p3-fixture-20260801.qcow2` and
+verified at size 264,306,688, mode 0600, uid 1000, nlink 1, and SHA-256
 `b3064efb500d71d6ccbe619b1716062b803e285116e040627b430aaee14cced6`. Every
 fixture-dependent lane, coordinator preflight/denial, all bounded P4 owners,
-QMP response-history capture, doctor, and plan/index contract passed. This is
-neither a P4 gate pass nor a retroactive invalidation of sealed P3 evidence:
-valid execute authority, explicit production exclusions, actual qemu-system
-execution, and the checkpoint/adoption matrix remain unconsumed.
+QMP response-history capture, doctor, and plan/index contract passed in that
+run. It is a sealed historical claim, not current readiness: the fixture is
+currently absent, [`PLAN.md`](PLAN.md) §3.1 `BASE-017` owns its exact
+re-acquisition, and the current truthful aggregate is the latest bundle
+recorded in [`SOTA_RUN.md`](SOTA_RUN.md). Neither bundle is a P4 gate pass
+nor a retroactive invalidation of sealed P3 evidence: valid execute
+authority, explicit production exclusions, actual qemu-system execution, and
+the checkpoint/adoption matrix remain unconsumed.
 
 ### P4 direct implementation modules (gate remains open)
 
