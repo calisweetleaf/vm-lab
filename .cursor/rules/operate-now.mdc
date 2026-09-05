@@ -1,0 +1,23 @@
+---
+description: Execute the ready TASK.md unit in code. Continuity is close-out, not the work.
+alwaysApply: true
+---
+
+# Operate the ready unit
+
+Open `TASK.md`. Implement the single `ACTIVE` or `READY` unit against its named owner files. Stop when that unit's consumed-boundary evidence exists.
+
+Continuity files (`NOTEPAD.md`, `PROVENANCE.md`, `MEMORY.md`, `STATE.md`, `CONTEXT.md`) are a close-out after the implementation, not the job. Do not spend the turn rewriting kernel markdown.
+
+Do not bulk-read `AGENTS.md` / `PLAN.md` / `ONBOARDING.md` when the unit already names its owners.
+
+Use GitHub and cloud connectors when they answer faster than a local hunt. If a connector is useless, ignore it and keep implementing.
+
+```text
+# BAD — a turn that only updates provenance after a green run
+edit PROVENANCE.md, NOTEPAD.md, CONTEXT.md, MEMORY.md
+
+# GOOD — the ready unit's owner, then one proof command
+edit src/somnus_vm/host/p4_gate.py
+PYTHONPATH=src python scripts/run_gate_p4.py prepare-matrix
+```

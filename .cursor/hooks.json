@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": "python3 .cursor/hooks/session_start.py",
+        "timeout": 5
+      }
+    ],
+    "beforeShellExecution": [
+      {
+        "command": "python3 .cursor/hooks/before_shell.py",
+        "failClosed": true,
+        "timeout": 5
+      }
+    ],
+    "preToolUse": [
+      {
+        "command": "python3 .cursor/hooks/pre_tool_write.py",
+        "matcher": "Write|StrReplace",
+        "timeout": 5
+      }
+    ]
+  }
+}

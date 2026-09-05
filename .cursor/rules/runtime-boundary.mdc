@@ -1,0 +1,22 @@
+---
+description: Live runtime vs candidate trees, public CLI freeze, fail-loud physical proof.
+alwaysApply: true
+---
+
+# Runtime boundary
+
+Live import graph: `src/somnus_protocol/` and `src/somnus_vm/` only. `components/`, `extras/`, `archive/`, and `quarantine/` are evidence, not capability. Do not import them to "save time".
+
+Public CLI stays `doctor`, `topology`, and non-mutating `plan`. Do not add `start` / `stop` / `destroy`. Internal mutation belongs to the daemon. Physical P4 runs through `scripts/run_gate_p4.py`, never the public CLI.
+
+No pytest. Direct Python modules that print a terminal readout and write JSON + Markdown (+ log). No mocks for storage, QMP, process, or lifecycle claims. A missing fixture or binary is a loud failure, not a skip.
+
+Do not substitute the pinned P3 qcow2. Do not erase `test/vm_lab/runs/`. Do not treat a PID, open port, or preflight as a running VM.
+
+```python
+# BAD
+subprocess.run("qemu-system-x86_64 " + args, shell=True)
+
+# GOOD
+subprocess.run(["qemu-system-x86_64", *argv], check=False)
+```

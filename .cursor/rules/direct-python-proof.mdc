@@ -1,0 +1,23 @@
+---
+description: Direct Python proof modules — terminal readout plus JSON and Markdown artifacts.
+globs: test/vm_lab/**/*.py,scripts/**/*.py
+alwaysApply: false
+---
+
+# Direct proof modules
+
+Do not add pytest. Each proof module prints what it did, writes `result.json` and `result.md` (and a log when it is the harness), and fails loud.
+
+Physical layers use real files, sockets, SQLite, `qemu-img`, and processes. Do not stub QMP or storage to go green.
+
+```python
+# BAD
+def test_ok():
+    assert True
+
+# GOOD
+def main() -> int:
+    print("[PASS] overlay: two sparse 100 GiB children, backing chain verified")
+    bundle.write_text(json.dumps({"status": "pass", "pass_count": 1}))
+    return 0
+```
