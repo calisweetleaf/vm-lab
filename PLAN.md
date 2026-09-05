@@ -122,6 +122,11 @@ reopen the sealed historical P3 gate. It establishes whether the current checkou
 can truthfully consume that gate. Until it passes, physical P4 execution,
 public lifecycle promotion, source-manifest rebaselining, fixture substitution,
 and every claim that the historical 40/0/0 run is current are prohibited.
+Sequence items use `BASE` family IDs (`BASE-014`…`BASE-018`): current evidence
+authority is §3 floor truth, not a promoted phase with its own gate. The
+original `RECOVERY-R0-00x` item IDs were outside the closed plan-contract
+grammar; sealed bundle `test/vm_lab/runs/20260905T101438Z/` preserves that
+failure evidence.
 
 **Observed starting state before source repair (2026-08-24):**
 
@@ -155,23 +160,23 @@ P4 gate.
 
 **Required sequence:**
 
-- [x] `RECOVERY-R0-001` Freeze P4 matrix execution and public promotion; retain
+- [x] `BASE-014` Freeze P4 matrix execution and public promotion; retain
   the failed `20260825T011700Z` bundle unchanged as current failure evidence.
-- [x] `RECOVERY-R0-002` Establish source-preservation authority from an
+- [x] `BASE-015` Establish source-preservation authority from an
   authenticated `vm_lab.zip` matching the declared archive SHA-256
   `63f698f7af3ce989de8885a3b3b68b7214dedbffb1ac6671636b1f5d13829f94`, or
   explicitly decide whether the matching original Git blob is sufficient
   first-party recovery authority. Stage and compare bytes before any mutation.
-- [x] `RECOVERY-R0-003` If the authoritative original is `d27779…cf644e`,
+- [x] `BASE-016` If the authoritative original is `d27779…cf644e`,
   restore those exact bytes atomically while preserving the displaced
   `198917…29a81` commit evidence. If the authoritative original is
   `198917…29a81`, prove the manifest transcription defect before changing the
   manifest. Any third result halts for provenance reconciliation.
-- [ ] `RECOVERY-R0-004` Acquire only a declared-origin or separately
+- [ ] `BASE-017` Acquire only a declared-origin or separately
   authenticated byte-identical fixture. Require canonical regular-file,
   private mode/owner, size, hash, and P3 identity checks; do not download,
   synthesize, or substitute an image merely to unblock tests.
-- [ ] `RECOVERY-R0-005` Run the existing structural verifier and all
+- [ ] `BASE-018` Run the existing structural verifier and all
   fixture-dependent P3/P4 owners. Publish a fresh result bundle. Only that
   bundle may correct task/state/provenance claims; RECOVERY-R0 never closes
   the P4 physical gate.
